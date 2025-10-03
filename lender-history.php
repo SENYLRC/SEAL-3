@@ -137,33 +137,15 @@ if (strlen($filter_destination ?? '') > 2) {
 
 // Status conditions
 $conds = [];
-if ($filter_yes === "yes") {
-    $conds[] = "`Fill` = 1";
-}
-if ($filter_no === "yes") {
-    $conds[] = "`Fill` = 0";
-}
-if ($filter_noans === "yes") {
-    $conds[] = "`Fill` = 3";
-}
-if ($filter_expire === "yes") {
-    $conds[] = "`Fill` = 4";
-}
-if ($filter_cancel === "yes") {
-    $conds[] = "`Fill` = 6";
-}
-if ($filter_checkin === "yes") {
-    $conds[] = "`checkinAccount` IS NOT NULL";
-}
-if ($filter_recevied === "yes") {
-    $conds[] = "`receiveAccount` IS NOT NULL AND `returnAccount` IS NULL";
-}
-if ($filter_return === "yes") {
-    $conds[] = "`returnAccount` IS NOT NULL AND `checkinAccount` IS NULL";
-}
-if ($filter_renew === "yes") {
-    $conds[] = "`renewAnswer` > 1";
-}
+if ($filter_yes === "yes") $conds[] = "`Fill` = 1";
+if ($filter_no === "yes") $conds[] = "`Fill` = 0";
+if ($filter_noans === "yes") $conds[] = "`Fill` = 3";
+if ($filter_expire === "yes") $conds[] = "`Fill` = 4";
+if ($filter_cancel === "yes") $conds[] = "`Fill` = 6";
+if ($filter_checkin === "yes") $conds[] = "`checkinAccount` IS NOT NULL";
+if ($filter_recevied === "yes") $conds[] = "`receiveAccount` IS NOT NULL AND `returnAccount` IS NULL";
+if ($filter_return === "yes") $conds[] = "`returnAccount` IS NOT NULL AND `checkinAccount` IS NULL";
+if ($filter_renew === "yes") $conds[] = "`renewAnswer` > 1";
 
 $SQLMIDDLE = count($conds) ? implode(' OR ', $conds) : "`Fill` = ''";
 $GETLISTSQL = $SQLBASE . $SQL_DESTINATION . $SQL_DAYS . $SQLILL . " AND (" . $SQLMIDDLE . ")" . $SQLEND;
@@ -182,32 +164,30 @@ if (!$GETLIST) {
     ?>
     <hr>
     <h4>Perform Bulk Action</h4>
-    <form action="/bulkaction" method="post">
-        <select name="bulkaction" id="bulkaction" required>
-            <option value="">--Select Action--</option>
-            <option value="5">Request Not Filled</option>
-            <option value="6">Check Item Back In</option>
-        </select>
-        <input type="submit" value="Submit"
-               onclick="return confirm('Confirm, you want to continue with bulk update.');">
-</form>
-        <br><br>
-        <?php
-        echo $GETLISTCOUNTwhole . " results<br>";
-    echo "<table class='responsive-table'>
-                <thead>
-                  <tr>
-                    <th><input type='checkbox' id='check_all'></th>
-                    <th>ILL #</th>
-                    <th>Title/Author</th>
-                    <th>Type/Need By</th>
-                    <th>Borrower/Contact</th>
-                    <th>Due Date/Shipping</th>
-                    <th>Timestamp/Status/ILLiad ID</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>";
+    <select id="bulkaction" required>
+        <option value="">--Select Action--</option>
+        <option value="5">Request Not Filled</option>
+        <option value="6">Check Item Back In</option>
+    </select>
+    <button id="bulkSubmit">Submit</button>
+    <br><br>
 
+    <?php echo $GETLISTCOUNTwhole . " results<br>"; ?>
+    <table class='responsive-table'>
+        <thead>
+          <tr>
+            <th><input type='checkbox' id='check_all'></th>
+            <th>ILL #</th>
+            <th>Title/Author</th>
+            <th>Type/Need By</th>
+            <th>Borrower/Contact</th>
+            <th>Due Date/Shipping</th>
+            <th>Timestamp/Status/ILLiad ID</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+    <?php
     $rowtype = 1;
     while ($row = mysqli_fetch_assoc($GETLIST)) {
         $illNUB   = $row["illNUB"];
@@ -215,13 +195,13 @@ if (!$GETLIST) {
         $rowclass = ($rowtype & 1) ? "group-odd" : "group-even";
 
         echo "<tr class='$rowclass'>
-                    <td><input type='checkbox' name='check_list[]' value='" . htmlspecialchars($illNUB, ENT_QUOTES) . "'></td>
-                    <td>$illNUB</td>
-                    <td>{$row["Title"]}<br><i>{$row["Author"]}</i></td>
-                    <td>{$row["Itype"]}<br>{$row["needbydate"]}</td>
-                    <td>{$row["Requester person"]}<br><a href='mailto:{$row["requesterEMAIL"]}?Subject=NOTE Request ILL# $illNUB' target='_blank'>{$row["Requester lib"]}</a></td>
-                    <td>{$row["DueDate"]}<br>" . shipmtotxt($row["shipMethod"]) . "</td>
-                    <td>" . date("Y-m-d", strtotime($row["Timestamp"])) . "<br>" .
+                <td><input type='checkbox' class='check_item' value='" . htmlspecialchars($illNUB, ENT_QUOTES) . "'></td>
+                <td>$illNUB</td>
+                <td>{$row["Title"]}<br><i>{$row["Author"]}</i></td>
+                <td>{$row["Itype"]}<br>{$row["needbydate"]}</td>
+                <td>{$row["Requester person"]}<br><a href='mailto:{$row["requesterEMAIL"]}?Subject=NOTE Request ILL# $illNUB' target='_blank'>{$row["Requester lib"]}</a></td>
+                <td>{$row["DueDate"]}<br>" . shipmtotxt($row["shipMethod"]) . "</td>
+                <td>" . date("Y-m-d", strtotime($row["Timestamp"])) . "<br>" .
                   itemstatus(
                       $fill,
                       $row["receiveAccount"],
@@ -233,7 +213,7 @@ if (!$GETLIST) {
                       $row["fillNofillDate"]
                   ) .
                   "<br>{$row["IlliadTransID"]}</td>
-                    <td>";
+                <td>";
 
         // ==== Actions ====
         $receive  = $row["receiveAccount"];
@@ -307,16 +287,47 @@ if (!$GETLIST) {
         echo "</td></tr>";
         $rowtype++;
     }
-    echo "</table>";
-    ?>
-    </form>
-    <?php
+    echo "</tbody></table>";
 }
 ?>
 
 <script>
 // "check all" toggle
 document.getElementById("check_all").addEventListener("click", function(e) {
-  document.querySelectorAll("input[name='check_list[]']").forEach(cb => cb.checked = e.target.checked);
+  document.querySelectorAll(".check_item").forEach(cb => cb.checked = e.target.checked);
+});
+
+// Handle bulk submit via JS only
+document.getElementById("bulkSubmit").addEventListener("click", function() {
+  const action = document.getElementById("bulkaction").value;
+  const selected = Array.from(document.querySelectorAll(".check_item:checked"))
+                       .map(cb => cb.value);
+
+  if (!action) {
+    alert("Please select an action.");
+    return;
+  }
+  if (selected.length === 0) {
+    alert("Please select at least one request.");
+    return;
+  }
+  if (!confirm("Confirm, you want to continue with bulk update.")) return;
+
+  // Build params correctly for multiple values
+  const params = new URLSearchParams();
+  params.append("bulkaction", action);
+  selected.forEach(val => params.append("check_list[]", val));
+
+  fetch("/bulkaction", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params
+  })
+  .then(r => r.text())
+  .then(txt => {
+    alert("Bulk update complete.");
+    location.reload();
+  })
+  .catch(err => alert("Error: " + err));
 });
 </script>

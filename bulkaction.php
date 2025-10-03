@@ -166,9 +166,7 @@ mysqli_close($db);
 </head>
 <body>
   <h2>Bulk Action Results</h2>
-  <?php foreach ($messages as $msg) {
-      echo $msg;
-  } ?>
+  <?php foreach ($messages as $msg) { echo $msg; } ?>
   <p><a href="/lender-history" class="button">Back to Lender History</a></p>
 </body>
 </html>
