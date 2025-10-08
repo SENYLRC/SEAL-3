@@ -1,6 +1,6 @@
 <?php
 require '/var/www/seal_wp_script/seal_function.php';
-//request.php
+
 $library_error = false;
 $submission_success = false;
 
@@ -103,6 +103,41 @@ foreach ($_POST['libdestination'] as $destination) {
     $saddress2 = trim(mysqli_real_escape_string($db, $_POST['address2']));
     $caddress = trim(mysqli_real_escape_string($db, $_POST['caddress']));
     $reqsystem = ''; // Add logic to determine system if needed
+
+// -------------------------------
+// Article field handling
+// -------------------------------
+$arttile = $artauthor = $artissue = $artvolume = $artpage = $artmonth = $artyear = $artcopyright = '';
+
+if (isset($_REQUEST['arttile'])) {
+    $arttile = mysqli_real_escape_string($db, $_REQUEST['arttile']);
+}
+if (isset($_REQUEST['artauthor'])) {
+    $artauthor = mysqli_real_escape_string($db, $_REQUEST['artauthor']);
+}
+if (isset($_REQUEST['artissue'])) {
+    $artissue = mysqli_real_escape_string($db, $_REQUEST['artissue']);
+}
+if (isset($_REQUEST['artvolume'])) {
+    $artvolume = mysqli_real_escape_string($db, $_REQUEST['artvolume']);
+}
+if (isset($_REQUEST['artpage'])) {
+    $artpage = mysqli_real_escape_string($db, $_REQUEST['artpage']);
+}
+if (isset($_REQUEST['artmonth'])) {
+    $artmonth = mysqli_real_escape_string($db, $_REQUEST['artmonth']);
+}
+if (isset($_REQUEST['artyear'])) {
+    $artyear = mysqli_real_escape_string($db, $_REQUEST['artyear']);
+}
+if (isset($_REQUEST['artcopyright'])) {
+    $artcopyright = mysqli_real_escape_string($db, $_REQUEST['artcopyright']);
+}
+
+// Combine article details into one string for database
+$article = "Article Title: $arttile <br>Article Author: $artauthor <br>Volume: $artvolume <br>Issue: $artissue <br>Pages: $artpage <br>Month: $artmonth <br>Year: $artyear <br>Copyright: $artcopyright";
+
+
 
     // Final INSERT SQL
     $sql = "INSERT INTO `$sealSTAT` 
@@ -318,21 +353,43 @@ $headers = preg_replace('/(?<!\r)\n/', "\r\n", $headers);
 
 // Email to requester
 $subject_to_requester = "Your SEAL ILL Request Confirmation";
+
+// Check if it's an article request
+$isArticle = !empty($_POST['arttile']);
+
+$articleDetails = "";
+if ($isArticle) {
+    $articleDetails = "
+    <h4>Article Details</h4>
+    <ul>
+      <li><strong>Article Title:</strong> " . htmlspecialchars($_POST['arttile']) . "</li>
+      <li><strong>Article Author:</strong> " . htmlspecialchars($_POST['artauthor']) . "</li>
+      <li><strong>Volume:</strong> " . htmlspecialchars($_POST['artvolume']) . "</li>
+      <li><strong>Issue:</strong> " . htmlspecialchars($_POST['artissue']) . "</li>
+      <li><strong>Pages:</strong> " . htmlspecialchars($_POST['artpage']) . "</li>
+      <li><strong>Month:</strong> " . htmlspecialchars($_POST['artmonth']) . "</li>
+      <li><strong>Year:</strong> " . htmlspecialchars($_POST['artyear']) . "</li>
+      <li><strong>Copyright Compliance:</strong> " . htmlspecialchars($_POST['artcopyright']) . "</li>
+    </ul>";
+}
+
 $message_to_requester = "
 <html>
 <body>
-<p>Dear {$_POST['fname']} {$_POST['lname']},</p>
+<p>Dear " . htmlspecialchars($_POST['fname']) . " " . htmlspecialchars($_POST['lname']) . ",</p>
 
-<p>Your ILL request has been submitted successfully. Your request number is <strong><?php echo $illnum; ?></strong>.</p>
+<p>Your ILL request has been submitted successfully. Your request number is <strong>$illnum</strong>.</p>
 
-
+<h4>Request Summary</h4>
 <ul>
- <li><strong>ILL#:</strong> $illnum</li>
-  <li><strong>Title:</strong> {$_POST['bibtitle']}</li>
-  <li><strong>Author:</strong> {$_POST['bibauthor']}</li>
-  <li><strong>Publication Date:</strong> {$_POST['pubdate']}</li>
-  <li><strong>ISBN:</strong> {$_POST['isbn']}</li>
+  <li><strong>ILL#:</strong> $illnum</li>
+  <li><strong>Title:</strong> " . htmlspecialchars($_POST['bibtitle']) . "</li>
+  <li><strong>Author:</strong> " . htmlspecialchars($_POST['bibauthor']) . "</li>
+  <li><strong>Publication Date:</strong> " . htmlspecialchars($_POST['pubdate']) . "</li>
+  <li><strong>ISBN:</strong> " . htmlspecialchars($_POST['isbn']) . "</li>
 </ul>
+
+$articleDetails
 
 <p>You will be notified once the request is processed.</p>
 <p><a href='https://$illsystemhost/status?num=$illnum&a=6'>Do you need to cancel this request?</a></p>
@@ -344,27 +401,46 @@ $message_to_requester = "
 mail($requester_email, $subject_to_requester, $message_to_requester, $headers, "-f donotreply@senylrc.org");
 
 // Email to lending library
-$subject_to_library = "New SEAL ILL Request for \"{$_POST['bibtitle']}\"";
+$subject_to_library = "New SEAL ILL Request for \"" . htmlspecialchars($_POST['bibtitle']) . "\"";
+
+$articleDetailsLibrary = "";
+if ($isArticle) {
+    $articleDetailsLibrary = "
+    <h4>Article Details</h4>
+    <ul>
+      <li><strong>Article Title:</strong> " . htmlspecialchars($_POST['arttile']) . "</li>
+      <li><strong>Article Author:</strong> " . htmlspecialchars($_POST['artauthor']) . "</li>
+      <li><strong>Volume:</strong> " . htmlspecialchars($_POST['artvolume']) . "</li>
+      <li><strong>Issue:</strong> " . htmlspecialchars($_POST['artissue']) . "</li>
+      <li><strong>Pages:</strong> " . htmlspecialchars($_POST['artpage']) . "</li>
+      <li><strong>Month:</strong> " . htmlspecialchars($_POST['artmonth']) . "</li>
+      <li><strong>Year:</strong> " . htmlspecialchars($_POST['artyear']) . "</li>
+      <li><strong>Copyright Compliance:</strong> " . htmlspecialchars($_POST['artcopyright']) . "</li>
+    </ul>";
+}
+
 $message_to_library = "
 <html>
 <body>
 <p>A new ILL request has been submitted to your library:</p>
 
 <ul>
-  <li><strong>Requester Name:</strong> {$_POST['fname']} {$_POST['lname']}</li>
-  <li><strong>Institution:</strong> {$_POST['inst']}</li>
-  <li><strong>Email:</strong> {$_POST['email']}</li>
-  <li><strong>Phone:</strong> {$_POST['wphone']}</li>
+  <li><strong>Requester Name:</strong> " . htmlspecialchars($_POST['fname']) . " " . htmlspecialchars($_POST['lname']) . "</li>
+  <li><strong>Institution:</strong> " . htmlspecialchars($_POST['inst']) . "</li>
+  <li><strong>Email:</strong> " . htmlspecialchars($_POST['email']) . "</li>
+  <li><strong>Phone:</strong> " . htmlspecialchars($_POST['wphone']) . "</li>
 </ul>
 
-<p><strong>Requested Item:</strong></p>
+<h4>Requested Item</h4>
 <ul>
-  <li><strong>Title:</strong> {$_POST['bibtitle']}</li>
-  <li><strong>Author:</strong> {$_POST['bibauthor']}</li>
-  <li><strong>Publication Date:</strong> {$_POST['pubdate']}</li>
-  <li><strong>ISBN:</strong> {$_POST['isbn']}</li>
+  <li><strong>ILL#:</strong> $illnum</li>
+  <li><strong>Title:</strong> " . htmlspecialchars($_POST['bibtitle']) . "</li>
+  <li><strong>Author:</strong> " . htmlspecialchars($_POST['bibauthor']) . "</li>
+  <li><strong>Publication Date:</strong> " . htmlspecialchars($_POST['pubdate']) . "</li>
+  <li><strong>ISBN:</strong> " . htmlspecialchars($_POST['isbn']) . "</li>
 </ul>
 
+$articleDetailsLibrary
 
 <p>
 Will you fill this request?<br>
@@ -375,8 +451,9 @@ Will you fill this request?<br>
 </body>
 </html>
 ";
-//disable for testing
+
 mail($destination_email, $subject_to_library, $message_to_library, $headers, "-f donotreply@senylrc.org");
+
 
 }//end of the lib dest for each loop
 ?>
@@ -401,6 +478,20 @@ mail($destination_email, $subject_to_library, $message_to_library, $headers, "-f
     <li><strong>Requested From:</strong> <?php echo htmlspecialchars($library); ?></li>
   <?php endif; ?>
 </ul>
+<?php if (!empty($arttile)) : ?>
+  <h4>Article Details</h4>
+  <ul>
+    <li><strong>Article Title:</strong> <?php echo htmlspecialchars($arttile); ?></li>
+    <li><strong>Article Author:</strong> <?php echo htmlspecialchars($artauthor); ?></li>
+    <li><strong>Volume:</strong> <?php echo htmlspecialchars($artvolume); ?></li>
+    <li><strong>Issue:</strong> <?php echo htmlspecialchars($artissue); ?></li>
+    <li><strong>Pages:</strong> <?php echo htmlspecialchars($artpage); ?></li>
+    <li><strong>Month:</strong> <?php echo htmlspecialchars($artmonth); ?></li>
+    <li><strong>Year:</strong> <?php echo htmlspecialchars($artyear); ?></li>
+    <li><strong>Copyright:</strong> <?php echo htmlspecialchars($artcopyright); ?></li>
+  </ul>
+<?php endif; ?>
+
 
 <?php if ($destinationCount > 1): ?>
   <p><strong>This request was sent to <?php echo $destinationCount; ?> libraries.</strong></p>
@@ -446,22 +537,66 @@ mail($destination_email, $subject_to_library, $message_to_library, $headers, "-f
     <input type="hidden" name="wphone" value="<?php echo $field_work_phone; ?>">
     <input type="hidden" name="reqLOCcode" value="<?php echo $field_loc_location_code; ?>">
 
-    <h4>Request Details</h4>
-    <div class="form-grid">
-      <div>
-        <label>Need by date</label>
-        <input type="text" name="needbydate">
-      </div>
-      <div>
-        <label>Note</label>
-        <input type="text" name="reqnote">
-      </div>
-      <div style="grid-column:1/-1">
-        <p><em>Patron information is optional; please follow your local policies regarding patron privacy.</em></p>
-        <label>Patron Name or Barcode</label>
-        <input type="text" name="patronnote">
-      </div>
+<h4>Request Details</h4>
+<div class="form-grid">
+  <div class="full-row">
+    <label>Need by date</label><br>
+    <input type="text" name="needbydate" style="width:100%;">
+  </div>
+  <div class="full-row">
+    <label>Note</label><br>
+    <input type="text" name="reqnote" style="width:100%;">
+  </div>
+  <div class="full-row">
+    <p><em>Patron information is optional; please follow your local policies regarding patron privacy.</em></p>
+    <label>Patron Name or Barcode</label><br>
+    <input type="text" name="patronnote" style="width:100%;">
+  </div>
+</div>
+
+
+  <!-- Article Request Section -->
+  <div class="full-row">
+    <b>Is this a request for an article?</b><br>
+    <label>
+      <input type="radio" name="yesno" id="yesCheck" onclick="yesnoCheck();"> Yes
+    </label>
+    <label>
+      <input type="radio" name="yesno" id="noCheck" checked onclick="yesnoCheck();"> No
+    </label>
+
+    <div id="ifYes" style="display:none; margin-top:10px;">
+      <b>Article Title:</b><br>
+      <input type="text" name="arttile" size="80" style="width:100%;"><br>
+
+      <b>Article Author:</b><br>
+      <input type="text" name="artauthor" size="80" style="width:100%;"><br>
+
+      <b>Volume:</b><br>
+      <input type="text" name="artvolume" size="80" style="width:100%;"><br>
+
+      <b>Issue:</b><br>
+      <input type="text" name="artissue" style="width:100%;"><br>
+
+      <b>Pages:</b><br>
+      <input type="text" name="artpage" style="width:100%;"><br>
+
+      <b>Issue Month:</b><br>
+      <input type="text" name="artmonth" style="width:100%;"><br>
+
+      <b>Issue Year:</b><br>
+      <input type="text" name="artyear" style="width:100%;"><br>
+
+      <b>Copyright compliance:</b><br>
+      <select name="artcopyright" style="width:100%;">
+        <option value=""></option>
+        <option value="ccl">CCL</option>
+        <option value="ccg">CCG</option>
+      </select>
     </div>
+  </div>
+</div>
+
 
     <h4>Bibliographic Details</h4>
     <div class="form-grid">
