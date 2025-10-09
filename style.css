@@ -530,3 +530,146 @@ input#datepicker {
   width: 1.8em;
   height: 1.8em;
 }
+
+/* === SEAL Unified Admin Styles (Extended) === */
+
+/* Keep existing structure — additions below */
+
+/* ---- Filter Bar Enhancements ---- */
+.filter-bar {
+  background: #f9fafc;
+  border: 1px solid #d4dae0;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 25px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.filter-bar h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #003366;
+  font-weight: 600;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px 20px;
+}
+
+.filter-grid .form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-grid label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.filter-grid input[type=text],
+.filter-grid select {
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.filter-actions {
+  text-align: center;
+  margin-top: 15px;
+}
+
+/* ---- Export & Action Buttons ---- */
+.btn-primary,
+.export-btn {
+  background: #0066cc;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-primary:hover,
+.export-btn:hover {
+  background: #004c99;
+}
+
+/* ---- Requests Table ---- */
+.rh-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  margin-top: 15px;
+}
+
+.rh-table th,
+.rh-table td {
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  font-size: 0.9rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.rh-table th {
+  background: #2f4f6f;
+  color: #fff;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.rh-table tr:nth-child(even) td {
+  background: #f4f4f4;
+}
+
+/* ---- Datepicker Arrows (fix icons missing) ---- */
+.ui-datepicker .ui-datepicker-prev span,
+.ui-datepicker .ui-datepicker-next span {
+  display: none;
+}
+
+.ui-datepicker .ui-datepicker-prev::before {
+  content: "◀";
+  font-size: 16px;
+  color: #333;
+}
+
+.ui-datepicker .ui-datepicker-next::before {
+  content: "▶";
+  font-size: 16px;
+  color: #333;
+}
+
+.ui-datepicker .ui-datepicker-prev,
+.ui-datepicker .ui-datepicker-next {
+  cursor: pointer;
+  top: 2px;
+  width: 1.8em;
+  height: 1.8em;
+}
+
+/* ---- Pagination Info ---- */
+.pagination-info {
+  text-align: right;
+  font-size: 0.9rem;
+  color: #555;
+  margin-top: 10px;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .filter-grid {
+    grid-template-columns: 1fr;
+  }
+  .rh-table th,
+  .rh-table td {
+    font-size: 0.8rem;
+  }
+}
