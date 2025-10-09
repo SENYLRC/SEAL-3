@@ -1,4 +1,22 @@
+<link rel="stylesheet" href="https://sealbeta.senylrc.org/assets/jquery-ui.css">
+<script src="https://sealbeta.senylrc.org/assets/jquery.min.js"></script>
+<script src="https://sealbeta.senylrc.org/assets/jquery-ui.min.js"></script>
+
+
+<script>
+  jQuery(function($){
+    $("#datepicker").datepicker({
+      dateFormat: "yy-mm-dd",
+      changeMonth: true,
+      changeYear: true,
+      showAnim: "fadeIn"
+    });
+  });
+</script>
+
+
 <?php
+
 /**
  * adminlib.php  — SEAL Admin: Library Directory
  * - Modernized layout (matches your CSS)
@@ -6,6 +24,7 @@
  * - Clean radio layouts for delivery/options
  * - Optional SQL debug panel
  */
+
 
 session_id('YOUR_SESSION_ID');
 session_start();
@@ -22,12 +41,23 @@ $db = mysqli_connect($dbhost, $dbuser, $dbpass);
 mysqli_select_db($db, $dbname);
 
 // Table names (usually in seal_function.php, but we’ll be defensive)
-if (!isset($sealLIB) || !$sealLIB) { $sealLIB = 'sealLIB'; }
+if (!isset($sealLIB) || !$sealLIB) {
+    $sealLIB = 'sealLIB';
+}
 
 // Helpers (don’t rely on theme functions)
-function h($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
-function checked_val($v) { return ($v === "yes" || $v === 1 || $v === "1") ? "checked" : ""; }
-function selected_val($cur, $target) { return ((string)$cur === (string)$target) ? "selected" : ""; }
+function h($s)
+{
+    return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
+}
+function checked_val($v)
+{
+    return ($v === "yes" || $v === 1 || $v === "1") ? "checked" : "";
+}
+function selected_val($cur, $target)
+{
+    return ((string)$cur === (string)$target) ? "selected" : "";
+}
 
 // Read initial flags
 $firstpass = (isset($_REQUEST['firstpass']) ? "no" : "yes");
@@ -39,7 +69,7 @@ if ($firstpass === "no") {
     $filter_loc         = $_REQUEST['loc']              ?? "";
     $filter_alias       = $_REQUEST['filter_alias']     ?? "";
     $filter_illemail    = $_REQUEST['filter_illemail']  ?? "";
-    $filter_numresults  = $_REQUEST['filter_numresults']?? "25";
+    $filter_numresults  = $_REQUEST['filter_numresults'] ?? "25";
     $filter_offset      = $_REQUEST['filter_offset']    ?? "0";
 
     // Checkbox-ish filters
@@ -105,10 +135,13 @@ echo "<div class='adminlib-wrapper'>";
 echo "<div class='adminlib-header'>
         <h3>SEAL — Library Directory Admin</h3>
         <div class='actions'>
+          <a class='btn-secondary' href='/adminlib'> Back to Library List</a>
           <a class='btn-secondary' href='" . h($_SERVER['REDIRECT_URL']) . "?action=1'>Add Library</a>
-          <a class='btn-secondary' href='" . h($_SERVER['REDIRECT_URL']) . "?action=5'>Mass Suspend/Activate</a>
-          <a class='btn-secondary' target='_blank' href='/export'>Export CSV</a>
-        </div>
+          <a class='btn-secondary' href='" . h($_SERVER['REDIRECT_URL']) . "?action=5'>Mass Suspend/Activate</a>";
+if ((int)$pageaction === 0) {
+    echo "<a class='btn-secondary' target='_blank' href='/export'>Export CSV</a>";
+}
+echo      "</div>
       </div>";
 
 /**
@@ -164,7 +197,9 @@ if ((int)$pageaction === 5) {
 
             echo "<div class='section-card status-message'>";
             echo ($sflag ? "Suspended" : "Activated") . " lending for system <strong>" . h($system) . "</strong>";
-            if ($sflag) echo " until <strong>" . h($end_esc) . "</strong>";
+            if ($sflag) {
+                echo " until <strong>" . h($end_esc) . "</strong>";
+            }
             echo ".</div>";
         }
     }
@@ -193,11 +228,14 @@ if ((int)$pageaction === 5) {
               <option value='UB'>Ulster BOCES</option>
             </select>
           </div>";
-    echo "<div class='form-group'>
-            <label>Suspension End Date</label>
-            <input id='datepicker' name='enddate' type='text' placeholder='YYYY-MM-DD'>
-          </div>";
-    echo "</div>";
+
+
+    echo '<div class="form-group">';
+    echo '  <label for="datepicker">Suspension End Date</label>';
+    echo '  <input id="datepicker" name="enddate" value="' . h($enddate ?: '') . '">';
+    echo '  <div class="helper">If no date is picked, the system will default to seven (7) days.</div>';
+    echo '</div>';
+
 
     echo "<div class='actions'><button class='btn-primary'>Submit</button></div>";
     echo "</form></div>";
@@ -232,7 +270,7 @@ if ((int)$pageaction === 1) {
         $av       = mysqli_real_escape_string($db, $av);
         $ebook    = mysqli_real_escape_string($db, $ebook);
         $ejournal = mysqli_real_escape_string($db, $ejournal);
-        $reference= mysqli_real_escape_string($db, $reference);
+        $reference = mysqli_real_escape_string($db, $reference);
 
         $insertsql = "
           INSERT INTO `$sealLIB`
@@ -288,73 +326,100 @@ if ((int)$pageaction === 1) {
     echo "</div>";
 
     echo "<div class='section-divider'></div>";
-    echo "<h6>Delivery Options</h6>";
-    echo "<table class='option-table'>
-            <tr><td><b>Empire Delivery</b></td><td>
-              <div class='inline-options'>
-                <label class='choice'><input type='radio' name='lbEmpire' value='Yes'> Yes</label>
-                <label class='choice'><input type='radio' name='lbEmpire' value='No'> No</label>
-              </div>
-            </td></tr>
-            <tr><td><b>Public Library System Courier (MHLS or RCLS)</b></td><td>
-              <div class='inline-options'>
-                <label class='choice'><input type='radio' name='lbsyscourier' value='Yes'> Yes</label>
-                <label class='choice'><input type='radio' name='lbsyscourier' value='No'> No</label>
-              </div>
-            </td></tr>
-            <tr><td><b>US Mail</b></td><td>
-              <div class='inline-options'>
-                <label class='choice'><input type='radio' name='lbUSPS' value='Yes'> Yes</label>
-                <label class='choice'><input type='radio' name='lbUSPS' value='No'> No</label>
-              </div>
-            </td></tr>
-            <tr><td><b>Commercial Courier (UPS or FedEx)</b></td><td>
-              <div class='inline-options'>
-                <label class='choice'><input type='radio' name='lbCommCourier' value='Yes'> Yes</label>
-                <label class='choice'><input type='radio' name='lbCommCourier' value='No'> No</label>
-              </div>
-            </td></tr>
-          </table>";
+    echo '<div class="section-card">';
+    echo '  <h4>Delivery Options</h4>';
+    echo '  <div class="form-section two-col">';
 
-    echo "<h6>Items Willing to Loan</h6>";
-    echo "<table class='option-table'>
-            <tr><td><b>Print Book</b></td><td>
-              <div class='inline-options'>
-                <label class='choice'><input type='radio' name='book' value='Yes'> Yes</label>
-                <label class='choice'><input type='radio' name='book' value='No'> No</label>
-              </div>
-            </td></tr>
-            <tr><td><b>Print Journal or Article</b></td><td>
-              <div class='inline-options'>
-                <label class='choice'><input type='radio' name='journal' value='Yes'> Yes</label>
-                <label class='choice'><input type='radio' name='journal' value='No'> No</label>
-              </div>
-            </td></tr>
-            <tr><td><b>Audio Video Materials</b></td><td>
-              <div class='inline-options'>
-                <label class='choice'><input type='radio' name='av' value='Yes'> Yes</label>
-                <label class='choice'><input type='radio' name='av' value='No'> No</label>
-              </div>
-            </td></tr>
-            <tr><td><b>Theses</b></td><td>
-              <div class='inline-options'>
-                <label class='choice'><input type='radio' name='reference' value='Yes'> Yes</label>
-                <label class='choice'><input type='radio' name='reference' value='No'> No</label>
-              </div>
-            </td></tr>
-            <tr><td><b>Electronic Book</b></td><td>
-              <div class='inline-options'>
-                <label class='choice'><input type='radio' name='ebook' value='Yes'> Yes</label>
-                <label class='choice'><input type='radio' name='ebook' value='No'> No</label>
-              </div>
-            </td></tr>
-            <tr><td><b>Electronic Journal</b></td><td>
-              <div class='inline-options'>
-                <label class='choice'><input type='radio' name='ejournal' value='Yes'> Yes</label>
-                <label class='choice'><input type='radio' name='ejournal' value='No'> No</label>
-              </div>
-            </td></tr>
-          </table>";
+    echo '    <div class="form-group">';
+    echo '      <label>Empire Library Delivery</label>';
+    echo '      <div class="inline-options">';
+    echo '        <label class="choice"><input type="radio" name="lbEmpire" value="Yes" ' . (($lbEmpire == "Yes") ? "checked" : "") . '> Yes</label>';
+    echo '        <label class="choice"><input type="radio" name="lbEmpire" value="No" ' . (($lbEmpire == "No") ? "checked" : "") . '> No</label>';
+    echo '      </div>';
+    echo '    </div>';
+
+    echo '    <div class="form-group">';
+    echo '      <label>Public Library System Courier (MHLS or RCLS)</label>';
+    echo '      <div class="inline-options">';
+    echo '        <label class="choice"><input type="radio" name="lbsyscourier" value="Yes" ' . (($lbsyscourier == "Yes") ? "checked" : "") . '> Yes</label>';
+    echo '        <label class="choice"><input type="radio" name="lbsyscourier" value="No" ' . (($lbsyscourier == "No") ? "checked" : "") . '> No</label>';
+    echo '      </div>';
+    echo '    </div>';
+
+    echo '    <div class="form-group">';
+    echo '      <label>US Mail</label>';
+    echo '      <div class="inline-options">';
+    echo '        <label class="choice"><input type="radio" name="lbUSPS" value="Yes" ' . (($lbUSPS == "Yes") ? "checked" : "") . '> Yes</label>';
+    echo '        <label class="choice"><input type="radio" name="lbUSPS" value="No" ' . (($lbUSPS == "No") ? "checked" : "") . '> No</label>';
+    echo '      </div>';
+    echo '    </div>';
+
+    echo '    <div class="form-group">';
+    echo '      <label>Commercial Courier (UPS or FedEx)</label>';
+    echo '      <div class="inline-options">';
+    echo '        <label class="choice"><input type="radio" name="lbCommCourier" value="Yes" ' . (($lbCommCourier == "Yes") ? "checked" : "") . '> Yes</label>';
+    echo '        <label class="choice"><input type="radio" name="lbCommCourier" value="No" ' . (($lbCommCourier == "No") ? "checked" : "") . '> No</label>';
+    echo '      </div>';
+    echo '    </div>';
+
+    echo '  </div>';
+    echo '</div>';
+
+    echo '<div class="section-card">';
+    echo '  <h4>Items Willing to Loan</h4>';
+    echo '  <div class="form-section two-col">';
+
+    echo '    <div class="form-group">';
+    echo '      <label>Print Book</label>';
+    echo '      <div class="inline-options">';
+    echo '        <label class="choice"><input type="radio" name="book" value="Yes" ' . (($book == "Yes") ? "checked" : "") . '> Yes</label>';
+    echo '        <label class="choice"><input type="radio" name="book" value="No" ' . (($book == "No") ? "checked" : "") . '> No</label>';
+    echo '      </div>';
+    echo '    </div>';
+
+    echo '    <div class="form-group">';
+    echo '      <label>Print Journal or Article</label>';
+    echo '      <div class="inline-options">';
+    echo '        <label class="choice"><input type="radio" name="journal" value="Yes" ' . (($journal == "Yes") ? "checked" : "") . '> Yes</label>';
+    echo '        <label class="choice"><input type="radio" name="journal" value="No" ' . (($journal == "No") ? "checked" : "") . '> No</label>';
+    echo '      </div>';
+    echo '    </div>';
+
+    echo '    <div class="form-group">';
+    echo '      <label>Audio Video Materials</label>';
+    echo '      <div class="inline-options">';
+    echo '        <label class="choice"><input type="radio" name="av" value="Yes" ' . (($av == "Yes") ? "checked" : "") . '> Yes</label>';
+    echo '        <label class="choice"><input type="radio" name="av" value="No" ' . (($av == "No") ? "checked" : "") . '> No</label>';
+    echo '      </div>';
+    echo '    </div>';
+
+    echo '    <div class="form-group">';
+    echo '      <label>Reference/Microfilm</label>';
+    echo '      <div class="inline-options">';
+    echo '        <label class="choice"><input type="radio" name="reference" value="Yes" ' . (($reference == "Yes") ? "checked" : "") . '> Yes</label>';
+    echo '        <label class="choice"><input type="radio" name="reference" value="No" ' . (($reference == "No") ? "checked" : "") . '> No</label>';
+    echo '      </div>';
+    echo '    </div>';
+
+    echo '    <div class="form-group">';
+    echo '      <label>Electronic Book</label>';
+    echo '      <div class="inline-options">';
+    echo '        <label class="choice"><input type="radio" name="ebook" value="Yes" ' . (($ebook == "Yes") ? "checked" : "") . '> Yes</label>';
+    echo '        <label class="choice"><input type="radio" name="ebook" value="No" ' . (($ebook == "No") ? "checked" : "") . '> No</label>';
+    echo '      </div>';
+    echo '    </div>';
+
+    echo '    <div class="form-group">';
+    echo '      <label>Electronic Journal</label>';
+    echo '      <div class="inline-options">';
+    echo '        <label class="choice"><input type="radio" name="ejournal" value="Yes" ' . (($ejournal == "Yes") ? "checked" : "") . '> Yes</label>';
+    echo '        <label class="choice"><input type="radio" name="ejournal" value="No" ' . (($ejournal == "No") ? "checked" : "") . '> No</label>';
+    echo '      </div>';
+    echo '    </div>';
+
+    echo '  </div>';
+    echo '</div>';
+
 
     echo "<div class='actions'><button class='btn-primary'>Submit</button></div>";
     echo "</form></div>";
@@ -385,7 +450,7 @@ if ((int)$pageaction === 2) {
         $av       = mysqli_real_escape_string($db, $av);
         $ebook    = mysqli_real_escape_string($db, $ebook);
         $ejournal = mysqli_real_escape_string($db, $ejournal);
-        $reference= mysqli_real_escape_string($db, $reference);
+        $reference = mysqli_real_escape_string($db, $reference);
 
         $libilliadurl  = mysqli_real_escape_string($db, $libilliadurl);
         $libilliaddate = mysqli_real_escape_string($db, $libilliaddate);
@@ -401,7 +466,6 @@ if ((int)$pageaction === 2) {
         $lbUSPS        = $_REQUEST["lbUSPS"] ?? "";
         $lbEmpire      = $_REQUEST["lbEmpire"] ?? "";
         $lbCommCourier = $_REQUEST["lbCommCourier"] ?? "";
-
         // If suspended with no end date, default +7 days
         if (($suspend == 1) && (strlen($enddate) < 2)) {
             $enddate = date('Y-m-d', strtotime('+7 day'));
@@ -410,9 +474,14 @@ if ((int)$pageaction === 2) {
         }
 
         // If participant is set to 0, also suspend
-        if ($participant === '0') {
+        if ($participant === '0' && $suspend === '0') {
+            // keep suspend = 0 if both are no
+            $suspend = '0';
+        } elseif ($participant === '0') {
+            // force suspend if not participant
             $suspend = '1';
         }
+
 
         $librecnumb_esc = mysqli_real_escape_string($db, $librecnumb);
 
@@ -465,16 +534,34 @@ if ((int)$pageaction === 2) {
     $row = mysqli_fetch_assoc($GETLIST);
 
     // Fill local vars
-    $libname = $row["Name"]; $libalias = $row["alias"]; $libemail = $row["ill_email"]; $phone = $row["phone"];
-    $libparticipant = $row["participant"]; $libemailalert = $row["LibEmailAlert"];
-    $libilliad = $row["Illiad"]; $libilliadkey = $row["APIkey"]; $oclc = $row["oclc"]; $loc = $row["loc"];
-    $libilliadurl = $row["IlliadURL"]; $libilliaddate = $row["IlliadDATE"]; $libsuspend = $row["suspend"];
+    $libname = $row["Name"];
+    $libalias = $row["alias"];
+    $libemail = $row["ill_email"];
+    $phone = $row["phone"];
+    $libparticipant = $row["participant"];
+    $libemailalert = $row["LibEmailAlert"];
+    $libilliad = $row["Illiad"];
+    $libilliadkey = $row["APIkey"];
+    $oclc = $row["oclc"];
+    $loc = $row["loc"];
+    $libilliadurl = $row["IlliadURL"];
+    $libilliaddate = $row["IlliadDATE"];
+    $libsuspend = $row["suspend"];
     $system = $row["system"];
-    $address1 = $row["address1"]; $address2 = $row["address2"]; $address3 = $row["address3"];
-    $book = $row["book_loan"]; $reference = $row["theses_loan"]; $av = $row["av_loan"];
-    $ebook = $row["ebook_request"]; $ejournal = $row["ejournal_request"]; $journal = $row["periodical_loan"];
+    $address1 = $row["address1"];
+    $address2 = $row["address2"];
+    $address3 = $row["address3"];
+    $book = $row["book_loan"];
+    $reference = $row["theses_loan"];
+    $av = $row["av_loan"];
+    $ebook = $row["ebook_request"];
+    $ejournal = $row["ejournal_request"];
+    $journal = $row["periodical_loan"];
     $timestamp = $row["ModifyDate"];
-    $lbsyscourier = $row["lbsyscourier"]; $lbUSPS = $row["lbUSPS"]; $lbEmpire = $row["lbEmpire"]; $lbCommCourier = $row["lbCommCourier"];
+    $lbsyscourier = $row["lbsyscourier"];
+    $lbUSPS = $row["lbUSPS"];
+    $lbEmpire = $row["lbEmpire"];
+    $lbCommCourier = $row["lbCommCourier"];
     $enddateshow = $row["SuspendDateEnd"];
 
     // Edit form
@@ -526,80 +613,122 @@ if ((int)$pageaction === 2) {
             </select>
           </div>";
 
-    echo "<div class='form-group'><label>Suspension End Date</label><input id='datepicker' name='enddate' value=''></div>";
+    echo '<div class="form-group">';
+    echo '  <label for="datepicker">Suspension End Date</label>';
+    echo '  <input id="datepicker" name="enddate" value="' . h($enddate ?: '') . '">';
+    echo '  <div class="helper">If no date is picked, the system will default to seven (7) days.</div>';
+    echo '</div>';
+
 
     echo "<div class='form-group'><label>Library System</label>
             <select name='system'>
-              <option value='DU' " . selected_val($system,'DU') . ">Dutchess BOCES</option>
-              <option value='MH' " . selected_val($system,'MH') . ">Mid-Hudson Library System</option>
-              <option value='OU' " . selected_val($system,'OU') . ">Orange Ulster BOCES</option>
-              <option value='RC' " . selected_val($system,'RC') . ">Ramapo Catskill Library System</option>
-              <option value='RB' " . selected_val($system,'RB') . ">Rockland BOCES</option>
-              <option value='SE' " . selected_val($system,'SE') . ">SENYLRC</option>
-              <option value='SB' " . selected_val($system,'SB') . ">Sullivan BOCES</option>
-              <option value='UB' " . selected_val($system,'UB') . ">Ulster BOCES</option>
+              <option value='DU' " . selected_val($system, 'DU') . ">Dutchess BOCES</option>
+              <option value='MH' " . selected_val($system, 'MH') . ">Mid-Hudson Library System</option>
+              <option value='OU' " . selected_val($system, 'OU') . ">Orange Ulster BOCES</option>
+              <option value='RC' " . selected_val($system, 'RC') . ">Ramapo Catskill Library System</option>
+              <option value='RB' " . selected_val($system, 'RB') . ">Rockland BOCES</option>
+              <option value='SE' " . selected_val($system, 'SE') . ">SENYLRC</option>
+              <option value='SB' " . selected_val($system, 'SB') . ">Sullivan BOCES</option>
+              <option value='UB' " . selected_val($system, 'UB') . ">Ulster BOCES</option>
             </select>
           </div>";
     echo "</div>";
 
     echo "<div class='section-divider'></div>";
-    echo "<h6>Delivery Options</h6>";
-    echo "<table class='option-table'>
-            <tr><td><b>Empire Delivery</b></td><td>
-              <div class='inline-options'>
-                <label class='choice'><input type='radio' name='lbEmpire' value='Yes' " . selected_val($lbEmpire,'Yes') . "> Yes</label>
-                <label class='choice'><input type='radio' name='lbEmpire' value='No' " . selected_val($lbEmpire,'No') . "> No</label>
-              </div></td></tr>
-            <tr><td><b>Public Library System Courier (MHLS or RCLS)</b></td><td>
-              <div class='inline-options'>
-                <label class='choice'><input type='radio' name='lbsyscourier' value='Yes' " . selected_val($lbsyscourier,'Yes') . "> Yes</label>
-                <label class='choice'><input type='radio' name='lbsyscourier' value='No' " . selected_val($lbsyscourier,'No') . "> No</label>
-              </div></td></tr>
-            <tr><td><b>US Mail</b></td><td>
-              <div class='inline-options'>
-                <label class='choice'><input type='radio' name='lbUSPS' value='Yes' " . selected_val($lbUSPS,'Yes') . "> Yes</label>
-                <label class='choice'><input type='radio' name='lbUSPS' value='No' " . selected_val($lbUSPS,'No') . "> No</label>
-              </div></td></tr>
-            <tr><td><b>Commercial Courier (UPS or FedEx)</b></td><td>
-              <div class='inline-options'>
-                <label class='choice'><input type='radio' name='lbCommCourier' value='Yes' " . selected_val($lbCommCourier,'Yes') . "> Yes</label>
-                <label class='choice'><input type='radio' name='lbCommCourier' value='No' " . selected_val($lbCommCourier,'No') . "> No</label>
-              </div></td></tr>
-          </table>";
+    echo '<div class="section-card">';
+    echo '  <h4>Delivery Options</h4>';
+    echo '  <div class="form-section two-col">';
 
-    echo "<h6>Items Willing to Loan</h6>";
-    echo "<table class='option-table'>
-            <tr><td><b>Print Book</b></td><td>
-              <div class='inline-options'>
-                <label class='choice'><input type='radio' name='book' value='Yes' " . selected_val($book,'Yes') . "> Yes</label>
-                <label class='choice'><input type='radio' name='book' value='No' " . selected_val($book,'No') . "> No</label>
-              </div></td></tr>
-            <tr><td><b>Print Journal or Article</b></td><td>
-              <div class='inline-options'>
-                <label class='choice'><input type='radio' name='journal' value='Yes' " . selected_val($journal,'Yes') . "> Yes</label>
-                <label class='choice'><input type='radio' name='journal' value='No' " . selected_val($journal,'No') . "> No</label>
-              </div></td></tr>
-            <tr><td><b>Audio Video Materials</b></td><td>
-              <div class='inline-options'>
-                <label class='choice'><input type='radio' name='av' value='Yes' " . selected_val($av,'Yes') . "> Yes</label>
-                <label class='choice'><input type='radio' name='av' value='No' " . selected_val($av,'No') . "> No</label>
-              </div></td></tr>
-            <tr><td><b>Theses</b></td><td>
-              <div class='inline-options'>
-                <label class='choice'><input type='radio' name='reference' value='Yes' " . selected_val($reference,'Yes') . "> Yes</label>
-                <label class='choice'><input type='radio' name='reference' value='No' " . selected_val($reference,'No') . "> No</label>
-              </div></td></tr>
-            <tr><td><b>Electronic Book</b></td><td>
-              <div class='inline-options'>
-                <label class='choice'><input type='radio' name='ebook' value='Yes' " . selected_val($ebook,'Yes') . "> Yes</label>
-                <label class='choice'><input type='radio' name='ebook' value='No' " . selected_val($ebook,'No') . "> No</label>
-              </div></td></tr>
-            <tr><td><b>Electronic Journal</b></td><td>
-              <div class='inline-options'>
-                <label class='choice'><input type='radio' name='ejournal' value='Yes' " . selected_val($ejournal,'Yes') . "> Yes</label>
-                <label class='choice'><input type='radio' name='ejournal' value='No' " . selected_val($ejournal,'No') . "> No</label>
-              </div></td></tr>
-          </table>";
+    echo '    <div class="form-group">';
+    echo '      <label>Empire Library Delivery</label>';
+    echo '      <div class="inline-options">';
+    echo '        <label class="choice"><input type="radio" name="lbEmpire" value="Yes" ' . (($lbEmpire == "Yes") ? "checked" : "") . '> Yes</label>';
+    echo '        <label class="choice"><input type="radio" name="lbEmpire" value="No" ' . (($lbEmpire == "No") ? "checked" : "") . '> No</label>';
+    echo '      </div>';
+    echo '    </div>';
+
+    echo '    <div class="form-group">';
+    echo '      <label>Public Library System Courier (MHLS or RCLS)</label>';
+    echo '      <div class="inline-options">';
+    echo '        <label class="choice"><input type="radio" name="lbsyscourier" value="Yes" ' . (($lbsyscourier == "Yes") ? "checked" : "") . '> Yes</label>';
+    echo '        <label class="choice"><input type="radio" name="lbsyscourier" value="No" ' . (($lbsyscourier == "No") ? "checked" : "") . '> No</label>';
+    echo '      </div>';
+    echo '    </div>';
+
+    echo '    <div class="form-group">';
+    echo '      <label>US Mail</label>';
+    echo '      <div class="inline-options">';
+    echo '        <label class="choice"><input type="radio" name="lbUSPS" value="Yes" ' . (($lbUSPS == "Yes") ? "checked" : "") . '> Yes</label>';
+    echo '        <label class="choice"><input type="radio" name="lbUSPS" value="No" ' . (($lbUSPS == "No") ? "checked" : "") . '> No</label>';
+    echo '      </div>';
+    echo '    </div>';
+
+    echo '    <div class="form-group">';
+    echo '      <label>Commercial Courier (UPS or FedEx)</label>';
+    echo '      <div class="inline-options">';
+    echo '        <label class="choice"><input type="radio" name="lbCommCourier" value="Yes" ' . (($lbCommCourier == "Yes") ? "checked" : "") . '> Yes</label>';
+    echo '        <label class="choice"><input type="radio" name="lbCommCourier" value="No" ' . (($lbCommCourier == "No") ? "checked" : "") . '> No</label>';
+    echo '      </div>';
+    echo '    </div>';
+
+    echo '  </div>';
+    echo '</div>';
+
+    echo '<div class="section-card">';
+    echo '  <h4>Items Willing to Loan</h4>';
+    echo '  <div class="form-section two-col">';
+
+    echo '    <div class="form-group">';
+    echo '      <label>Print Book</label>';
+    echo '      <div class="inline-options">';
+    echo '        <label class="choice"><input type="radio" name="book" value="Yes" ' . (($book == "Yes") ? "checked" : "") . '> Yes</label>';
+    echo '        <label class="choice"><input type="radio" name="book" value="No" ' . (($book == "No") ? "checked" : "") . '> No</label>';
+    echo '      </div>';
+    echo '    </div>';
+
+    echo '    <div class="form-group">';
+    echo '      <label>Print Journal or Article</label>';
+    echo '      <div class="inline-options">';
+    echo '        <label class="choice"><input type="radio" name="journal" value="Yes" ' . (($journal == "Yes") ? "checked" : "") . '> Yes</label>';
+    echo '        <label class="choice"><input type="radio" name="journal" value="No" ' . (($journal == "No") ? "checked" : "") . '> No</label>';
+    echo '      </div>';
+    echo '    </div>';
+
+    echo '    <div class="form-group">';
+    echo '      <label>Audio Video Materials</label>';
+    echo '      <div class="inline-options">';
+    echo '        <label class="choice"><input type="radio" name="av" value="Yes" ' . (($av == "Yes") ? "checked" : "") . '> Yes</label>';
+    echo '        <label class="choice"><input type="radio" name="av" value="No" ' . (($av == "No") ? "checked" : "") . '> No</label>';
+    echo '      </div>';
+    echo '    </div>';
+
+    echo '    <div class="form-group">';
+    echo '      <label>Reference/Microfilm</label>';
+    echo '      <div class="inline-options">';
+    echo '        <label class="choice"><input type="radio" name="reference" value="Yes" ' . (($reference == "Yes") ? "checked" : "") . '> Yes</label>';
+    echo '        <label class="choice"><input type="radio" name="reference" value="No" ' . (($reference == "No") ? "checked" : "") . '> No</label>';
+    echo '      </div>';
+    echo '    </div>';
+
+    echo '    <div class="form-group">';
+    echo '      <label>Electronic Book</label>';
+    echo '      <div class="inline-options">';
+    echo '        <label class="choice"><input type="radio" name="ebook" value="Yes" ' . (($ebook == "Yes") ? "checked" : "") . '> Yes</label>';
+    echo '        <label class="choice"><input type="radio" name="ebook" value="No" ' . (($ebook == "No") ? "checked" : "") . '> No</label>';
+    echo '      </div>';
+    echo '    </div>';
+
+    echo '    <div class="form-group">';
+    echo '      <label>Electronic Journal</label>';
+    echo '      <div class="inline-options">';
+    echo '        <label class="choice"><input type="radio" name="ejournal" value="Yes" ' . (($ejournal == "Yes") ? "checked" : "") . '> Yes</label>';
+    echo '        <label class="choice"><input type="radio" name="ejournal" value="No" ' . (($ejournal == "No") ? "checked" : "") . '> No</label>';
+    echo '      </div>';
+    echo '    </div>';
+
+    echo '  </div>';
+    echo '</div>';
+
 
     if ($libsuspend == "1") {
         echo "<p class='pill'>This library is <strong>suspended</strong> until " . h($enddateshow) . ".</p>";
@@ -684,15 +813,15 @@ echo "<div class='form-group'><label><input type='checkbox' name='filter_all_lib
 echo "<div class='form-group'>
         <label>Library System</label>
         <select name='filter_system'>
-          <option value='' " . selected_val($filter_system,'') . ">All</option>
-          <option value='DU' " . selected_val($filter_system,'DU') . ">Dutchess BOCES</option>
-          <option value='MH' " . selected_val($filter_system,'MH') . ">Mid-Hudson</option>
-          <option value='OU' " . selected_val($filter_system,'OU') . ">Orange Ulster BOCES</option>
-          <option value='RC' " . selected_val($filter_system,'RC') . ">Ramapo Catskill</option>
-          <option value='RB' " . selected_val($filter_system,'RB') . ">Rockland BOCES</option>
-          <option value='SE' " . selected_val($filter_system,'SE') . ">SENYLRC</option>
-          <option value='SB' " . selected_val($filter_system,'SB') . ">Sullivan BOCES</option>
-          <option value='UB' " . selected_val($filter_system,'UB') . ">Ulster BOCES</option>
+          <option value='' " . selected_val($filter_system, '') . ">All</option>
+          <option value='DU' " . selected_val($filter_system, 'DU') . ">Dutchess BOCES</option>
+          <option value='MH' " . selected_val($filter_system, 'MH') . ">Mid-Hudson</option>
+          <option value='OU' " . selected_val($filter_system, 'OU') . ">Orange Ulster BOCES</option>
+          <option value='RC' " . selected_val($filter_system, 'RC') . ">Ramapo Catskill</option>
+          <option value='RB' " . selected_val($filter_system, 'RB') . ">Rockland BOCES</option>
+          <option value='SE' " . selected_val($filter_system, 'SE') . ">SENYLRC</option>
+          <option value='SB' " . selected_val($filter_system, 'SB') . ">Sullivan BOCES</option>
+          <option value='UB' " . selected_val($filter_system, 'UB') . ">Ulster BOCES</option>
         </select>
       </div>";
 
@@ -703,19 +832,19 @@ echo "<div class='form-group'><label>ILL Email</label><input name='filter_illema
 
 echo "<div class='form-group'><label>Results per page</label>
         <select name='filter_numresults'>
-          <option value='25' " . selected_val($filter_numresults,'25') . ">25</option>
-          <option value='50' " . selected_val($filter_numresults,'50') . ">50</option>
-          <option value='100' " . selected_val($filter_numresults,'100') . ">100</option>
-          <option value='all' " . selected_val($filter_numresults,'all') . ">All</option>
+          <option value='25' " . selected_val($filter_numresults, '25') . ">25</option>
+          <option value='50' " . selected_val($filter_numresults, '50') . ">50</option>
+          <option value='100' " . selected_val($filter_numresults, '100') . ">100</option>
+          <option value='all' " . selected_val($filter_numresults, 'all') . ">All</option>
         </select>
       </div>";
 
 if ($filter_numresults != "all") {
-    $resultpages = max(1, ceil($GETLISTCOUNTwhole / max(1,(int)$filter_numresults)));
+    $resultpages = max(1, ceil($GETLISTCOUNTwhole / max(1, (int)$filter_numresults)));
     echo "<div class='form-group'><label>Page</label><select name='filter_offset'>";
-    for ($x=1; $x<=$resultpages; $x++) {
-        $localoffset = $x-1;
-        echo "<option value='" . $localoffset . "' " . selected_val($filter_offset,$localoffset) . ">$x</option>";
+    for ($x = 1; $x <= $resultpages; $x++) {
+        $localoffset = $x - 1;
+        echo "<option value='" . $localoffset . "' " . selected_val($filter_offset, $localoffset) . ">$x</option>";
     }
     echo "</select></div>";
 }
@@ -767,4 +896,3 @@ while ($row = mysqli_fetch_assoc($GETLIST)) {
 echo "</tbody></table>";
 
 echo "</div>"; // wrapper end
-?>
