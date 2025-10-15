@@ -1,214 +1,239 @@
 <?php
-// adminlib_accounts.php — Manage WordPress user accounts by System
+// adminlib_accounts.php — Manage SEAL WordPress user accounts by Home System
 
-// --- Session (for CSRF) ---
-session_start();
-if (empty($_SESSION['csrf'])) { $_SESSION['csrf'] = bin2hex(random_bytes(16)); }
+if (session_status() === PHP_SESSION_NONE) {
+    session_name('seal_admin_session');
+    session_start();
+}
+if (empty($_SESSION['csrf'])) {
+    $_SESSION['csrf'] = bin2hex(random_bytes(16));
+}
+$csrf_token = $_SESSION['csrf'];
 
-// --- WP includes ---
+// --------------------------------------------------
+// WordPress environment & includes
+// --------------------------------------------------
 require '/var/www/seal_wp_script/seal_function.php';
 require '/var/www/seal_wp_script/seal_db.inc';
 
-// --- Helpers ---
+if (!function_exists('self_url')) {
+    function self_url() {
+        if (function_exists('get_permalink')) {
+            return get_permalink();
+        }
+        return $_SERVER['REQUEST_URI'];
+    }
+}
+
+// --------------------------------------------------
+// Helpers
+// --------------------------------------------------
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 function post($k,$d=''){ return isset($_POST[$k]) ? $_POST[$k] : $d; }
 function req($k,$d=''){ return isset($_REQUEST[$k]) ? $_REQUEST[$k] : $d; }
 
-// --- DB ---
-$db = mysqli_connect($dbhost, $dbuser, $dbpass, $dbname);
-
-// --- Current system (from seal_function.php) ---
+// --------------------------------------------------
+// Routing
+// --------------------------------------------------
 $SYSTEM = $SYSTEM ?? '';
-
-// --- Routing ---
-$action     = req('action','list');           // list | edit | save
-$recnum     = req('recnum','');               // WP user ID
-$per_page   = req('per_page','25');
-$page       = max(1,(int)req('page','1'));
-
-// --- Search inputs ---
-$q_user     = req('q_user','');   // username
-$q_email    = req('q_email','');  // email
-$q_inst     = req('q_inst','');   // institution
-$q_phone    = req('q_phone','');  // phone
-
+$action = req('action','list');
+$recnum = (int)req('recnum',0);
 ?>
+
 <style>
-/* styling shell */
-.seal-shell {font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial, sans-serif; color:#111; }
-.seal-wrap {max-width: 1100px; margin: 0 auto; padding: 18px;}
-.seal-card {background:#fff; border:1px solid #e5e7eb; border-radius:14px; box-shadow: 0 1px 2px rgba(0,0,0,.04); padding:18px; margin-bottom:16px;}
-.seal-title {font-size: 22px; font-weight:700; margin: 0 0 8px;}
-.seal-sub {font-size:14px; color:#555; margin-bottom: 12px;}
-.seal-row {display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;}
-.seal-row .input, .seal-row select {padding:8px 10px; border:1px solid #d1d5db; border-radius:8px; min-width: 220px;}
-.seal-btn {display:inline-block; padding:9px 14px; border-radius:10px; border:1px solid #0f766e; background:#0d9488; color:#fff; text-decoration:none; font-weight:600; cursor:pointer;}
-.seal-btn.secondary { background:#fff; color:#0f766e; }
-.seal-muted {color:#555;}
-.seal-table {width:100%; border-collapse: collapse;}
-.seal-table th, .seal-table td { padding:10px 8px; border-bottom:1px solid #eef2f7; text-align:left; }
-.seal-table th { font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:#6b7280; background:#fafafa;}
-.seal-hr { border:0; border-top:1px solid #e5e7eb; margin:16px 0;}
-.seal-note { font-size:13px; color:#6b7280;}
-@media (max-width: 720px) {
-  .seal-row .input, .seal-row select { min-width: 100%; }
-}
+.seal-shell {font-family:system-ui,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;color:#111;}
+.seal-wrap {max-width:1100px;margin:0 auto;padding:18px;}
+.seal-card {background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.04);padding:18px;margin-bottom:16px;}
+.seal-title {font-size:22px;font-weight:700;margin:0 0 8px;}
+.seal-sub {font-size:14px;color:#555;margin-bottom:12px;}
+.seal-row {display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
+.seal-row .input {padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;min-width:220px;}
+.seal-btn {display:inline-block;padding:9px 14px;border-radius:10px;border:1px solid #0f766e;background:#0d9488;color:#fff;text-decoration:none;font-weight:600;cursor:pointer;}
+.seal-btn.secondary {background:#fff;color:#0f766e;}
+.seal-btn.danger {background:#b91c1c;border-color:#991b1b;}
+.seal-table {width:100%;border-collapse:collapse;}
+.seal-table th,.seal-table td {padding:10px 8px;border-bottom:1px solid #eef2f7;text-align:left;}
+.seal-table th {font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280;background:#fafafa;}
+@media (max-width:720px){.seal-row .input{min-width:100%;}}
 </style>
 
 <div class="seal-shell"><div class="seal-wrap">
+
 <?php
-
-// ---------- SAVE ----------
-if ($action === 'save' && $_SERVER['REQUEST_METHOD']==='POST') {
-    if (!isset($_POST['csrf']) || $_POST['csrf'] !== $_SESSION['csrf']) {
-        echo '<div class="seal-card"><div class="seal-title">Security error</div><div class="seal-sub">Invalid token.</div></div>';
+// --------------------------------------------------
+// DELETE
+// --------------------------------------------------
+if ($action === 'delete' && $recnum) {
+    if (!isset($_GET['csrf']) || $_GET['csrf'] !== $_SESSION['csrf']) {
+        echo '<div class="seal-card"><div class="seal-title">Security Error</div><div class="seal-sub">Invalid token.</div></div>';
     } else {
-        $uid = (int)post('recnum',0);
+        wp_delete_user($recnum);
+        echo '<div class="seal-card"><div class="seal-title">✅ Account Deleted</div>
+              <a class="seal-btn" href="'.h(self_url()).'">Return to List</a></div>';
+    }
+}
 
-        // confirm user is in same system
-        $chk = "SELECT MAX(CASE WHEN meta_key='home_system' THEN meta_value END) AS home_system
-                FROM wp_usermeta WHERE user_id=$uid";
-        $res = mysqli_query($db,$chk);
-        $row = mysqli_fetch_assoc($res);
-        if (!$row || strtoupper($row['home_system']) !== strtoupper($SYSTEM)) {
+// --------------------------------------------------
+// SAVE
+// --------------------------------------------------
+if ($action === 'save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!isset($_POST['csrf']) || $_POST['csrf'] !== $_SESSION['csrf']) {
+        echo '<div class="seal-card"><div class="seal-title">Security Error</div><div class="seal-sub">Invalid token.</div></div>';
+    } else {
+        $uid = (int)post('recnum', 0);
+        $user_system = get_user_meta($uid, 'home_system', true);
+        if (strtoupper($user_system) !== strtoupper($SYSTEM)) {
             echo '<div class="seal-card"><div class="seal-title">Not allowed</div><div class="seal-sub">User not in your system.</div></div>';
         } else {
-            // fields
-            $email       = mysqli_real_escape_string($db, trim(post('user_email','')));
-            $institution = mysqli_real_escape_string($db, trim(post('institution','')));
-            $phone       = mysqli_real_escape_string($db, trim(post('phone','')));
-            $alt_email   = mysqli_real_escape_string($db, trim(post('alt_email','')));
+            // Sanitize input
+            $email = sanitize_email(post('user_email', ''));
+            $password = (string)post('user_pass', '');
 
-            // update wp_users
-            mysqli_query($db, "UPDATE wp_users SET user_email='$email' WHERE ID=$uid");
-
-            // update wp_usermeta
-            $pairs = [
-                'institution' => $institution,
-                'phone'       => $phone,
-                'alt_email'   => $alt_email
+            $fields = [
+                'institution'       => sanitize_text_field(post('institution','')),
+                'home_system'       => sanitize_text_field(post('home_system','')),
+                'phone'             => sanitize_text_field(post('phone','')),
+                'alt_email'         => sanitize_email(post('alt_email','')),
+                'address_loc_code'  => sanitize_text_field(post('address_loc_code','')),
+                'oclc_symbol'       => sanitize_text_field(post('oclc_symbol','')),
+                'delivery_address1' => sanitize_text_field(post('delivery_address1','')),
+                'delivery_address2' => sanitize_text_field(post('delivery_address2','')),
+                'delivery_city'     => sanitize_text_field(post('delivery_city','')),
+                'delivery_state'    => sanitize_text_field(post('delivery_state','')),
+                'delivery_zip'      => sanitize_text_field(post('delivery_zip','')),
             ];
-            foreach($pairs as $k=>$v){
-                $sql = "INSERT INTO wp_usermeta (user_id,meta_key,meta_value)
-                        VALUES ($uid,'$k','$v')
-                        ON DUPLICATE KEY UPDATE meta_value='$v'";
-                mysqli_query($db,$sql);
-            }
 
-            echo '<div class="seal-card"><div class="seal-title">Account updated</div>
-                  <a class="seal-btn" href="'.h($_SERVER['REDIRECT_URL']).'">Back to search</a></div>';
+            // Update user
+            $userdata = ['ID' => $uid, 'user_email' => $email];
+            if (!empty($password)) $userdata['user_pass'] = $password;
+            wp_update_user($userdata);
+
+            foreach ($fields as $key => $val) update_user_meta($uid, $key, $val);
+
+            echo '<div class="seal-card">
+                    <div class="seal-title">✅ Account Updated</div>
+                    <a class="seal-btn" href="' . h(self_url()) . '">Back to List</a>
+                  </div>';
         }
     }
 }
 
-// ---------- EDIT ----------
-if ($action === 'edit' && $recnum !== '') {
-    $uid = (int)$recnum;
-    $sql = "SELECT u.ID, u.user_login, u.user_email,
-                   MAX(CASE WHEN m.meta_key='institution' THEN m.meta_value END) AS institution,
-                   MAX(CASE WHEN m.meta_key='phone' THEN m.meta_value END) AS phone,
-                   MAX(CASE WHEN m.meta_key='alt_email' THEN m.meta_value END) AS alt_email,
-                   MAX(CASE WHEN m.meta_key='home_system' THEN m.meta_value END) AS home_system
-            FROM wp_users u
-            LEFT JOIN wp_usermeta m ON u.ID=m.user_id
-            WHERE u.ID=$uid
-            GROUP BY u.ID";
-    $res = mysqli_query($db,$sql);
-    $r = mysqli_fetch_assoc($res);
-
-    if (!$r || strtoupper($r['home_system']) !== strtoupper($SYSTEM)) {
-        echo '<div class="seal-card"><div class="seal-title">Not found / not allowed</div><div class="seal-sub">No user in your system.</div></div>';
+// --------------------------------------------------
+// EDIT
+// --------------------------------------------------
+if ($action === 'edit' && $recnum) {
+    $user = get_userdata($recnum);
+    if (!$user) {
+        echo '<div class="seal-card"><div class="seal-title">User not found</div></div>';
     } else {
-        ?>
-        <div class="seal-card">
-            <div class="seal-title">Edit Account (<?php echo h($r['user_login']); ?>)</div>
-            <div class="seal-sub">System: <b><?php echo h($SYSTEM); ?></b> • User ID: <?php echo (int)$r['ID']; ?></div>
-            <form method="post" action="<?php echo h($_SERVER['REDIRECT_URL']); ?>?action=save">
-                <input type="hidden" name="csrf" value="<?php echo h($_SESSION['csrf']); ?>">
-                <input type="hidden" name="recnum" value="<?php echo (int)$r['ID']; ?>">
+        $meta = [];
+        foreach ([
+            'institution','home_system','phone','alt_email','address_loc_code','oclc_symbol',
+            'delivery_address1','delivery_address2','delivery_city','delivery_state','delivery_zip'
+        ] as $key) $meta[$key] = get_user_meta($recnum, $key, true);
+?>
+<div class="seal-card">
+    <div class="seal-title">Edit Account: <?php echo h($user->display_name); ?> (<?php echo h($user->user_login); ?>)</div>
+    <div class="seal-sub">Home System: <b><?php echo h($meta['home_system']); ?></b> • User ID: <?php echo (int)$recnum; ?></div>
 
-                <div class="seal-row">
-                    <label><b>Email</b><br>
-                        <input class="input" type="text" name="user_email" value="<?php echo h($r['user_email']); ?>">
-                    </label>
-                    <label><b>Institution</b><br>
-                        <input class="input" type="text" name="institution" value="<?php echo h($r['institution']); ?>">
-                    </label>
-                    <label><b>Phone</b><br>
-                        <input class="input" type="text" name="phone" value="<?php echo h($r['phone']); ?>">
-                    </label>
-                </div>
+    <form method="post" action="<?php echo h(self_url()); ?>?action=save">
+        <input type="hidden" name="csrf" value="<?php echo h($csrf_token); ?>">
+        <input type="hidden" name="recnum" value="<?php echo (int)$recnum; ?>">
 
-                <div class="seal-row">
-                    <label><b>Alternative Email</b><br>
-                        <input class="input" type="text" name="alt_email" value="<?php echo h($r['alt_email']); ?>">
-                    </label>
-                </div>
-
-                <div style="margin-top:12px;">
-                    <button class="seal-btn" type="submit">Save changes</button>
-                    <a class="seal-btn secondary" href="<?php echo h($_SERVER['REDIRECT_URL']); ?>">Cancel</a>
-                </div>
-            </form>
+        <div class="seal-row">
+            <label><b>Email</b><br><input class="input" type="email" name="user_email" value="<?php echo h($user->user_email); ?>"></label>
+            <label><b>New Password</b><br><input class="input" type="password" name="user_pass" placeholder="Leave blank to keep existing"></label>
         </div>
-        <?php
+        <div class="seal-row">
+            <label><b>Institution</b><br><input class="input" type="text" name="institution" value="<?php echo h($meta['institution']); ?>"></label>
+            <label><b>Home System</b><br><input class="input" type="text" name="home_system" value="<?php echo h($meta['home_system']); ?>"></label>
+        </div>
+        <div class="seal-row">
+            <label><b>Phone</b><br><input class="input" type="text" name="phone" value="<?php echo h($meta['phone']); ?>"></label>
+            <label><b>Alt Email</b><br><input class="input" type="email" name="alt_email" value="<?php echo h($meta['alt_email']); ?>"></label>
+        </div>
+        <div class="seal-row">
+            <label><b>LOC Code</b><br><input class="input" type="text" name="address_loc_code" value="<?php echo h($meta['address_loc_code']); ?>"></label>
+            <label><b>OCLC Symbol</b><br><input class="input" type="text" name="oclc_symbol" value="<?php echo h($meta['oclc_symbol']); ?>"></label>
+        </div>
+
+        <hr style="border-top:1px solid #ddd;margin:12px 0;">
+        <div class="seal-title" style="font-size:18px;">Delivery Address</div>
+        <div class="seal-row">
+            <label><b>Address 1</b><br><input class="input" type="text" name="delivery_address1" value="<?php echo h($meta['delivery_address1']); ?>"></label>
+            <label><b>Address 2</b><br><input class="input" type="text" name="delivery_address2" value="<?php echo h($meta['delivery_address2']); ?>"></label>
+        </div>
+        <div class="seal-row">
+            <label><b>City</b><br><input class="input" type="text" name="delivery_city" value="<?php echo h($meta['delivery_city']); ?>"></label>
+            <label><b>State</b><br><input class="input" type="text" name="delivery_state" value="<?php echo h($meta['delivery_state']); ?>"></label>
+            <label><b>ZIP</b><br><input class="input" type="text" name="delivery_zip" value="<?php echo h($meta['delivery_zip']); ?>"></label>
+        </div>
+
+        <div style="margin-top:12px;">
+            <button class="seal-btn" type="submit">Save Changes</button>
+            <a class="seal-btn secondary" href="<?php echo h(self_url()); ?>">Cancel</a>
+            <a class="seal-btn danger"
+               href="<?php echo h(self_url()); ?>?action=delete&recnum=<?php echo (int)$recnum; ?>&csrf=<?php echo h($csrf_token); ?>"
+               onclick="return confirm('Are you sure you want to permanently delete this account?');">Delete</a>
+        </div>
+    </form>
+</div>
+<?php
     }
 }
 
-// ---------- LIST ----------
+// --------------------------------------------------
+// LIST + SEARCH
+// --------------------------------------------------
 if ($action === 'list') {
-    // Build WHERE for direct user fields
-    $WHERE = [];
-    if ($q_user)  $WHERE[] = "u.user_login LIKE '%".mysqli_real_escape_string($db,$q_user)."%'";
-    if ($q_email) $WHERE[] = "u.user_email LIKE '%".mysqli_real_escape_string($db,$q_email)."%'";
-    $WHERE_SQL = $WHERE ? "WHERE ".implode(" AND ",$WHERE) : "";
+    global $wpdb;
+    $search = trim(req('search',''));
+    $where = "WHERE 1=1";
 
-    // HAVING for meta fields
-    $HAVING = "HAVING home_system = '".mysqli_real_escape_string($db,$SYSTEM)."'";
-    if ($q_inst)  $HAVING .= " AND institution LIKE '%".mysqli_real_escape_string($db,$q_inst)."%'";
-    if ($q_phone) $HAVING .= " AND phone LIKE '%".mysqli_real_escape_string($db,$q_phone)."%'";
-    
-    $sql = "SELECT u.ID, u.user_login, u.user_email,
-                   MAX(CASE WHEN m.meta_key='institution' THEN m.meta_value END) AS institution,
-                   MAX(CASE WHEN m.meta_key='phone' THEN m.meta_value END) AS phone,
-                   MAX(CASE WHEN m.meta_key='home_system' THEN m.meta_value END) AS home_system
-            FROM wp_users u
-            LEFT JOIN wp_usermeta m ON u.ID=m.user_id
-            $WHERE_SQL
-            GROUP BY u.ID
-            $HAVING
-            ORDER BY u.user_login ASC";
-    $res = mysqli_query($db,$sql);
+    if (!empty($search)) {
+        $like = '%' . $wpdb->esc_like($search) . '%';
+        $where .= $wpdb->prepare(" AND (
+            u.user_email LIKE %s OR
+            u.display_name LIKE %s OR
+            m1.meta_value LIKE %s OR
+            m2.meta_value LIKE %s
+        )", $like, $like, $like, $like);
+    }
 
-    echo '<div class="seal-card">';
-    echo '<div class="seal-title">Accounts in Your System</div>';
-    echo '<div class="seal-sub">System: <b>'.h($SYSTEM).'</b>. Search and edit WP accounts tied to this system.</div>';
-    echo '<form method="get" action="'.h($_SERVER['REDIRECT_URL']).'">';
+    $sql = "
+        SELECT DISTINCT u.ID, u.display_name, u.user_login, u.user_email,
+            m1.meta_value AS institution,
+            m2.meta_value AS address_loc_code,
+            m3.meta_value AS home_system
+        FROM {$wpdb->users} u
+        LEFT JOIN {$wpdb->usermeta} m1 ON (u.ID=m1.user_id AND m1.meta_key='institution')
+        LEFT JOIN {$wpdb->usermeta} m2 ON (u.ID=m2.user_id AND m2.meta_key='address_loc_code')
+        LEFT JOIN {$wpdb->usermeta} m3 ON (u.ID=m3.user_id AND m3.meta_key='home_system')
+        $where
+        HAVING m3.meta_value=%s
+        ORDER BY u.display_name ASC
+    ";
+    $rows = $wpdb->get_results($wpdb->prepare($sql, $SYSTEM));
+
+    echo '<div class="seal-card"><div class="seal-title">Accounts in '.h($SYSTEM).'</div>';
+
+    echo '<form method="get" action="'.h(self_url()).'" class="seal-row" style="margin-bottom:15px;">';
     echo '<input type="hidden" name="action" value="list">';
-    echo '<div class="seal-row">';
-    echo '<label><b>Username</b><br><input class="input" type="text" name="q_user" value="'.h($q_user).'"></label>';
-    echo '<label><b>Email</b><br><input class="input" type="text" name="q_email" value="'.h($q_email).'"></label>';
-    echo '<label><b>Institution</b><br><input class="input" type="text" name="q_inst" value="'.h($q_inst).'"></label>';
-    echo '<label><b>Phone</b><br><input class="input" type="text" name="q_phone" value="'.h($q_phone).'"></label>';
-    echo '<div style="margin-left:auto;">
-            <a class="seal-btn secondary" href="'.h($_SERVER['REDIRECT_URL']).'">Clear</a>
-            <button class="seal-btn" type="submit">Search</button>
-          </div>';
-    echo '</div></form></div>';
+    echo '<input class="input" type="text" name="search" placeholder="Search by name, email, LOC, or institution" value="'.h($search).'">';
+    echo '<button class="seal-btn" type="submit">Search</button>';
+    echo '<a class="seal-btn secondary" href="'.h(self_url()).'">Reset</a>';
+    echo '</form>';
 
-    // results
-    echo '<div class="seal-card"><table class="seal-table">';
-    echo '<tr><th>Username</th><th>Email</th><th>Institution</th><th>Phone</th><th>Action</th></tr>';
-    if ($res) {
-        while($row=mysqli_fetch_assoc($res)){
-            echo '<tr>';
-            echo '<td>'.h($row['user_login']).'</td>';
-            echo '<td>'.h($row['user_email']).'</td>';
-            echo '<td>'.h($row['institution']).'</td>';
-            echo '<td>'.h($row['phone']).'</td>';
-            echo '<td><a class="seal-btn secondary" href="'.h($_SERVER['REDIRECT_URL']).'?action=edit&recnum='.(int)$row['ID'].'">Edit</a></td>';
-            echo '</tr>';
-        }
+    echo '<table class="seal-table">';
+    echo '<tr><th>Name</th><th>Email</th><th>Institution</th><th>LOC Code</th><th>Action</th></tr>';
+    foreach ($rows as $row) {
+        echo '<tr>';
+        echo '<td>'.h($row->display_name).'</td>';
+        echo '<td>'.h($row->user_email).'</td>';
+        echo '<td>'.h($row->institution).'</td>';
+        echo '<td>'.h($row->address_loc_code).'</td>';
+        echo '<td><a class="seal-btn secondary" href="'.h(self_url()).'?action=edit&recnum='.(int)$row->ID.'">Edit</a></td>';
+        echo '</tr>';
     }
     echo '</table></div>';
 }
