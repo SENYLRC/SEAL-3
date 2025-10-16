@@ -1,13 +1,28 @@
 <?php
-/* Template Name: Edit My WP Profile (Custom) */
+// ==========================================================
+// WordPress Access Control — Restrict to Logged-In Users
+// with Role: Administrator or Library Staff
+// ==========================================================
+if (!is_user_logged_in()) {
+    die("<div style='padding:20px;color:red;font-weight:bold;'>
+        Access Denied<br>You must be logged in to view this page.
+    </div>");
+}
+
+$current_user = wp_get_current_user();
+$user_roles   = (array)$current_user->roles;
+
+// Only allow Administrator or Library Staff roles
+if (!array_intersect(['administrator', 'library_staff'], $user_roles)) {
+    die("<div style='padding:20px;color:red;font-weight:bold;'>
+        Access Denied<br>You must have the <b>Administrator</b> or <b>Library Staff</b> role to access this page.
+    </div>");
+}
+// illuser.php###
 
 // Ensure WP context
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-if ( ! is_user_logged_in() ) {
-  wp_redirect( wp_login_url( get_permalink() ) );
-  exit;
-}
 
 $current_user = wp_get_current_user();
 $user_id = $current_user->ID;
