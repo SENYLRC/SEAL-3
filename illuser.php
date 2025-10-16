@@ -1,8 +1,10 @@
 <?php
-// ==========================================================
-// WordPress Access Control — Restrict to Logged-In Users
-// with Role: Administrator or Library Staff
-// ==========================================================
+// Load WordPress if needed
+if (!defined('ABSPATH')) {
+    require_once('/var/www/wpSEAL/wp-load.php');
+}
+
+// Restrict to Logged-In Administrator or Library Staff
 if (!is_user_logged_in()) {
     die("<div style='padding:20px;color:red;font-weight:bold;'>
         Access Denied<br>You must be logged in to view this page.
@@ -12,24 +14,19 @@ if (!is_user_logged_in()) {
 $current_user = wp_get_current_user();
 $user_roles   = (array)$current_user->roles;
 
-// Only allow Administrator or Library Staff roles
 if (!array_intersect(['administrator', 'library_staff'], $user_roles)) {
     die("<div style='padding:20px;color:red;font-weight:bold;'>
         Access Denied<br>You must have the <b>Administrator</b> or <b>Library Staff</b> role to access this page.
     </div>");
 }
-// illuser.php###
 
-// Ensure WP context
-if ( ! defined( 'ABSPATH' ) ) exit;
-
-
-$current_user = wp_get_current_user();
 $user_id = $current_user->ID;
 
-if ( ! current_user_can( 'edit_user', $user_id ) ) {
-  wp_die( 'You do not have permission to edit this profile.' );
+if (get_current_user_id() !== (int)$user_id && !current_user_can('edit_user', $user_id)) {
+    wp_die('You do not have permission to edit this profile.');
 }
+
+
 
 // Helper for safe output
 function h($v){ return esc_attr( (string)($v ?? '') ); }
