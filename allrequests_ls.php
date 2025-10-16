@@ -1,279 +1,253 @@
 <?php
-// allrequests_ls.php
+// allrequests_ls.php — SE System Requests page (Borrower + Lender)
+
+session_name('seal_admin_session');
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+if (empty($_SESSION['csrf'])) {
+    $_SESSION['csrf'] = bin2hex(random_bytes(16));
+}
+$csrf = $_SESSION['csrf'];
 
 require '/var/www/seal_wp_script/seal_function.php';
 require '/var/www/seal_wp_script/seal_db.inc';
+require_once('/var/www/wpSEAL/wp-load.php');
 
 // ----------------------------------------
-// Load WordPress environment to get user data
+// WordPress role check
 // ----------------------------------------
-require_once('/var/www/wpSEAL/wp-load.php');
-wp_get_current_user();
-global $current_user;
+$current_user = wp_get_current_user();
+$user_roles = (array)$current_user->roles;
+if (!in_array('administrator', $user_roles, true) && !in_array('lib-systems-staff', $user_roles, true)) {
+    die("<div style='padding:20px;color:red;font-weight:bold;'>Access Denied<br>You must have the <b>Lib Systems Staff</b> role to access this page.</div>");
+}
 
 $home_system = get_user_meta($current_user->ID, 'home_system', true);
 if (empty($home_system)) {
     die("<div style='padding:20px;color:red;font-weight:bold;'>Your account does not have a Home Library System assigned.</div>");
 }
 
-// ----------------------------------------
-// Configuration
-// ----------------------------------------
-$results_per_page_options = [25, 50, 100, 'all'];
+
 
 // ----------------------------------------
-// Handle Filters
-// ----------------------------------------
-$filter_startdate  = $_GET['filter_startdate']  ?? "2022-08-01";
-$filter_enddate    = $_GET['filter_enddate']    ?? date("Y-m-d");
-$filter_title      = $_GET['filter_title']      ?? "";
-$filter_illnum     = $_GET['filter_illnum']     ?? "";
-$filter_lender     = $_GET['filter_lender']     ?? "";
-$filter_borrower   = $_GET['filter_borrower']   ?? "";
-$filter_numresults = $_GET['filter_numresults'] ?? 25;
-$pg                = isset($_GET['pg']) ? max(1, (int)$_GET['pg']) : 1;
-
-if (!in_array($filter_numresults, ['all', 25, 50, 100], true)) {
-    $filter_numresults = 25;
-}
-
-// ----------------------------------------
-// Database connection
+// DB Connection
 // ----------------------------------------
 $db = mysqli_connect($dbhost, $dbuser, $dbpass, $dbname);
 if (!$db) {
-    die('DB connection failed: ' . mysqli_connect_error());
+    die("<div style='color:red;'>DB connection failed: " . mysqli_connect_error() . "</div>");
 }
 mysqli_set_charset($db, 'utf8mb4');
 
-// ----------------------------------------
-// Base SQL and filters
-// ----------------------------------------
-$SQLBASE = "SELECT *, DATE_FORMAT(`Timestamp`, '%Y/%m/%d') AS ts_fmt FROM `$sealSTAT` WHERE 1=1";
-$conds   = [];
-
-// Apply system restriction
-$conds[] = "(`ReqSystem` = '".mysqli_real_escape_string($db, $home_system)."' 
-             OR `DestSystem` = '".mysqli_real_escape_string($db, $home_system)."')";
-
-// Date range
-if ($filter_startdate && $filter_enddate) {
-    $sd = mysqli_real_escape_string($db, $filter_startdate);
-    $ed = mysqli_real_escape_string($db, $filter_enddate);
-    $conds[] = "`Timestamp` BETWEEN '$sd 00:00:00' AND '$ed 23:59:59'";
-}
-
-// Other filters
-if ($filter_title) {
-    $conds[] = "`Title` LIKE '%".mysqli_real_escape_string($db, $filter_title)."%'";
-}
-if ($filter_illnum) {
-    $conds[] = "`illNUB` = '".mysqli_real_escape_string($db, $filter_illnum)."'";
-}
-if ($filter_lender) {
-    $conds[] = "`Destination` LIKE '%".mysqli_real_escape_string($db, $filter_lender)."%'";
-}
-if ($filter_borrower) {
-    $conds[] = "(`Requester person` LIKE '%".mysqli_real_escape_string($db, $filter_borrower)."%' 
-               OR `Requester lib` LIKE '%".mysqli_real_escape_string($db, $filter_borrower)."%')";
-}
-
-$where = " AND ".implode(" AND ", $conds);
-
-// Count total
-$count_sql = "SELECT COUNT(*) AS total FROM `$sealSTAT` WHERE 1=1 $where";
-$count_res = mysqli_query($db, $count_sql);
-$row = mysqli_fetch_assoc($count_res);
-$totalResults = $row ? (int)$row['total'] : 0;
+$sealSTAT = "SENYLRC-SEAL2-STATS"; // Make sure this matches your DB table name
 
 // ----------------------------------------
-// Pagination math
+// Filters
 // ----------------------------------------
-if ($filter_numresults === 'all') {
-    $limit = $totalResults > 0 ? $totalResults : 1;
-    $totalPages = 1;
-    $pg = 1;
-    $offset = 0;
-} else {
-    $limit = (int)$filter_numresults;
-    if ($limit <= 0) {
-        $limit = 25;
-    }
-    $totalPages = max(1, ceil($totalResults / $limit));
-    if ($pg > $totalPages) {
-        $pg = $totalPages;
-    }
-    $offset = ($pg - 1) * $limit;
-}
+$filter_startdate = $_GET['filter_startdate'] ?? "2025-05-01";
+$filter_enddate   = $_GET['filter_enddate'] ?? date("Y-m-d");
 
 // ----------------------------------------
-// Main SQL
+// Build Query
 // ----------------------------------------
-$sql = "$SQLBASE $where ORDER BY `Timestamp` DESC";
-if ($filter_numresults !== 'all') {
-    $sql .= " LIMIT $offset, $limit";
-}
+$esc_home = mysqli_real_escape_string($db, $home_system);
+$esc_sd   = mysqli_real_escape_string($db, $filter_startdate);
+$esc_ed   = mysqli_real_escape_string($db, $filter_enddate);
+
+$sql = "SELECT *, DATE_FORMAT(`Timestamp`, '%Y/%m/%d') AS ts_fmt 
+        FROM `$sealSTAT` 
+        WHERE (`ReqSystem`='$esc_home' OR `DestSystem`='$esc_home')
+        AND `Timestamp` >= '$esc_sd'
+        ORDER BY `Timestamp` DESC
+        LIMIT 0, 50";
+
 $GETLIST = mysqli_query($db, $sql);
-?>
+$totalResults = $GETLIST ? mysqli_num_rows($GETLIST) : 0;
 
+// ----------------------------------------
+// Shipping methods
+// ----------------------------------------
+$shipping_methods = [
+    '' => 'Select Method',
+    'Delivery Van' => 'Delivery Van',
+    'USPS' => 'USPS',
+    'UPS' => 'UPS',
+    'FedEx' => 'FedEx',
+    'Courier' => 'Courier',
+    'Pickup' => 'Pickup'
+];
+
+// ----------------------------------------
+// Handle inline actions
+// ----------------------------------------
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['do_action'])) {
+    $action = $_POST['do_action'];
+    $recid  = (int)$_POST['recid'];
+    $csrf   = $_POST['csrf'] ?? '';
+
+    // CSRF basic check
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    if (!isset($_SESSION['csrf'])) $_SESSION['csrf'] = bin2hex(random_bytes(16));
+
+    if ($csrf !== $_SESSION['csrf']) {
+        echo "<div class='status-banner error'>Invalid security token.</div>";
+    } else {
+        if ($action === 'fill_save') {
+            $due = mysqli_real_escape_string($db, $_POST['fill_due']);
+            $ship = mysqli_real_escape_string($db, $_POST['fill_ship']);
+            $sqlu = "UPDATE `$sealSTAT` 
+                     SET `Fill`=1, `fillNofillDate`=CURDATE(), `DueDate`='$due', `shipMethod`='$ship' 
+                     WHERE `index`=$recid LIMIT 1";
+            mysqli_query($db, $sqlu);
+            echo "<div class='status-banner success'>✅ Marked as Filled — Due: $due, Ship: $ship</div>";
+        }
+        elseif ($action === 'fill_no') {
+            $sqlu = "UPDATE `$sealSTAT` SET `Fill`=0, `fillNofillDate`=CURDATE() WHERE `index`=$recid LIMIT 1";
+            mysqli_query($db, $sqlu);
+            echo "<div class='status-banner warn'>🚫 Marked as Not Filled</div>";
+        }
+        elseif ($action === 'checkin') {
+            $sqlu = "UPDATE `$sealSTAT` SET `checkinAccount`='".$current_user->user_login."', `checkinTimeStamp`=NOW() WHERE `index`=$recid LIMIT 1";
+            mysqli_query($db, $sqlu);
+            echo "<div class='status-banner success'>📦 Item Checked Back In</div>";
+        }
+        elseif ($action === 'renew_approve') {
+            $sqlu = "UPDATE `$sealSTAT` SET `renewAnswer`=1, `renewAccountLender`='".$current_user->user_login."', `renewTimeStamp`=NOW() WHERE `index`=$recid LIMIT 1";
+            mysqli_query($db, $sqlu);
+            echo "<div class='status-banner success'>🔁 Renewal Approved</div>";
+        }
+        elseif ($action === 'renew_deny') {
+            $sqlu = "UPDATE `$sealSTAT` SET `renewAnswer`=2, `renewAccountLender`='".$current_user->user_login."', `renewTimeStamp`=NOW() WHERE `index`=$recid LIMIT 1";
+            mysqli_query($db, $sqlu);
+            echo "<div class='status-banner warn'>❌ Renewal Denied</div>";
+        }
+    }
+}
+
+// ----------------------------------------
+// CSRF setup
+// ----------------------------------------
+if (session_status() === PHP_SESSION_NONE) session_start();
+if (empty($_SESSION['csrf'])) $_SESSION['csrf'] = bin2hex(random_bytes(16));
+$csrf = $_SESSION['csrf'];
+?>
 <link rel="stylesheet" href="https://sealbeta.senylrc.org/assets/jquery-ui.css">
-<link rel="stylesheet" href="/wp-content/themes/neve/css/seal-admin.css">
 <script src="https://sealbeta.senylrc.org/assets/jquery.min.js"></script>
 <script src="https://sealbeta.senylrc.org/assets/jquery-ui.min.js"></script>
-
-<script>
-jQuery(function($){
-  $("#startdate, #enddate").datepicker({
-    dateFormat: "yy-mm-dd",
-    changeMonth: true,
-    changeYear: true,
-    showAnim: "fadeIn"
-  });
-  $('form.filter-bar').on('submit', function(){
-    $(this).find('input[name="pg"]').val('1');
-  });
-});
-</script>
+<style>
+.inline-editor { display:none; background:#f9f9f9; padding:10px; margin-top:6px; border:1px solid #ddd; border-radius:8px; }
+.seal-btn { padding:6px 10px; border-radius:6px; border:none; cursor:pointer; font-weight:600; }
+.seal-btn.success { background:#059669; color:#fff; }
+.seal-btn.warn { background:#b91c1c; color:#fff; }
+.seal-btn.secondary { background:#e5e7eb; color:#111; }
+.status-banner { margin:10px 0; padding:10px; border-radius:6px; }
+.status-banner.success { background:#d1fae5; color:#065f46; }
+.status-banner.warn { background:#fee2e2; color:#7f1d1d; }
+.status-banner.error { background:#fef2f2; color:#7f1d1d; }
+</style>
 
 <main id="content">
   <div class="adminlib-wrapper">
+    <h3><?php echo strtoupper(htmlspecialchars($home_system)); ?> System Requests</h3>
 
-    <div class="adminlib-header">
-      <h3>(<?php echo htmlspecialchars($home_system); ?> System) Requests </h3>
-      <div class="actions">
-        <a href="/var/www/seal_wp_script/export.php" class="export-btn">Export CSV</a>
-      </div>
-    </div>
+    <?php
+    if ($totalResults == 0) {
+        echo "<div class='status-banner warn'>No results found.</div>";
+    } else {
+        echo "<div class='pagination-info'>".number_format($totalResults)." total results</div>";
+        echo "<table class='rh-table' style='width:100%;border-collapse:collapse;'>";
+        echo "<thead><tr>
+                <th>ILL #</th>
+                <th>Title</th>
+                <th>Need By</th>
+                <th>Lender</th>
+                <th>Borrower</th>
+                <th>Due/Ship</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr></thead><tbody>";
 
-    <form method="get" class="filter-bar">
-      <input type="hidden" name="pg" value="1">
-      <div class="filter-grid">
-        <div class="form-group">
-          <label>Start Date</label>
-          <input id="startdate" name="filter_startdate" value="<?php echo htmlspecialchars($filter_startdate); ?>">
-        </div>
-        <div class="form-group">
-          <label>End Date</label>
-          <input id="enddate" name="filter_enddate" value="<?php echo htmlspecialchars($filter_enddate); ?>">
-        </div>
-        <div class="form-group">
-          <label>Title</label>
-          <input name="filter_title" value="<?php echo htmlspecialchars($filter_title); ?>">
-        </div>
-        <div class="form-group">
-          <label>ILL #</label>
-          <input name="filter_illnum" value="<?php echo htmlspecialchars($filter_illnum); ?>">
-        </div>
-        <div class="form-group">
-          <label>Lender</label>
-          <input name="filter_lender" value="<?php echo htmlspecialchars($filter_lender); ?>">
-        </div>
-        <div class="form-group">
-          <label>Borrower</label>
-          <input name="filter_borrower" value="<?php echo htmlspecialchars($filter_borrower); ?>">
-        </div>
-        <div class="form-group">
-          <label>Results per page</label>
-          <select name="filter_numresults">
-            <?php
-            foreach ($results_per_page_options as $opt) {
-                $sel = ((string)$filter_numresults === (string)$opt) ? 'selected' : '';
-                echo "<option value='$opt' $sel>$opt</option>";
+        while ($r = mysqli_fetch_assoc($GETLIST)) {
+            $recid  = (int)$r['index'];
+            $ill    = htmlspecialchars($r['illNUB']);
+            $title  = htmlspecialchars($r['Title']);
+            $author = htmlspecialchars($r['Author']);
+            $needby = htmlspecialchars($r['needbydate']);
+            $lender = htmlspecialchars($r['Destination']);
+            $borrower = htmlspecialchars($r['Requester lib']);
+            $due    = htmlspecialchars($r['DueDate']);
+            $ship   = htmlspecialchars($r['shipMethod']);
+            $fill   = $r['Fill'];
+
+            $status = itemstatus(
+                $r["Fill"],
+                $r["receiveAccount"],
+                $r["returnAccount"],
+                $r["returnDate"],
+                $r["receiveDate"],
+                $r["checkinAccount"],
+                $r["checkinTimeStamp"],
+                $r["fillNofillDate"]
+            );
+
+            echo "<tr>
+                    <td>$ill</td>
+                    <td>$title<br><i>$author</i></td>
+                    <td>$needby</td>
+                    <td>$lender</td>
+                    <td>$borrower</td>
+                    <td>$due<br>$ship</td>
+                    <td>$status</td>
+                    <td>";
+
+            if ($fill == 3 || $fill === '') {
+                echo "<a href='#' class='seal-btn success open-fill-editor' data-recid='$recid'>Will Fill (set details)</a>
+                      <form method='post' style='display:inline;'>
+                        <input type='hidden' name='csrf' value='$csrf'>
+                        <input type='hidden' name='recid' value='$recid'>
+                        <button class='seal-btn warn' name='do_action' value='fill_no'>No, Can't Fill</button>
+                      </form>
+                      <div id='fill-editor-$recid' class='inline-editor'>
+                        <form method='post'>
+                          <input type='hidden' name='csrf' value='$csrf'>
+                          <input type='hidden' name='recid' value='$recid'>
+                          <label>Due Date 
+                            <input type='text' id='fill-date-input-$recid' name='fill_due' placeholder='YYYY-MM-DD'>
+                          </label>
+                          <label>Ship Method 
+                            <select name='fill_ship'>";
+                foreach ($shipping_methods as $k => $v) {
+                    echo "<option value='".htmlspecialchars($k)."'>".htmlspecialchars($v)."</option>";
+                }
+                echo "      </select></label>
+                          <button class='seal-btn success' name='do_action' value='fill_save'>Save</button>
+                          <a href='#' class='seal-btn secondary open-fill-editor' data-recid='$recid'>Cancel</a>
+                        </form>
+                      </div>";
+            } else {
+                echo "<span class='small-note'>—</span>";
             }
-?>
-          </select>
-        </div>
-      </div>
-      <div class="filter-actions">
-        <button type="submit" class="btn-primary">Update Results</button>
-        <a href="myrequests.php" class="btn-secondary">Reset</a>
-      </div>
-    </form>
 
-<?php
-if (!$GETLIST || $totalResults == 0) {
-    echo "<div class='status-message status-error'><strong>No results found.</strong></div>";
-} else {
-    echo "<div class='pagination-info'>".number_format($totalResults)." total results</div>";
-    echo "<table class='rh-table'><thead><tr>
-    <th>ILL #</th><th>Title / Author</th><th>Type</th><th>Need By</th>
-    <th>Lender</th><th>Borrower</th><th>Due Date / Shipping</th>
-    <th>Timestamp</th><th>Status</th></tr></thead><tbody>";
-
-    $rowtype = 1;
-    while ($r = mysqli_fetch_assoc($GETLIST)) {
-        $class = ($rowtype++ & 1) ? "group-odd" : "group-even";
-        $status = itemstatus(
-            $r["Fill"],
-            $r["receiveAccount"],
-            $r["returnAccount"],
-            $r["returnDate"],
-            $r["receiveDate"],
-            $r["checkinAccount"],
-            $r["checkinTimeStamp"],
-            $r["fillNofillDate"]
-        );
-        $shiptxt = shipmtotxt($r["shipMethod"]);
-
-        // ----------------------------------------
-        // Lookup library name for lender (Destination LOC)
-        // ----------------------------------------
-        $lender_loc = trim($r['Destination']);
-        $lender_name = '';
-
-        if (!empty($lender_loc)) {
-            $lib_query = "SELECT Name FROM `$sealLIB` WHERE LOC = '".mysqli_real_escape_string($db, $lender_loc)."' LIMIT 1";
-            $lib_result = mysqli_query($db, $lib_query);
-            if ($lib_result && $lib_row = mysqli_fetch_assoc($lib_result)) {
-                $lender_name = $lib_row['Name'];
-            }
+            echo "</td></tr>";
         }
-        if (empty($lender_name)) {
-            $lender_name = $lender_loc; // fallback to LOC if not found
-        }
-
-        echo "<tr class='$class'>
-          <td>".htmlspecialchars($r['illNUB'])."</td>
-          <td>".htmlspecialchars($r['Title'])."<br><i>".htmlspecialchars($r['Author'])."</i></td>
-          <td>".htmlspecialchars($r['Itype'])."</td>
-          <td>".htmlspecialchars($r['needbydate'])."</td>
-          <td>".htmlspecialchars($lender_name)."</td>
-          <td>".htmlspecialchars($r['Requester person'])."<br>".htmlspecialchars($r['Requester lib'])."</td>
-          <td>".htmlspecialchars($r['DueDate'])."<br>".htmlspecialchars($shiptxt)."</td>
-          <td>".htmlspecialchars($r['ts_fmt'])."</td>
-          <td>$status</td>
-        </tr>";
+        echo "</tbody></table>";
     }
-
-    echo "</tbody></table>";
-
-    // ----------------------------------------
-    // Pagination controls
-    // ----------------------------------------
-    if ($filter_numresults !== 'all' && $totalPages > 1) {
-        echo "<div class='filter-actions'>";
-        $base_qs = $_GET;
-
-        if ($pg > 1) {
-            $prev_qs = $base_qs;
-            $prev_qs['pg'] = $pg - 1;
-            echo "<a class='btn-secondary' href='?".htmlspecialchars(http_build_query($prev_qs))."'>Previous</a> ";
-        } else {
-            echo "<span class='btn-secondary' style='opacity:.6;pointer-events:none;'>Previous</span> ";
-        }
-
-        if ($pg < $totalPages) {
-            $next_qs = $base_qs;
-            $next_qs['pg'] = $pg + 1;
-            echo "<a class='btn-primary' href='?".htmlspecialchars(http_build_query($next_qs))."'>Next</a>";
-        } else {
-            echo "<span class='btn-primary' style='opacity:.6;pointer-events:none;'>Next</span>";
-        }
-
-        echo "<p style='margin-top:10px;'>Page ".number_format($pg)." of ".number_format($totalPages)."</p>";
-        echo "</div>";
-    }
-}
-?>
+    ?>
   </div>
 </main>
+
+<script>
+jQuery(function($){
+  $(".open-fill-editor").on("click", function(e){
+    e.preventDefault();
+    var rec = $(this).data("recid");
+    var editor = $("#fill-editor-"+rec);
+    $(".inline-editor").not(editor).slideUp(); // close others
+    editor.slideToggle(); // open this one
+    $("#fill-date-input-"+rec).datepicker({ dateFormat:"yy-mm-dd" });
+    $('html, body').animate({
+        scrollTop: editor.offset().top - 100
+    }, 300); // smooth scroll to form
+  });
+});
+</script>

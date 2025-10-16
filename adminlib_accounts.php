@@ -1,6 +1,9 @@
 <?php
 // adminlib_accounts.php — Manage SEAL WordPress user accounts by Home System
 
+// ------------------
+// Security + Session
+// ------------------
 if (session_status() === PHP_SESSION_NONE) {
     session_name('seal_admin_session');
     session_start();
@@ -10,31 +13,39 @@ if (empty($_SESSION['csrf'])) {
 }
 $csrf_token = $_SESSION['csrf'];
 
-// --------------------------------------------------
-// WordPress environment & includes
-// --------------------------------------------------
+// ------------------
+// Includes
+// ------------------
 require '/var/www/seal_wp_script/seal_function.php';
 require '/var/www/seal_wp_script/seal_db.inc';
 
-if (!function_exists('self_url')) {
-    function self_url() {
-        if (function_exists('get_permalink')) {
-            return get_permalink();
-        }
-        return $_SERVER['REQUEST_URI'];
-    }
-}
-
-// --------------------------------------------------
+// ------------------
 // Helpers
-// --------------------------------------------------
+// ------------------
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 function post($k,$d=''){ return isset($_POST[$k]) ? $_POST[$k] : $d; }
 function req($k,$d=''){ return isset($_REQUEST[$k]) ? $_REQUEST[$k] : $d; }
 
-// --------------------------------------------------
-// Routing
-// --------------------------------------------------
+if (!function_exists('self_url')) {
+    function self_url() {
+        if (function_exists('get_permalink')) return get_permalink();
+        return $_SERVER['REQUEST_URI'];
+    }
+}
+
+// ------------------
+// Access Control
+// ------------------
+$current_user = wp_get_current_user();
+$allowed_roles = ['administrator', 'lib_systems_staff'];
+if ( ! array_intersect( $allowed_roles, (array) $current_user->roles ) ) {
+    echo '<div style="padding:30px;text-align:center;color:#a00;font-family:sans-serif;">
+            <h2>🚫 Access Denied</h2>
+            <p>You must have the <strong>Lib Systems Staff</strong> or <strong>Administrator</strong> role to access this page.</p>
+          </div>';
+    exit;
+}
+
 $SYSTEM = $SYSTEM ?? '';
 $action = req('action','list');
 $recnum = (int)req('recnum',0);
@@ -74,47 +85,96 @@ if ($action === 'delete' && $recnum) {
 }
 
 // --------------------------------------------------
-// SAVE
+// ADD NEW ACCOUNT (POST)
+// --------------------------------------------------
+if ($action === 'add' && $_SERVER['REQUEST_METHOD']==='POST') {
+    if (!isset($_POST['csrf']) || $_POST['csrf'] !== $_SESSION['csrf']) {
+        echo '<div class="seal-card"><div class="seal-title">Security Error</div><div class="seal-sub">Invalid token.</div></div>';
+    } else {
+        $username = sanitize_user(post('user_login',''));
+        $email    = sanitize_email(post('user_email',''));
+        $password = (string)post('user_pass','');
+        $institution = sanitize_text_field(post('institution',''));
+        $address_loc_code = sanitize_text_field(post('address_loc_code',''));
+
+        if ( empty($username) || empty($email) || empty($password) || empty($institution) ) {
+            echo '<div class="seal-card"><div class="seal-title">❌ Missing Required Fields</div><div class="seal-sub">Please fill out all required fields.</div></div>';
+        } elseif ( username_exists($username) || email_exists($email) ) {
+            echo '<div class="seal-card"><div class="seal-title">⚠️ Account Exists</div><div class="seal-sub">A user with that username or email already exists.</div></div>';
+        } else {
+            $uid = wp_create_user($username, $password, $email);
+            if (is_wp_error($uid)) {
+                echo '<div class="seal-card"><div class="seal-title">❌ Error Creating Account</div><div class="seal-sub">'.h($uid->get_error_message()).'</div></div>';
+            } else {
+                $user = new WP_User($uid);
+                $user->set_role('library_staff');
+
+                update_user_meta($uid, 'institution', $institution);
+                update_user_meta($uid, 'home_system', $SYSTEM);
+                update_user_meta($uid, 'address_loc_code', $address_loc_code);
+
+                echo '<div class="seal-card"><div class="seal-title">✅ Account Created</div>
+                      <div class="seal-sub">User <strong>'.h($username).'</strong> added successfully as Library Staff.</div>
+                      <a class="seal-btn" href="'.h(self_url()).'">Back to List</a></div>';
+            }
+        }
+    }
+}
+
+// --------------------------------------------------
+// SHOW ADD FORM
+// --------------------------------------------------
+if ($action === 'new') {
+?>
+<div class="seal-card">
+    <div class="seal-title">Add New Library Staff Account</div>
+    <form method="post" action="<?php echo h(self_url()); ?>?action=add">
+        <input type="hidden" name="csrf" value="<?php echo h($csrf_token); ?>">
+        <div class="seal-row">
+            <label><b>Username*</b><br><input class="input" type="text" name="user_login" required></label>
+            <label><b>Email*</b><br><input class="input" type="email" name="user_email" required></label>
+        </div>
+        <div class="seal-row">
+            <label><b>Password*</b><br><input class="input" type="password" name="user_pass" required></label>
+            <label><b>Institution*</b><br><input class="input" type="text" name="institution" required></label>
+        </div>
+        <div class="seal-row">
+            <label><b>LOC Code</b><br><input class="input" type="text" name="address_loc_code"></label>
+        </div>
+        <div style="margin-top:12px;">
+            <button class="seal-btn" type="submit">Create Account</button>
+            <a class="seal-btn secondary" href="<?php echo h(self_url()); ?>">Cancel</a>
+        </div>
+    </form>
+</div>
+<?php
+}
+
+// --------------------------------------------------
+// SAVE (EDIT)
 // --------------------------------------------------
 if ($action === 'save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!isset($_POST['csrf']) || $_POST['csrf'] !== $_SESSION['csrf']) {
         echo '<div class="seal-card"><div class="seal-title">Security Error</div><div class="seal-sub">Invalid token.</div></div>';
     } else {
         $uid = (int)post('recnum', 0);
-        $user_system = get_user_meta($uid, 'home_system', true);
-        if (strtoupper($user_system) !== strtoupper($SYSTEM)) {
-            echo '<div class="seal-card"><div class="seal-title">Not allowed</div><div class="seal-sub">User not in your system.</div></div>';
-        } else {
-            // Sanitize input
-            $email = sanitize_email(post('user_email', ''));
-            $password = (string)post('user_pass', '');
+        $email    = sanitize_email(post('user_email', ''));
+        $password = (string)post('user_pass', '');
+        $fields = [
+            'institution','home_system','phone','alt_email','address_loc_code','oclc_symbol',
+            'delivery_address1','delivery_address2','delivery_city','delivery_state','delivery_zip'
+        ];
+        $meta = [];
+        foreach ($fields as $f) $meta[$f] = sanitize_text_field(post($f,''));
 
-            $fields = [
-                'institution'       => sanitize_text_field(post('institution','')),
-                'home_system'       => sanitize_text_field(post('home_system','')),
-                'phone'             => sanitize_text_field(post('phone','')),
-                'alt_email'         => sanitize_email(post('alt_email','')),
-                'address_loc_code'  => sanitize_text_field(post('address_loc_code','')),
-                'oclc_symbol'       => sanitize_text_field(post('oclc_symbol','')),
-                'delivery_address1' => sanitize_text_field(post('delivery_address1','')),
-                'delivery_address2' => sanitize_text_field(post('delivery_address2','')),
-                'delivery_city'     => sanitize_text_field(post('delivery_city','')),
-                'delivery_state'    => sanitize_text_field(post('delivery_state','')),
-                'delivery_zip'      => sanitize_text_field(post('delivery_zip','')),
-            ];
+        $userdata = ['ID'=>$uid, 'user_email'=>$email];
+        if (!empty($password)) $userdata['user_pass']=$password;
+        wp_update_user($userdata);
 
-            // Update user
-            $userdata = ['ID' => $uid, 'user_email' => $email];
-            if (!empty($password)) $userdata['user_pass'] = $password;
-            wp_update_user($userdata);
+        foreach ($meta as $k=>$v) update_user_meta($uid,$k,$v);
 
-            foreach ($fields as $key => $val) update_user_meta($uid, $key, $val);
-
-            echo '<div class="seal-card">
-                    <div class="seal-title">✅ Account Updated</div>
-                    <a class="seal-btn" href="' . h(self_url()) . '">Back to List</a>
-                  </div>';
-        }
+        echo '<div class="seal-card"><div class="seal-title">✅ Account Updated</div>
+              <a class="seal-btn" href="'.h(self_url()).'">Back to List</a></div>';
     }
 }
 
@@ -124,16 +184,18 @@ if ($action === 'save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 if ($action === 'edit' && $recnum) {
     $user = get_userdata($recnum);
     if (!$user) {
-        echo '<div class="seal-card"><div class="seal-title">User not found</div></div>';
+        echo '<div class="seal-card"><div class="seal-title">❌ User not found</div></div>';
     } else {
-        $meta = [];
-        foreach ([
+        $fields = [
             'institution','home_system','phone','alt_email','address_loc_code','oclc_symbol',
             'delivery_address1','delivery_address2','delivery_city','delivery_state','delivery_zip'
-        ] as $key) $meta[$key] = get_user_meta($recnum, $key, true);
+        ];
+        $meta = [];
+        foreach ($fields as $key) $meta[$key] = get_user_meta($recnum, $key, true) ?: '';
+        $display_name = $user->display_name ?: $user->user_login;
 ?>
 <div class="seal-card">
-    <div class="seal-title">Edit Account: <?php echo h($user->display_name); ?> (<?php echo h($user->user_login); ?>)</div>
+    <div class="seal-title">Edit Account: <?php echo h($display_name); ?> (<?php echo h($user->user_login); ?>)</div>
     <div class="seal-sub">Home System: <b><?php echo h($meta['home_system']); ?></b> • User ID: <?php echo (int)$recnum; ?></div>
 
     <form method="post" action="<?php echo h(self_url()); ?>?action=save">
@@ -189,7 +251,6 @@ if ($action === 'list') {
     global $wpdb;
     $search = trim(req('search',''));
     $where = "WHERE 1=1";
-
     if (!empty($search)) {
         $like = '%' . $wpdb->esc_like($search) . '%';
         $where .= $wpdb->prepare(" AND (
@@ -216,12 +277,12 @@ if ($action === 'list') {
     $rows = $wpdb->get_results($wpdb->prepare($sql, $SYSTEM));
 
     echo '<div class="seal-card"><div class="seal-title">Accounts in '.h($SYSTEM).'</div>';
-
     echo '<form method="get" action="'.h(self_url()).'" class="seal-row" style="margin-bottom:15px;">';
     echo '<input type="hidden" name="action" value="list">';
     echo '<input class="input" type="text" name="search" placeholder="Search by name, email, LOC, or institution" value="'.h($search).'">';
     echo '<button class="seal-btn" type="submit">Search</button>';
     echo '<a class="seal-btn secondary" href="'.h(self_url()).'">Reset</a>';
+    echo '<a class="seal-btn" style="margin-left:auto;" href="'.h(self_url()).'?action=new">+ Add Account</a>';
     echo '</form>';
 
     echo '<table class="seal-table">';
