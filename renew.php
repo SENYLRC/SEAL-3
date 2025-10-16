@@ -14,6 +14,25 @@
 </script>
 
 <?php
+// ==========================================================
+// WordPress Access Control — Restrict to Logged-In Users
+// with Role: Administrator or Library Staff
+// ==========================================================
+if (!is_user_logged_in()) {
+    die("<div style='padding:20px;color:red;font-weight:bold;'>
+        Access Denied<br>You must be logged in to view this page.
+    </div>");
+}
+
+$current_user = wp_get_current_user();
+$user_roles   = (array)$current_user->roles;
+
+// Only allow Administrator or Library Staff roles
+if (!array_intersect(['administrator', 'library_staff'], $user_roles)) {
+    die("<div style='padding:20px;color:red;font-weight:bold;'>
+        Access Denied<br>You must have the <b>Administrator</b> or <b>Library Staff</b> role to access this page.
+    </div>");
+}
 // renew.php
 require '/var/www/seal_wp_script/seal_function.php';
 

@@ -1,39 +1,63 @@
 <?php
-// This must be the very first line of the file — no blank lines above!
-//export.php
-ob_end_clean();
+// ==========================================================
+// export.php — Secure CSV Export for Authorized Roles Only
+// ==========================================================
+
+// 🚫 Absolutely no blank lines before this block
 if (ob_get_length()) ob_end_clean();
 header_remove();
 
-header('Content-Type: text/csv; charset=utf-8');
-header('Content-Disposition: attachment; filename="export.csv"');
-header('Cache-Control: no-store, no-cache, must-revalidate');
-header('Pragma: no-cache');
+// Ensure we can use WordPress functions
+require_once('/var/www/wpSEAL/wp-load.php');
 
-session_start();
+// Restrict to logged-in users
+if (!is_user_logged_in()) {
+    header('HTTP/1.1 403 Forbidden');
+    header('Content-Type: text/plain; charset=utf-8');
+    echo "Access Denied: Login required.";
+    exit;
+}
 
+// Get current user info
+$current_user = wp_get_current_user();
+$user_roles   = (array)$current_user->roles;
+
+// ✅ Allowed roles: Administrator, Library Staff, Lib Systems Staff
+$allowed_roles = ['administrator', 'library_staff', 'lib_systems_staff'];
+
+if (!array_intersect($allowed_roles, $user_roles)) {
+    header('HTTP/1.1 403 Forbidden');
+    header('Content-Type: text/plain; charset=utf-8');
+    echo "Access Denied: You do not have permission to export data.";
+    exit;
+}
+
+// ==========================================================
+// Initialize environment and database connection
+// ==========================================================
 require '/var/www/seal_wp_script/seal_function.php';
 require '/var/www/seal_wp_script/seal_db.inc';
 
-// Table name fallback
-if (!isset($sealLIB) || !$sealLIB) {
-    $sealLIB = 'sealLIB';
-}
-
-// Connect DB
-$db = mysqli_connect($dbhost, $dbuser, $dbpass);
+// Connect securely
+$db = mysqli_connect($dbhost, $dbuser, $dbpass, $dbname);
 if (!$db) {
     header('HTTP/1.1 500 Internal Server Error');
     echo "Database connection failed.";
     exit;
 }
-mysqli_select_db($db, $dbname);
+mysqli_set_charset($db, 'utf8mb4');
 
-// Build SQL safely (with proper quoting for `system`)
+// ==========================================================
+// Build Export Query
+// ==========================================================
+session_start();
 $sessionQuery = $_SESSION['query2'] ?? null;
+
 if ($sessionQuery && stripos($sessionQuery, 'select') === 0) {
+    // Remove any LIMIT clause to export all results
     $allsqlresults = preg_replace('/\s+LIMIT\s+\d+(\s*,\s*\d+)?\s*;?$/i', '', $sessionQuery);
 } else {
+    // Default export of all libraries
     $allsqlresults = "
         SELECT
             recnum,
@@ -59,19 +83,23 @@ if (!$result) {
     exit;
 }
 
-// ✅ Force browser to treat it as a CSV download
+// ==========================================================
+// Send CSV headers and output cleanly
+// ==========================================================
 header('Content-Type: text/csv; charset=utf-8');
-header('Content-Disposition: attachment; filename="export.csv"');
+header('Content-Disposition: attachment; filename="seal_export.csv"');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
 
-// Disable any compression that might add junk
+// Disable compression & buffering to avoid corrupt output
 if (function_exists('apache_setenv')) {
     @apache_setenv('no-gzip', 1);
 }
 ini_set('zlib.output_compression', 0);
+ini_set('output_buffering', 0);
+set_time_limit(0);
 
-// Start clean output stream
+// Open output stream
 $fp = fopen('php://output', 'w');
 
 // Header row
@@ -104,6 +132,7 @@ while ($row = mysqli_fetch_assoc($result)) {
     ]);
 }
 
+// Clean up
 fclose($fp);
 mysqli_close($db);
 exit;

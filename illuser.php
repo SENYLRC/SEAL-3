@@ -1,4 +1,5 @@
 <?php
+// illuser.php###
 // Load WordPress if needed
 if (!defined('ABSPATH')) {
     require_once('/var/www/wpSEAL/wp-load.php');
