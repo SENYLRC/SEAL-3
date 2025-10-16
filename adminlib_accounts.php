@@ -37,7 +37,7 @@ if (!function_exists('self_url')) {
 // Access Control
 // ------------------
 $current_user = wp_get_current_user();
-$allowed_roles = ['administrator', 'lib_systems_staff'];
+$allowed_roles = ['administrator', 'libsys'];
 if ( ! array_intersect( $allowed_roles, (array) $current_user->roles ) ) {
     echo '<div style="padding:30px;text-align:center;color:#a00;font-family:sans-serif;">
             <h2>🚫 Access Denied</h2>

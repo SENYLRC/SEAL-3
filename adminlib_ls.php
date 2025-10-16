@@ -11,7 +11,7 @@ require_once('/var/www/wpSEAL/wp-load.php');
 $current_user = wp_get_current_user();
 $user_roles = (array)$current_user->roles;
 
-if (!in_array('administrator', $user_roles, true) && !in_array('lib-systems-staff', $user_roles, true)) {
+if (!in_array('administrator', $user_roles, true) && !in_array('libsys', $user_roles, true)) {
     die("<div style='padding:20px;color:red;font-weight:bold;'>Access Denied<br>You must have the <b>Lib Systems Staff</b> role to access this page.</div>");
 }
 
