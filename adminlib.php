@@ -16,6 +16,19 @@
 
 
 <?php
+// ==========================================================
+// WordPress Role Enforcement — Restrict to Administrator
+// ==========================================================
+require_once('/var/www/wpSEAL/wp-load.php');
+$current_user = wp_get_current_user();
+$user_roles = (array)$current_user->roles;
+
+if (!in_array('administrator', $user_roles, true)) {
+    die("<div style='padding:20px;color:red;font-weight:bold;'>
+        Access Denied<br>You must have the <b>Administrator</b> role to access this page.
+    </div>");
+}
+
 
 /**
  * adminlib.php  — SEAL Admin: Library Directory
@@ -798,7 +811,8 @@ if ($debug) {
 $GETLIST = mysqli_query($db, $GETLISTSQL);
 $GETCOUNT = mysqli_query($db, $GETFULLSQL);
 $GETLISTCOUNTwhole = $GETCOUNT ? mysqli_num_rows($GETCOUNT) : 0;
-
+//for export
+$_SESSION['query2'] = $GETFULLSQL; // place this after $GETFULLSQL is defined
 // ---- Filter bar ----
 echo "<form action='" . h($_SERVER['REDIRECT_URL']) . "' method='post' class='filter-bar'>";
 echo "<input type='hidden' name='firstpass' value='no'>";

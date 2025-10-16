@@ -17,6 +17,20 @@
   });
   </script>
 <?php
+
+// ==========================================================
+// WordPress Role Enforcement — Restrict to Administrator
+// ==========================================================
+require_once('/var/www/wpSEAL/wp-load.php');
+$current_user = wp_get_current_user();
+$user_roles = (array)$current_user->roles;
+
+if (!in_array('administrator', $user_roles, true)) {
+    die("<div style='padding:20px;color:red;font-weight:bold;'>
+        Access Denied<br>You must have the <b>Administrator</b> role to access this page.
+    </div>");
+}
+
 //sealstats.php
 // Connect to database
 require '/var/www/seal_wp_script/seal_function.php';
@@ -517,7 +531,7 @@ if (($_SERVER['REQUEST_METHOD'] == 'POST')   || (isset($_GET{'page'}))) {
     }
 } else {
     ?>
-      #SEAL Borrowing Stats
+
      <h2>Enter the data range you will like to run SEAL borrowing stats usage:</h2>
      <form action="/sealstats?<?php echo $_SERVER['QUERY_STRING']; ?>" method="post">
      Start Date:
@@ -540,7 +554,7 @@ if (($_SERVER['REQUEST_METHOD'] == 'POST')   || (isset($_GET{'page'}))) {
      <input type="submit" value="Submit">
     </form>
     <br><hr>
-    #SEAL Lending Stats
+
      <h2>Enter the data range you will like to run SEAL lending stats usage:</h2>
      <form action="/sealstats?<?php echo $_SERVER['QUERY_STRING']; ?>" method="post">
      Start Date:

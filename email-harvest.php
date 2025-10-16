@@ -1,4 +1,18 @@
 <?php
+
+// ==========================================================
+// WordPress Role Enforcement — Restrict to Administrator
+// ==========================================================
+require_once('/var/www/wpSEAL/wp-load.php');
+$current_user = wp_get_current_user();
+$user_roles = (array)$current_user->roles;
+
+if (!in_array('administrator', $user_roles, true)) {
+    die("<div style='padding:20px;color:red;font-weight:bold;'>
+        Access Denied<br>You must have the <b>Administrator</b> role to access this page.
+    </div>");
+}
+
 /*
 Template Name: Staff Emails (CSV Export)
 Description: Lists all staff account emails with CSV export

@@ -1,4 +1,18 @@
 <?php
+
+// ==========================================================
+// WordPress Role Enforcement — Restrict to Administrator
+// ==========================================================
+require_once('/var/www/wpSEAL/wp-load.php');
+$current_user = wp_get_current_user();
+$user_roles = (array)$current_user->roles;
+
+if (!in_array('administrator', $user_roles, true)) {
+    die("<div style='padding:20px;color:red;font-weight:bold;'>
+        Access Denied<br>You must have the <b>Administrator</b> role to access this page.
+    </div>");
+}
+
 require '/var/www/seal_wp_script/seal_function.php';
 require '/var/www/seal_wp_script/seal_db.inc';
 
@@ -32,7 +46,7 @@ $pg = isset($_GET['pg']) ? max(1, (int)$_GET['pg']) : 1;
 
 // normalize numresults
 if (!in_array($filter_numresults, ['all', 25, 50, 100], true)) {
-    $filter_numresults = 25;
+  $filter_numresults = 25;
 }
 
 // ---------------------------------
@@ -40,9 +54,7 @@ if (!in_array($filter_numresults, ['all', 25, 50, 100], true)) {
 // ---------------------------------
 
 $db = mysqli_connect($dbhost, $dbuser, $dbpass, $dbname);
-if (!$db) {
-    die('DB connection failed');
-}
+if (!$db) { die('DB connection failed'); }
 mysqli_set_charset($db, 'utf8mb4');
 
 $SQLBASE = "SELECT *, DATE_FORMAT(`Timestamp`, '%Y/%m/%d') AS ts_fmt FROM `$sealSTAT` WHERE 1=1";
@@ -50,26 +62,26 @@ $conds   = [];
 
 // filters
 if ($filter_startdate && $filter_enddate) {
-    $sd = mysqli_real_escape_string($db, $filter_startdate);
-    $ed = mysqli_real_escape_string($db, $filter_enddate);
-    $conds[] = "`Timestamp` BETWEEN '$sd 00:00:00' AND '$ed 23:59:59'";
+  $sd = mysqli_real_escape_string($db, $filter_startdate);
+  $ed = mysqli_real_escape_string($db, $filter_enddate);
+  $conds[] = "`Timestamp` BETWEEN '$sd 00:00:00' AND '$ed 23:59:59'";
 }
 if ($filter_title) {
-    $conds[] = "`Title` LIKE '%" . mysqli_real_escape_string($db, $filter_title) . "%'";
+  $conds[] = "`Title` LIKE '%" . mysqli_real_escape_string($db, $filter_title) . "%'";
 }
 if ($filter_illnum) {
-    $conds[] = "`illNUB` = '" . mysqli_real_escape_string($db, $filter_illnum) . "'";
+  $conds[] = "`illNUB` = '" . mysqli_real_escape_string($db, $filter_illnum) . "'";
 }
 if ($filter_system) {
-    $fs = mysqli_real_escape_string($db, $filter_system);
-    $conds[] = "(`ReqSystem` = '$fs' OR `DestSystem` = '$fs')";
+  $fs = mysqli_real_escape_string($db, $filter_system);
+  $conds[] = "(`ReqSystem` = '$fs' OR `DestSystem` = '$fs')";
 }
 if ($filter_lender) {
-    $conds[] = "`Destination` LIKE '%" . mysqli_real_escape_string($db, $filter_lender) . "%'";
+  $conds[] = "`Destination` LIKE '%" . mysqli_real_escape_string($db, $filter_lender) . "%'";
 }
 if ($filter_borrower) {
-    $fb = mysqli_real_escape_string($db, $filter_borrower);
-    $conds[] = "(`Requester person` LIKE '%$fb%' OR `Requester lib` LIKE '%$fb%')";
+  $fb = mysqli_real_escape_string($db, $filter_borrower);
+  $conds[] = "(`Requester person` LIKE '%$fb%' OR `Requester lib` LIKE '%$fb%')";
 }
 
 $where = $conds ? " AND " . implode(" AND ", $conds) : "";
@@ -84,29 +96,23 @@ $totalResults = $count_row ? (int)$count_row['total'] : 0;
 // Pagination math
 // ---------------------------------
 if ($filter_numresults === 'all') {
-    $limit = ($totalResults > 0) ? $totalResults : 1; // avoid LIMIT 0
-    $totalPages = 1;
-    $pg = 1;
-    $offset = 0;
+  $limit = ($totalResults > 0) ? $totalResults : 1; // avoid LIMIT 0
+  $totalPages = 1;
+  $pg = 1;
+  $offset = 0;
 } else {
-    $limit = (int)$filter_numresults;
-    if ($limit <= 0) {
-        $limit = 25;
-    }
-    $totalPages = max(1, (int)ceil($totalResults / $limit));
-    if ($pg > $totalPages) {
-        $pg = $totalPages;
-    }
-    $offset = ($pg - 1) * $limit;
-    if ($offset < 0) {
-        $offset = 0;
-    }
+  $limit = (int)$filter_numresults;
+  if ($limit <= 0) $limit = 25;
+  $totalPages = max(1, (int)ceil($totalResults / $limit));
+  if ($pg > $totalPages) $pg = $totalPages;
+  $offset = ($pg - 1) * $limit;
+  if ($offset < 0) $offset = 0;
 }
 
 // final query
 $sql = "$SQLBASE $where ORDER BY `Timestamp` DESC";
 if ($filter_numresults !== 'all') {
-    $sql .= " LIMIT $offset, $limit";
+  $sql .= " LIMIT $offset, $limit";
 }
 $GETLIST = mysqli_query($db, $sql);
 ?>
@@ -160,14 +166,14 @@ jQuery(function($){
             <option value="">All</option>
             <?php
             $systems = [
-              'MH' => 'Mid Hudson','RC' => 'Ramapo Catskill','DU' => 'Dutchess BOCES','OU' => 'Orange Ulster',
-              'RB' => 'Rockland BOCES','SB' => 'Sullivan BOCES','UB' => 'Ulster BOCES','SE' => 'Southeastern'
+              'MH'=>'Mid Hudson','RC'=>'Ramapo Catskill','DU'=>'Dutchess BOCES','OU'=>'Orange Ulster',
+              'RB'=>'Rockland BOCES','SB'=>'Sullivan BOCES','UB'=>'Ulster BOCES','SE'=>'Southeastern'
             ];
-foreach ($systems as $code => $name) {
-    $sel = ($filter_system === $code) ? 'selected' : '';
-    echo "<option value='$code' $sel>$name</option>";
-}
-?>
+            foreach ($systems as $code=>$name) {
+              $sel = ($filter_system === $code) ? 'selected' : '';
+              echo "<option value='$code' $sel>$name</option>";
+            }
+            ?>
           </select>
         </div>
         <div class="form-group">
@@ -190,11 +196,11 @@ foreach ($systems as $code => $name) {
           <label for="filter_numresults">Results per page</label>
           <select id="filter_numresults" name="filter_numresults">
             <?php
-foreach ($results_per_page_options as $opt) {
-    $sel = ((string)$filter_numresults === (string)$opt) ? 'selected' : '';
-    echo "<option value='$opt' $sel>$opt</option>";
-}
-?>
+            foreach ($results_per_page_options as $opt) {
+              $sel = ((string)$filter_numresults === (string)$opt) ? 'selected' : '';
+              echo "<option value='$opt' $sel>$opt</option>";
+            }
+            ?>
           </select>
         </div>
       </div>
@@ -210,10 +216,10 @@ foreach ($results_per_page_options as $opt) {
 // Results table
 // ---------------------------------
 if (!$GETLIST || $totalResults == 0) {
-    echo "<div class='status-message status-error'><strong>No results found.</strong></div>";
+  echo "<div class='status-message status-error'><strong>No results found.</strong></div>";
 } else {
-    echo "<div class='pagination-info'>".number_format($totalResults)." total results</div>";
-    echo "<table class='rh-table'><thead><tr>
+  echo "<div class='pagination-info'>".number_format($totalResults)." total results</div>";
+  echo "<table class='rh-table'><thead><tr>
     <th>ILL #</th>
     <th>Title / Author</th>
     <th>Type</th>
@@ -225,22 +231,17 @@ if (!$GETLIST || $totalResults == 0) {
     <th>Status</th>
   </tr></thead><tbody>";
 
-    $rowtype = 1;
-    while ($r = mysqli_fetch_assoc($GETLIST)) {
-        $class = ($rowtype++ & 1) ? "group-odd" : "group-even";
-        $status = itemstatus(
-            $r["Fill"],
-            $r["receiveAccount"],
-            $r["returnAccount"],
-            $r["returnDate"],
-            $r["receiveDate"],
-            $r["checkinAccount"],
-            $r["checkinTimeStamp"],
-            $r["fillNofillDate"]
-        );
-        $shiptxt = shipmtotxt($r["shipMethod"]);
+  $rowtype = 1;
+  while ($r = mysqli_fetch_assoc($GETLIST)) {
+    $class = ($rowtype++ & 1) ? "group-odd" : "group-even";
+    $status = itemstatus(
+      $r["Fill"], $r["receiveAccount"], $r["returnAccount"],
+      $r["returnDate"], $r["receiveDate"],
+      $r["checkinAccount"], $r["checkinTimeStamp"], $r["fillNofillDate"]
+    );
+    $shiptxt = shipmtotxt($r["shipMethod"]);
 
-        echo "<tr class='$class'>
+    echo "<tr class='$class'>
       <td>".htmlspecialchars($r['illNUB'])."</td>
       <td>".htmlspecialchars($r['Title'])."<br><i>".htmlspecialchars($r['Author'])."</i></td>
       <td>".htmlspecialchars($r['Itype'])."</td>
@@ -251,37 +252,37 @@ if (!$GETLIST || $totalResults == 0) {
       <td>".htmlspecialchars($r['ts_fmt'])."</td>
       <td>$status<br>".htmlspecialchars($shiptxt)."</td>
     </tr>";
+  }
+  echo "</tbody></table>";
+
+  // ---------------------------------
+  // Pagination controls (no custom funcs)
+  // ---------------------------------
+  if ($filter_numresults !== 'all' && $totalPages > 1) {
+    echo "<div class='filter-actions'>";
+    $base_qs = $_GET;
+
+    // Prev
+    if ($pg > 1) {
+      $prev_qs = $base_qs; 
+      $prev_qs['pg'] = $pg - 1;
+      echo "<a class='btn-secondary' href='?".htmlspecialchars(http_build_query($prev_qs))."'>Previous</a> ";
+    } else {
+      echo "<span class='btn-secondary' style='opacity:.6;pointer-events:none;'>Previous</span> ";
     }
-    echo "</tbody></table>";
 
-    // ---------------------------------
-    // Pagination controls (no custom funcs)
-    // ---------------------------------
-    if ($filter_numresults !== 'all' && $totalPages > 1) {
-        echo "<div class='filter-actions'>";
-        $base_qs = $_GET;
-
-        // Prev
-        if ($pg > 1) {
-            $prev_qs = $base_qs;
-            $prev_qs['pg'] = $pg - 1;
-            echo "<a class='btn-secondary' href='?".htmlspecialchars(http_build_query($prev_qs))."'>Previous</a> ";
-        } else {
-            echo "<span class='btn-secondary' style='opacity:.6;pointer-events:none;'>Previous</span> ";
-        }
-
-        // Next
-        if ($pg < $totalPages) {
-            $next_qs = $base_qs;
-            $next_qs['pg'] = $pg + 1;
-            echo "<a class='btn-primary' href='?".htmlspecialchars(http_build_query($next_qs))."'>Next</a>";
-        } else {
-            echo "<span class='btn-primary' style='opacity:.6;pointer-events:none;'>Next</span>";
-        }
-
-        echo "<p style='margin-top:10px;'>Page ".number_format($pg)." of ".number_format($totalPages)."</p>";
-        echo "</div>";
+    // Next
+    if ($pg < $totalPages) {
+      $next_qs = $base_qs; 
+      $next_qs['pg'] = $pg + 1;
+      echo "<a class='btn-primary' href='?".htmlspecialchars(http_build_query($next_qs))."'>Next</a>";
+    } else {
+      echo "<span class='btn-primary' style='opacity:.6;pointer-events:none;'>Next</span>";
     }
+
+    echo "<p style='margin-top:10px;'>Page ".number_format($pg)." of ".number_format($totalPages)."</p>";
+    echo "</div>";
+  }
 }
 ?>
   </div><!-- /.adminlib-wrapper -->
