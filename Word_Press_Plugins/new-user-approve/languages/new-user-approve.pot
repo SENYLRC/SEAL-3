@@ -1,0 +1,1069 @@
+# Copyright (C) 2025 New User Approve
+# This file is distributed under the same license as the New User Approve plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: New User Approve 3.0.1\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/objects_ws-new-user-approve-7ea9cfa93df0\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2025-07-31T09:10:04+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: new-user-approve\n"
+
+#. Plugin Name of the plugin
+#. Author of the plugin
+#: new-user-approve.php
+msgid "New User Approve"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: new-user-approve.php
+msgid "http://newuserapprove.com/"
+msgstr ""
+
+#. Description of the plugin
+#: new-user-approve.php
+msgid "Allow administrators to approve users once they register. Only approved users will be allowed to access the site. For support, please go to the <a href=\"http://wordpress.org/support/plugin/new-user-approve\">support forums</a> on wordpress.org."
+msgstr ""
+
+#. Author URI of the plugin
+#: new-user-approve.php
+msgid "https://newuserapprove.com/"
+msgstr ""
+
+#: src/components/dashboard/auto-approve.jsx:65
+msgid "WhiteList"
+msgstr ""
+
+#: src/components/dashboard/auto-approve.jsx:66
+msgid "BlackList"
+msgstr ""
+
+#: src/components/dashboard/auto-approve.jsx:74
+msgid "Enable Whitelist"
+msgstr ""
+
+#: src/components/dashboard/auto-approve.jsx:78
+msgid "Domains added in the Whitelist will be automatically approved."
+msgstr ""
+
+#: src/components/dashboard/auto-approve.jsx:98
+#: src/components/dashboard/auto-approve.jsx:147
+msgid "Enter Domain(s)"
+msgstr ""
+
+#: src/components/dashboard/auto-approve.jsx:100
+#: src/components/dashboard/auto-approve.jsx:150
+msgid "One domain per line."
+msgstr ""
+
+#: src/components/dashboard/auto-approve.jsx:112
+#: src/components/dashboard/auto-approve.jsx:181
+#: src/components/dashboard/integrations/zapier.jsx:154
+#: src/components/invitation-code/add-code-subtabs.jsx:1444
+#: src/components/invitation-code/settings.jsx:65
+#: src/components/settings/tabs/admin-notification.jsx:250
+#: src/components/settings/tabs/general.jsx:533
+#: src/components/settings/tabs/registration.jsx:200
+#: src/components/settings/tabs/user-notification.jsx:250
+msgid "Save Changes"
+msgstr ""
+
+#: src/components/dashboard/auto-approve.jsx:128
+msgid "Enable Blacklist"
+msgstr ""
+
+#: src/components/dashboard/auto-approve.jsx:132
+msgid "Domains added in the Blacklist will be completely blocked and users using blacklisted domains will not be able to submit approval requests."
+msgstr ""
+
+#: src/components/dashboard/auto-approve.jsx:166
+msgid "Custom Message"
+msgstr ""
+
+#: src/components/dashboard/auto-approve.jsx:178
+msgid "Display custom message when a user register from a blocked domain."
+msgstr ""
+
+#: src/components/dashboard/booknow.jsx:41
+msgid "Need Help with NUA Plugin? We’re Here for Support!"
+msgstr ""
+
+#: src/components/dashboard/booknow.jsx:42
+msgid "Get Support"
+msgstr ""
+
+#: src/components/dashboard/counter-list.jsx:53
+msgid "Total Requests"
+msgstr ""
+
+#: src/components/dashboard/counter-list.jsx:63
+msgid "Pending Requests"
+msgstr ""
+
+#: src/components/dashboard/counter-list.jsx:73
+msgid "Approved Requests"
+msgstr ""
+
+#: src/components/dashboard/counter-list.jsx:83
+msgid "Rejected Requests"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/all-users.jsx:98
+#: src/components/dashboard/fetch_users/approved-users.jsx:92
+#: src/components/dashboard/fetch_users/denied-users.jsx:95
+#: src/components/dashboard/fetch_users/pending-users.jsx:97
+#: src/components/dashboard/recent_users_table.jsx:86
+msgid "Status has been changed successfully"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/all-users.jsx:115
+#: src/components/dashboard/fetch_users/approved-users.jsx:107
+#: src/components/dashboard/fetch_users/denied-users.jsx:109
+#: src/components/dashboard/fetch_users/pending-users.jsx:112
+#: src/components/dashboard/recent_users_table.jsx:106
+msgid "Failed to update user status"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/all-users.jsx:129
+#: src/components/dashboard/recent_users_table.jsx:120
+msgid "An error occurred"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/all-users.jsx:191
+#: src/components/dashboard/users-sub-tabs.jsx:41
+msgid "All Users"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/all-users.jsx:206
+#: src/components/dashboard/fetch_users/approved-users.jsx:177
+#: src/components/dashboard/fetch_users/denied-users.jsx:176
+#: src/components/dashboard/fetch_users/pending-users.jsx:194
+#: src/components/dashboard/recent_users_table.jsx:198
+msgid "User"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/all-users.jsx:207
+#: src/components/dashboard/fetch_users/approved-users.jsx:178
+#: src/components/dashboard/fetch_users/denied-users.jsx:177
+#: src/components/dashboard/fetch_users/pending-users.jsx:195
+#: src/components/dashboard/fetch_users/user-roles.jsx:114
+#: src/components/dashboard/recent_users_table.jsx:199
+#: src/components/invitation-code/invitation-code-main-tabs.jsx:51
+msgid "Email"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/all-users.jsx:208
+#: src/components/dashboard/fetch_users/approved-users.jsx:179
+#: src/components/dashboard/fetch_users/denied-users.jsx:178
+#: src/components/dashboard/fetch_users/pending-users.jsx:196
+#: src/components/dashboard/recent_users_table.jsx:201
+msgid "Registration Date"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/all-users.jsx:209
+#: src/components/dashboard/fetch_users/approved-users.jsx:180
+#: src/components/dashboard/fetch_users/denied-users.jsx:179
+#: src/components/dashboard/fetch_users/pending-users.jsx:197
+#: src/components/dashboard/recent_users_table.jsx:204
+#: src/components/invitation-code/add-code-subtabs.jsx:850
+#: src/components/invitation-code/add-code-subtabs.jsx:1132
+#: src/components/invitation-code/add-code-subtabs.jsx:1273
+#: src/components/invitation-code/edit-invitation-code.jsx:183
+msgid "Status"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/all-users.jsx:210
+#: src/components/dashboard/fetch_users/approved-users.jsx:181
+#: src/components/dashboard/fetch_users/denied-users.jsx:180
+#: src/components/dashboard/fetch_users/pending-users.jsx:198
+#: src/components/dashboard/recent_users_table.jsx:206
+#: src/components/invitation-code/add-code-subtabs.jsx:1135
+msgid "Actions"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/all-users.jsx:283
+#: src/components/dashboard/fetch_users/approved-users.jsx:244
+#: src/components/dashboard/fetch_users/denied-users.jsx:233
+#: src/components/dashboard/fetch_users/pending-users.jsx:259
+#: src/components/dashboard/fetch_users/user-roles.jsx:157
+#: src/components/dashboard/recent_users_table.jsx:298
+msgid "No Data Available"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/all-users.jsx:284
+#: src/components/dashboard/fetch_users/approved-users.jsx:245
+#: src/components/dashboard/fetch_users/denied-users.jsx:234
+#: src/components/dashboard/fetch_users/pending-users.jsx:260
+#: src/components/dashboard/fetch_users/user-roles.jsx:158
+#: src/components/dashboard/recent_users_table.jsx:299
+msgid "There’s no data available to see!"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/all-users.jsx:306
+#: src/components/dashboard/fetch_users/approved-users.jsx:267
+#: src/components/dashboard/fetch_users/denied-users.jsx:255
+#: src/components/dashboard/fetch_users/pending-users.jsx:281
+msgid "Rows per page"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/all-users.jsx:312
+#: src/components/dashboard/fetch_users/approved-users.jsx:273
+#: src/components/dashboard/fetch_users/denied-users.jsx:261
+#: src/components/dashboard/fetch_users/pending-users.jsx:287
+msgid "10"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/all-users.jsx:313
+#: src/components/dashboard/fetch_users/approved-users.jsx:274
+#: src/components/dashboard/fetch_users/denied-users.jsx:262
+#: src/components/dashboard/fetch_users/pending-users.jsx:288
+msgid "20"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/all-users.jsx:314
+#: src/components/dashboard/fetch_users/approved-users.jsx:275
+#: src/components/dashboard/fetch_users/denied-users.jsx:263
+#: src/components/dashboard/fetch_users/pending-users.jsx:289
+msgid "50"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/all-users.jsx:315
+#: src/components/dashboard/fetch_users/approved-users.jsx:276
+#: src/components/dashboard/fetch_users/denied-users.jsx:264
+#: src/components/dashboard/fetch_users/pending-users.jsx:290
+msgid "100"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/approved-users.jsx:164
+msgid "Approved Users"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/denied-users.jsx:163
+msgid "Denied Users"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/pending-users.jsx:181
+msgid "Pending Users"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/update-user-role-modal.jsx:89
+msgid "Upgrade User Role"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/update-user-role-modal.jsx:134
+msgid "Close"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/update-user-role-modal.jsx:137
+msgid "Save changes"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/user-roles.jsx:112
+msgid "Username"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/user-roles.jsx:113
+msgid "Current Role"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/user-roles.jsx:115
+msgid "Requested Role"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/user-roles.jsx:116
+msgid "Action"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/user-roles.jsx:134
+msgid "Edit"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/user-roles.jsx:187
+#: src/components/dashboard/get-pro-banner.jsx:22
+#: src/components/popup-modal.jsx:78
+msgid "Authenticate User Approval Process With New User Approve"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/user-roles.jsx:188
+#: src/components/dashboard/get-pro-banner.jsx:24
+#: src/components/popup-modal.jsx:80
+msgid "Join over 20,000 users who are making their WordPress sites free from spam registration and fake user signups"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/user-roles.jsx:190
+#: src/components/dashboard/get-pro-banner.jsx:31
+#: src/components/popup-modal.jsx:87
+msgid "Get Pro Now"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/user-roles.jsx:191
+msgid "Learn More"
+msgstr ""
+
+#: src/components/dashboard/fetch_users/users.jsx:31
+msgid "No Users"
+msgstr ""
+
+#: src/components/dashboard/guides-doc.jsx:19
+msgid "Guides and Documentation"
+msgstr ""
+
+#: src/components/dashboard/guides-doc.jsx:30
+msgid "Introduction"
+msgstr ""
+
+#: src/components/dashboard/guides-doc.jsx:37
+msgid "New User Approve Interface"
+msgstr ""
+
+#: src/components/dashboard/guides-doc.jsx:44
+#: src/components/settings/settings-tabs.jsx:42
+msgid "Registration Settings"
+msgstr ""
+
+#: src/components/dashboard/guides-doc.jsx:51
+#: src/components/dashboard/tabs.jsx:159
+msgid "Auto Approve"
+msgstr ""
+
+#: src/components/dashboard/guides-doc.jsx:58
+msgid "Compatibility"
+msgstr ""
+
+#: src/components/dashboard/guides-doc.jsx:65
+msgid "Installation Guide"
+msgstr ""
+
+#: src/components/dashboard/guides-doc.jsx:72
+msgid "Features"
+msgstr ""
+
+#: src/components/dashboard/guides-doc.jsx:79
+msgid "Approve New User Settings"
+msgstr ""
+
+#: src/components/dashboard/guides-doc.jsx:86
+msgid "Notifications"
+msgstr ""
+
+#: src/components/dashboard/integrations/integrate.jsx:13
+msgid "No Integrations Found"
+msgstr ""
+
+#: src/components/dashboard/integrations/integrations.jsx:31
+msgid "Zapier"
+msgstr ""
+
+#: src/components/dashboard/integrations/zapier.jsx:83
+msgid "URL copied successfully!"
+msgstr ""
+
+#: src/components/dashboard/integrations/zapier.jsx:113
+msgid "Website URL"
+msgstr ""
+
+#: src/components/dashboard/integrations/zapier.jsx:127
+msgid "API Key"
+msgstr ""
+
+#: src/components/dashboard/integrations/zapier.jsx:133
+msgid "Generate Api Key"
+msgstr ""
+
+#: src/components/dashboard/integrations/zapier.jsx:140
+msgid "Triggers"
+msgstr ""
+
+#: src/components/dashboard/integrations/zapier.jsx:145
+msgid "Triggers when a user is Approved."
+msgstr ""
+
+#: src/components/dashboard/integrations/zapier.jsx:146
+msgid "Triggers when a user is Denied."
+msgstr ""
+
+#: src/components/dashboard/integrations/zapier.jsx:147
+msgid "Triggers when a user is Pending."
+msgstr ""
+
+#: src/components/dashboard/integrations/zapier.jsx:148
+msgid "Triggers when a user registers via Invitation code."
+msgstr ""
+
+#: src/components/dashboard/integrations/zapier.jsx:149
+msgid "Triggers when a user is Auto Approved via Whitelist."
+msgstr ""
+
+#: src/components/dashboard/integrations/zapier.jsx:150
+msgid "Triggers when a user is Auto Approved via role."
+msgstr ""
+
+#: src/components/dashboard/recent_updates.jsx:134
+msgid "No recent activities"
+msgstr ""
+
+#: src/components/dashboard/recent_updates.jsx:145
+msgid "See All"
+msgstr ""
+
+#: src/components/dashboard/recent_users_table.jsx:181
+msgid "Analytics"
+msgstr ""
+
+#: src/components/dashboard/recent_users_table.jsx:190
+msgid "Recent Requests"
+msgstr ""
+
+#: src/components/dashboard/recent_users_table.jsx:309
+msgid "Recent Activities"
+msgstr ""
+
+#: src/components/dashboard/tabs.jsx:113
+msgid "Dashboard"
+msgstr ""
+
+#: src/components/dashboard/tabs.jsx:127
+msgid "Users"
+msgstr ""
+
+#: src/components/dashboard/tabs.jsx:143
+#: src/components/invitation-code/add-code-subtabs.jsx:1123
+#: src/components/invitation-code/add-code-subtabs.jsx:1240
+#: src/components/invitation-code/edit-invitation-code.jsx:128
+#: src/components/invitation-code/invitation-email.jsx:133
+msgid "Invitation Code"
+msgstr ""
+
+#: src/components/dashboard/tabs.jsx:175
+msgid "Integration"
+msgstr ""
+
+#: src/components/dashboard/tabs.jsx:189
+#: src/components/invitation-code/invitation-code-main-tabs.jsx:43
+msgid "Settings"
+msgstr ""
+
+#: src/components/dashboard/users-sub-tabs.jsx:42
+msgid "Approved"
+msgstr ""
+
+#: src/components/dashboard/users-sub-tabs.jsx:43
+msgid "Pending"
+msgstr ""
+
+#: src/components/dashboard/users-sub-tabs.jsx:44
+msgid "Denied"
+msgstr ""
+
+#: src/components/dashboard/user_filter.jsx:32
+msgid "Last 30 days"
+msgstr ""
+
+#: src/components/dashboard/user_filter.jsx:33
+msgid "By a week"
+msgstr ""
+
+#: src/components/dashboard/user_filter.jsx:34
+msgid "By today"
+msgstr ""
+
+#: src/components/dashboard/user_filter.jsx:35
+msgid "By yesterday"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:676
+#: src/components/invitation-code/add-code-subtabs.jsx:721
+#: src/components/invitation-code/add-code-subtabs.jsx:890
+#: src/components/invitation-code/invitation-code-main-tabs.jsx:42
+msgid "Add Codes"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:685
+#: src/components/invitation-code/add-code-subtabs.jsx:910
+msgid "Auto Generate"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:690
+#: src/components/invitation-code/add-code-subtabs.jsx:1028
+#: src/components/invitation-code/invitation-code-main-tabs.jsx:46
+msgid "Import Codes"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:695
+#: src/components/invitation-code/add-code-subtabs.jsx:1078
+#: src/components/invitation-code/add-code-subtabs.jsx:1101
+msgid "Send Email"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:743
+msgid "Selected date is incorrect"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:757
+msgid "Usage limit must be greater than 0"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:807
+#: src/components/invitation-code/add-code-subtabs.jsx:1114
+msgid "Codes"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:819
+msgid "Enter one code per line."
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:836
+#: src/components/invitation-code/add-code-subtabs.jsx:966
+#: src/components/invitation-code/add-code-subtabs.jsx:1256
+#: src/components/invitation-code/edit-invitation-code.jsx:152
+msgid "Usage Limit"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:865
+#: src/components/invitation-code/add-code-subtabs.jsx:979
+#: src/components/invitation-code/add-code-subtabs.jsx:1129
+#: src/components/invitation-code/add-code-subtabs.jsx:1266
+#: src/components/invitation-code/edit-invitation-code.jsx:169
+msgid "Expiry Date"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:883
+#: src/components/invitation-code/add-code-subtabs.jsx:999
+#: src/components/invitation-code/add-code-subtabs.jsx:1047
+#: src/components/invitation-code/add-code-subtabs.jsx:1098
+#: src/components/invitation-code/add-code-subtabs.jsx:1442
+#: src/components/invitation-code/add-code-subtabs.jsx:1490
+msgid "Cancel"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:928
+msgid "Code Prefix"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:940
+msgid "Code Suffix"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:952
+msgid "Code Quantity"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:1006
+msgid "Generate"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:1057
+msgid "Import Now"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:1113
+msgid "All Codes"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:1126
+msgid "Uses Remaining"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:1222
+msgid "View Invitation Code"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:1247
+#: src/components/invitation-code/edit-invitation-code.jsx:140
+msgid "Uses Left"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:1289
+msgid "Users that have registered by using this invitation code"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:1392
+msgid "Edit Invitation Code"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:1484
+msgid "The code will be permanently deleted and you won’t be able to see it again."
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:1493
+msgid "Delete"
+msgstr ""
+
+#: src/components/invitation-code/add-code-subtabs.jsx:1523
+msgid "No invitation code found"
+msgstr ""
+
+#: src/components/invitation-code/edit-invitation-code.jsx:49
+msgid "Please fill all required fields."
+msgstr ""
+
+#: src/components/invitation-code/edit-invitation-code.jsx:67
+msgid "Invitation code updated successfully!"
+msgstr ""
+
+#: src/components/invitation-code/edit-invitation-code.jsx:86
+msgid "Something went wrong"
+msgstr ""
+
+#: src/components/invitation-code/edit-invitation-code.jsx:102
+msgid "Network error. Please try again."
+msgstr ""
+
+#: src/components/invitation-code/edit-invitation-code.jsx:191
+msgid "Active"
+msgstr ""
+
+#: src/components/invitation-code/edit-invitation-code.jsx:192
+msgid "InActive"
+msgstr ""
+
+#: src/components/invitation-code/edit-invitation-code.jsx:193
+msgid "Expired"
+msgstr ""
+
+#: src/components/invitation-code/import-codes.jsx:50
+msgid "Import a CSV file"
+msgstr ""
+
+#: src/components/invitation-code/import-codes.jsx:51
+msgid "or simply drag and drop"
+msgstr ""
+
+#: src/components/invitation-code/import-codes.jsx:73
+msgid "Download sample CSV"
+msgstr ""
+
+#: src/components/invitation-code/invitation-email.jsx:112
+msgid "Registration Page"
+msgstr ""
+
+#: src/components/invitation-code/invitation-email.jsx:155
+msgid "User Email"
+msgstr ""
+
+#: src/components/invitation-code/invitation-email.jsx:160
+msgid "Enter Email Addresses, comma separated"
+msgstr ""
+
+#: src/components/invitation-code/invitation-email.jsx:165
+msgid "Email Subject"
+msgstr ""
+
+#: src/components/invitation-code/invitation-email.jsx:172
+msgid "Email Message"
+msgstr ""
+
+#: src/components/invitation-code/invitation-email.jsx:177
+msgid "Email Message to send, use {registration} for registration page link and {code} for invitation code."
+msgstr ""
+
+#: src/components/invitation-code/invitation-email.jsx:183
+msgid "Send email message as html."
+msgstr ""
+
+#: src/components/invitation-code/settings.jsx:57
+msgid "Enable/Disable:"
+msgstr ""
+
+#: src/components/invitation-code/settings.jsx:60
+msgid "Invitation Code for user to register."
+msgstr ""
+
+#: src/components/settings/settings-tabs.jsx:39
+msgid "General Settings"
+msgstr ""
+
+#: src/components/settings/settings-tabs.jsx:45
+msgid "Notification"
+msgstr ""
+
+#: src/components/settings/settings-tabs.jsx:49
+#: src/components/settings/tabs/general.jsx:167
+msgid "Help"
+msgstr ""
+
+#: src/components/settings/tabs/admin-notification.jsx:74
+msgid "Admin Notification Emails"
+msgstr ""
+
+#: src/components/settings/tabs/admin-notification.jsx:75
+msgid "Notification emails are sent to the site admin when a user needs to be updated."
+msgstr ""
+
+#: src/components/settings/tabs/admin-notification.jsx:82
+msgid "Notification Option"
+msgstr ""
+
+#: src/components/settings/tabs/admin-notification.jsx:88
+msgid "Send notification emails to all admins"
+msgstr ""
+
+#: src/components/settings/tabs/admin-notification.jsx:92
+msgid "By default, only the site admin will be notified when a user is awaiting approval. Checking this option will send the notification to all users with admin access."
+msgstr ""
+
+#: src/components/settings/tabs/admin-notification.jsx:107
+msgid "Notify admins when a user's status is updated"
+msgstr ""
+
+#: src/components/settings/tabs/admin-notification.jsx:111
+msgid "Useful for when there is more than one site admin."
+msgstr ""
+
+#: src/components/settings/tabs/admin-notification.jsx:126
+msgid "Don't send notification emails to current site admin"
+msgstr ""
+
+#: src/components/settings/tabs/admin-notification.jsx:146
+msgid "Send Email Notification to other than admins"
+msgstr ""
+
+#: src/components/settings/tabs/admin-notification.jsx:150
+msgid "Send admin notification emails to specific users."
+msgstr ""
+
+#: src/components/settings/tabs/admin-notification.jsx:202
+msgid "Notification Emails"
+msgstr ""
+
+#: src/components/settings/tabs/admin-notification.jsx:207
+#: src/components/settings/tabs/user-notification.jsx:79
+msgid "Notification subject"
+msgstr ""
+
+#: src/components/settings/tabs/admin-notification.jsx:214
+msgid "Notification Message"
+msgstr ""
+
+#: src/components/settings/tabs/admin-notification.jsx:218
+msgid "This message is sent to the site admin when a user registers for the site. Customizations can be made to the message above using the following email tags:"
+msgstr ""
+
+#: src/components/settings/tabs/admin-notification.jsx:241
+#: src/components/settings/tabs/user-notification.jsx:176
+#: src/components/settings/tabs/user-notification.jsx:243
+msgid "Send notification message as html."
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:107
+msgid "Settings saved successfully!"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:117
+msgid "Something went wrong while saving."
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:122
+msgid "Error saving settings. Please try again."
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:155
+msgid "General"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:158
+msgid "Registration Notification"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:161
+#: src/components/settings/tabs/notification.jsx:18
+msgid "Admin Notification"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:164
+#: src/components/settings/tabs/notification.jsx:21
+msgid "User Notification"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:173
+msgid "Invitation Code Settings"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:178
+msgid "Enable Invitation Code"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:183
+msgid "Invitation Code for user to register without admin approval."
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:207
+msgid "Make Invitation code Required"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:212
+msgid "The Invitation code field on the registration page will be required if the checkbox is checked."
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:237
+msgid "Dashboard Settings"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:241
+msgid "Dashboard Stats"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:246
+msgid "Enable this to show plugin's stats on the admin dashboard."
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:273
+msgid "Password & Security Settings"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:277
+msgid "Bypass password reset"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:282
+msgid "Don't reset the original password after approving a user. This is useful if you are allowing a user to set their password at registration."
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:311
+msgid "Approval Settings"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:316
+msgid "Enable Auto-Approve"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:321
+msgid "Enable Auto-Approve functionality."
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:345
+msgid "Select User Role Request ( Registration )"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:350
+msgid "Enable this option to show user role request on registeration page."
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:374
+msgid "Auto Approval for Specific User Roles"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:379
+msgid "Select roles to be auto-approve."
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:409
+msgid "Role Management Settings"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:414
+msgid "Allow User Role Change Request ( My-account )"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:419
+msgid "Enable this option to allow user to upgrade the request on my-account page."
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:444
+msgid "Shortcode"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:459
+msgid "Copied to clipboard"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:465
+msgid "Registration Management Settings"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:470
+msgid "Registration Deadline"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:474
+msgid "Set deadline for registration. This will close the registration after deadline."
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:501
+msgid "Administrator Settings"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:505
+msgid "Administrator Email Address"
+msgstr ""
+
+#: src/components/settings/tabs/general.jsx:510
+msgid "Change the admin/sender Email."
+msgstr ""
+
+#: src/components/settings/tabs/help.jsx:66
+msgid "Email Support"
+msgstr ""
+
+#: src/components/settings/tabs/help.jsx:83
+msgid "You may send an email to the following address to get plugin support."
+msgstr ""
+
+#: src/components/settings/tabs/help.jsx:86
+msgid "Please download the Diagnostic Info below and attach it to your email"
+msgstr ""
+
+#: src/components/settings/tabs/help.jsx:89
+msgid "Site Url :"
+msgstr ""
+
+#: src/components/settings/tabs/help.jsx:113
+msgid "Diagnostic Info"
+msgstr ""
+
+#: src/components/settings/tabs/help.jsx:136
+msgid "To copy the diagnostic info, click below then press Ctrl + C (PC) or Cmd + C (Mac)."
+msgstr ""
+
+#: src/components/settings/tabs/help.jsx:139
+msgid "Please include this information when posting support requests."
+msgstr ""
+
+#: src/components/settings/tabs/help.jsx:146
+msgid "Download Diagnostic Info File"
+msgstr ""
+
+#: src/components/settings/tabs/registration.jsx:64
+msgid "Login/Registration Settings"
+msgstr ""
+
+#: src/components/settings/tabs/registration.jsx:65
+msgid "Modify messages output during the login and registration processes."
+msgstr ""
+
+#: src/components/settings/tabs/registration.jsx:72
+msgid "Registration Notifications"
+msgstr ""
+
+#: src/components/settings/tabs/registration.jsx:75
+msgid "Welcome Message"
+msgstr ""
+
+#: src/components/settings/tabs/registration.jsx:81
+msgid "This message welcomes a user at login."
+msgstr ""
+
+#: src/components/settings/tabs/registration.jsx:93
+msgid "Registration Message"
+msgstr ""
+
+#: src/components/settings/tabs/registration.jsx:99
+msgid "This message is shown when a user is registering for the site."
+msgstr ""
+
+#: src/components/settings/tabs/registration.jsx:111
+msgid "Registration Complete Message"
+msgstr ""
+
+#: src/components/settings/tabs/registration.jsx:117
+msgid "This message is shown after a user has registered for the site."
+msgstr ""
+
+#: src/components/settings/tabs/registration.jsx:129
+msgid "Auto Approval Message"
+msgstr ""
+
+#: src/components/settings/tabs/registration.jsx:134
+msgid "This message is shown after a user has registered and got auto approve for the site."
+msgstr ""
+
+#: src/components/settings/tabs/registration.jsx:151
+msgid "Pending Notification"
+msgstr ""
+
+#: src/components/settings/tabs/registration.jsx:155
+msgid " Pending Error Message"
+msgstr ""
+
+#: src/components/settings/tabs/registration.jsx:160
+msgid "This message shows when a user with a status of 'pending' attempts to log in."
+msgstr ""
+
+#: src/components/settings/tabs/registration.jsx:177
+msgid "Reject Notification"
+msgstr ""
+
+#: src/components/settings/tabs/registration.jsx:180
+msgid "Denied Error Message"
+msgstr ""
+
+#: src/components/settings/tabs/registration.jsx:185
+msgid "This message shows when a user with a status of 'denied' attempts to log in."
+msgstr ""
+
+#: src/components/settings/tabs/user-notification.jsx:66
+msgid "User Notification Emails"
+msgstr ""
+
+#: src/components/settings/tabs/user-notification.jsx:67
+msgid "Users will receive notification emails when their status has been updated by a site admin."
+msgstr ""
+
+#: src/components/settings/tabs/user-notification.jsx:74
+msgid "Approve Notification"
+msgstr ""
+
+#: src/components/settings/tabs/user-notification.jsx:86
+msgid "Approve Notification Message"
+msgstr ""
+
+#: src/components/settings/tabs/user-notification.jsx:90
+msgid "This message is sent to users once they are approved. Customizations can be made to the message above using the following email tags:"
+msgstr ""
+
+#: src/components/settings/tabs/user-notification.jsx:109
+msgid "Send notification message as html"
+msgstr ""
+
+#: src/components/settings/tabs/user-notification.jsx:119
+msgid "Deny Notification"
+msgstr ""
+
+#: src/components/settings/tabs/user-notification.jsx:125
+msgid "Suppress denial message"
+msgstr ""
+
+#: src/components/settings/tabs/user-notification.jsx:129
+msgid "Don't send the denial message to denied users."
+msgstr ""
+
+#: src/components/settings/tabs/user-notification.jsx:145
+msgid "Deny notification subject"
+msgstr ""
+
+#: src/components/settings/tabs/user-notification.jsx:152
+msgid "Deny Notification Message"
+msgstr ""
+
+#: src/components/settings/tabs/user-notification.jsx:156
+msgid "This message is sent to users once they are denied. Customizations can be made to the message above using the following email tags:"
+msgstr ""
+
+#: src/components/settings/tabs/user-notification.jsx:186
+msgid "Welcome Notification"
+msgstr ""
+
+#: src/components/settings/tabs/user-notification.jsx:192
+msgid "User Welcome Email."
+msgstr ""
+
+#: src/components/settings/tabs/user-notification.jsx:196
+msgid "Send welcome email to users after registration."
+msgstr ""
+
+#: src/components/settings/tabs/user-notification.jsx:211
+msgid "User Welcome Email Subject"
+msgstr ""
+
+#: src/components/settings/tabs/user-notification.jsx:218
+msgid "User Welcome Email Message"
+msgstr ""
+
+#: src/components/settings/tabs/user-notification.jsx:222
+msgid "Users will receive Welcome emails when they register to the site."
+msgstr ""

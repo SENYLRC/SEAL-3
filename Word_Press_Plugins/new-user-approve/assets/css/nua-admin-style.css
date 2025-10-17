@@ -1,0 +1,349 @@
+body.new-users-approve_page_new-user-approve-admin, body.toplevel_page_new-user-approve-config, body.new-users-approve_page_new-user-approve-auto-approve, body.new-users-approve_page_nua-invitation-code {
+  background: #FFF;
+  color: #444444;
+}
+#nua-approve-admin {
+  border: none;
+}
+#nua-approve-admin .postbox-header{
+  border-bottom: none;
+}
+
+
+#nua-approve-admin .nav-tab, .toplevel_page_new-user-approve-config .nav-tab, .new-users-approve_page_new-user-approve-auto-approve .nav-tab, .new-users-approve_page_nua-invitation-code .nav-tab{
+    padding: 15px 25px;
+    font-size: 14px;
+    line-height: 1.7;
+    border: none;
+    border-radius: 9px;
+    background: #fbfbfb;
+    border: 1px solid #f3f3f3;
+}
+#nua-approve-admin .nav-tab-active, .toplevel_page_new-user-approve-config .nav-tab-active, .new-users-approve_page_new-user-approve-auto-approve .nav-tab-active, .new-users-approve_page_nua-invitation-code .nav-tab-active{
+  color:#FFF;
+  background: #2c725e;
+}
+
+.setting-main-tabpanel.generalTabPage .dash-tabPanel{
+  padding-left:0px;
+  padding-bottom: 0px;
+  }
+
+#nua-approve-admin #pw_pending_users, #nua-approve-admin #pw_approved_users, #nua-approve-admin #pw_denied_users {
+  margin-top:30px;
+}
+
+#pw_pending_users .thead, #pw_approved_users .thead, #pw_denied_users .thead{
+  outline: 1px solid #ccd0d4;
+}
+
+#pw_pending_users table.widefat thead th, #pw_approved_users table.widefat thead th, #pw_denied_users table.widefat thead th {
+   border-bottom: none;
+}
+
+#pw_pending_users table.widefat, #pw_approved_users table.widefat, #pw_denied_users table.widefat {
+  border: none;
+}
+
+
+#pw_pending_users .button-primary, #pw_approved_users .button-primary, #pw_denied_users .button-primary {
+  background:#61bd4f;
+  color:#FFF;
+  border-color: #73e831;
+  float:right;
+}
+
+#pw_denied_users .button-primary {
+  float:none;
+}
+
+#pw_pending_users .button, #pw_approved_users .button, #pw_denied_users .button {
+  
+  background:#eb5a46;
+  color:#FFF;
+  border-color: #f3463a;
+}
+
+#nua-approve-admin .postbox-header {
+  display:none;
+}
+
+#pw_pending_users .widefat th:last-child, #pw_approved_users .widefat th:last-child, #pw_denied_users .widefat th:last-child {
+  text-align:center;
+ }
+
+ #nua-approve-admin .status_heading{
+   font-size:18px;
+ }
+
+
+ /* nua settings page start */
+ .nua_setting_tab{
+  text-align: left;
+ }
+ 
+ .nua_switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+  border-radius: 63px;
+}
+.nua-toggle-tags-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.5em;
+  padding: 0;
+  margin: 12px 0;
+  line-height: 1;
+ display: flex;
+ position: relative;
+ left: -6px;
+}
+span.arrowUp{
+  rotate: 270deg;  
+}
+.nua-toggle-tags-btn span {
+  margin-left: 5px;
+    font-size: 14px;
+    color: #618E5F;
+}
+.send-email-as-html-element.setting-element .description{
+  margin-top: 0px;
+}
+.nua_switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+
+ .toplevel_page_new-user-approve-config .nav-tab-wrapper, .new-users-approve_page_new-user-approve-auto-approve .nav-tab-wrapper, .new-users-approve_page_nua-invitation-code .nav-tab-wrapper{
+   border-bottom:none !important;
+ }
+ .nua-settings-heading {
+   margin-bottom:10px;
+ }
+
+ .nua-tags {
+  cursor: pointer;
+  background-color: #EDF4FF;
+  color: #000;
+  padding: 2px;
+  margin: 2px;
+  display: inline-block;
+ }
+  /* nua settings page start end*/
+
+.nua-textarea {
+  width:100%;
+  min-height: 200px;
+}
+#nua_options_blacklist_message {
+  width:600px;
+}
+
+.new-users-approve_page_nua-invitation-code .nav-subtab-wrapper {
+  height: 60px;
+  clear:both;
+}
+
+#nua_email_users_email {
+  min-height: 100px;
+}
+
+#nua-approve-admin .sub_nav-tab-class, .toplevel_page_new-user-approve-config .sub_nav-tab-class, .approve-new-users_page_new-user-approve-auto-approve .sub_nav-tab-class, .approve-new-users_page_nua-invitation-code .sub_nav-tab-class{
+    padding: 2px;
+    font-size: 16px;
+    line-height: 1.7;
+    color: blue;
+    border-left: 1px outset;
+    text-decoration: none;
+    margin-left: 10px;
+    padding-left: 1px;
+     border-collapse:collapse;
+     padding: 2px 10px 2px 10px; 
+}
+
+
+#nua-approve-admin .sub_nav-tab-class-active, .toplevel_page_new-user-approve-config .sub_nav-tab-class-active, .approve-new-users_page_new-user-approve-auto-approve .sub_nav-tab-class-active, .approve-new-users_page_nua-invitation-code .sub_nav-tab-class-active{
+  color:#000000;
+}
+.nua_sub_nav a:first-child {
+  border: none;
+}
+
+.nua_approved_users-roles {
+  display: flex;
+  justify-content: center;
+}
+
+#popup-window {
+  position: fixed;
+  width: 300px;
+  height: 50%;
+  background: white;
+  border: 1px solid black;
+  padding: 10px;
+  margin: auto;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  display: none;
+}
+
+#roles_chooser .choices__input{
+  width: 105px !important;
+}
+#roles_chooser {
+  width: 250px;
+}
+
+/* .nua-tooltip {
+  border: 1px solid #444444;
+  border-radius: 50%;
+  padding: 1px 5px;
+  background-color: #444444;
+  color: #fff;
+  font-size: 10px;
+} */
+
+/* .nua-tooltip {
+  position: relative;
+  display: inline-block;
+  cursor: help;
+  margin-bottom: 6px;
+} */
+
+/* .nua-tooltip:hover:after {
+content: attr(data);
+background-color: #444444; 
+color: #fff; 
+padding: 8px;
+border-radius: 5px;
+position: absolute;
+z-index: 1;
+bottom: 125%;
+left: 50%;
+transform: translateX(-50%);
+overflow: hidden;
+width: 140px;
+opacity: 0;
+visibility: hidden;
+transition: opacity 0.3s;
+} */
+
+/* .nua-tooltip:hover:after {
+opacity: 1;
+visibility: visible;
+} */
+
+.nua-tooltip-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-left: 8px;
+}
+
+.auto-approve-tabs .nua-tooltip-wrapper{
+  top: 5px;
+}
+
+
+.nua-tooltip-arrow {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #333;
+}
+
+.nua-tooltip-wrapper .tooltip-icon{
+  color: #666;
+  margin-top: -3px;    
+}
+
+.Toastify__progress-bar--success{
+  background:#618e5f!important;
+}
+
+/* .Toastify__toast-icon.Toastify--animate-icon.Toastify__zoom-enter svg {
+  fill: #618e5f!important;
+} */
+
+/*
+styling related to pagination and update 5.1.2
+*/
+#pw_pending_users .tfoot,
+#pw_approved_users .tfoot,
+#pw_denied_users .tfoot {
+    outline: 1px solid #ccd0d4;
+}
+#pw_pending_users .actions-btn,
+#pw_approved_users .actions-btn,
+#pw_denied_users .actions-btn{
+    text-align: center !important;
+}
+#pw_pending_users .tfoot th,
+#pw_approved_users .tfoot th,
+#pw_denied_users .tfoot th {
+    padding: 0px 0px !important;
+}
+.page-numbers {
+    padding: 0 13px;
+    color: #2c3338;
+}
+.page-numbers:hover {
+    background-color: #fbfbfb;
+    padding: 0 13px;
+    color: #50575e;
+}
+.page-numbers.current {
+    background-color: #2c725e;
+    line-height: 32px;
+    padding: 0 13px;
+    border-radius: 3px;
+    color: white;
+}
+
+#nua-search-btn{
+  padding: 15px 25px;
+  font-size: 14px;
+  line-height: 1.7;
+  border: none;
+  border-radius: 9px;
+  background: #fbfbfb;
+  border: 1px solid #f3f3f3;
+  font-weight: 600;
+  color: #50575e;
+  
+}
+
+#nua-search-btn:hover{
+  color: #FFF;
+  background: #2c725e;
+}
+
+#nua_search_box{
+  line-height: 1.5;
+    padding: 15px 5px;
+}
+
+#nua_search_form{
+  float: right;
+}
+
+.nua_main_settings .setting-label{
+  display: flex;
+  position: relative;  
+}
+.nua-auto-settings span.setting-label{
+  position:relative;
+  width: unset;
+}
