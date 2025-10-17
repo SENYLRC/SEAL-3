@@ -1,0 +1,234 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.1deb3
+-- https://www.phpmyadmin.net/
+--
+-- Host: localhost:3306
+-- Generation Time: Oct 17, 2025 at 02:20 PM
+-- Server version: 8.0.40
+-- PHP Version: 8.3.6
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+--
+-- Database: `SEALill`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `SENYLRC-SEAL2-ILLIAD-ADD-MAPPING`
+--
+
+CREATE TABLE `SENYLRC-SEAL2-ILLIAD-ADD-MAPPING` (
+  `num` int NOT NULL,
+  `LOC` varchar(10) NOT NULL,
+  `illiadID` varchar(10) NOT NULL,
+  `illiadADDnumb` int NOT NULL,
+  `illiadLIBSymbol` varchar(30) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `SENYLRC-SEAL2-ILLIAD-ADD-MAPPING`
+--
+ALTER TABLE `SENYLRC-SEAL2-ILLIAD-ADD-MAPPING`
+  ADD UNIQUE KEY `num` (`num`) USING BTREE;
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `SENYLRC-SEAL2-ILLIAD-ADD-MAPPING`
+--
+ALTER TABLE `SENYLRC-SEAL2-ILLIAD-ADD-MAPPING`
+  MODIFY `num` int NOT NULL AUTO_INCREMENT;
+COMMIT;
+
+-- phpMyAdmin SQL Dump
+-- version 5.2.1deb3
+-- https://www.phpmyadmin.net/
+--
+-- Host: localhost:3306
+-- Generation Time: Oct 17, 2025 at 02:21 PM
+-- Server version: 8.0.40
+-- PHP Version: 8.3.6
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+--
+-- Database: `sealILL`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `SENYLRC-SEAL2-Library-Data`
+--
+
+CREATE TABLE `SENYLRC-SEAL2-Library-Data` (
+  `recnum` int NOT NULL,
+  `Name` varchar(255) NOT NULL,
+  `ill_email` varchar(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL,
+  `phone` varchar(40) NOT NULL,
+  `address1` varchar(255) NOT NULL,
+  `address2` varchar(255) NOT NULL,
+  `address3` varchar(255) NOT NULL,
+  `alias` varchar(255) NOT NULL,
+  `loc` varchar(10) NOT NULL,
+  `oclc` varchar(10) NOT NULL,
+  `participant` tinyint(1) NOT NULL DEFAULT '1',
+  `suspend` int NOT NULL DEFAULT '30',
+  `system` varchar(255) NOT NULL DEFAULT 'OU',
+  `av_loan` varchar(10) NOT NULL DEFAULT '1',
+  `ebook_request` varchar(10) NOT NULL DEFAULT '0',
+  `ejournal` varchar(10) NOT NULL,
+  `theses_loan` varchar(10) NOT NULL DEFAULT '0',
+  `book_loan` varchar(5) NOT NULL DEFAULT '1',
+  `periodical_loan` varchar(10) NOT NULL,
+  `ejournal_request` varchar(10) NOT NULL DEFAULT '1',
+  `ModifyDate` timestamp NULL DEFAULT NULL,
+  `ModEmail` varchar(255) DEFAULT NULL,
+  `SuspendDateEnd` date DEFAULT NULL,
+  `SuspendCheckDate` date DEFAULT NULL,
+  `LibEmailAlert` int NOT NULL DEFAULT '1',
+  `Illiad` int NOT NULL DEFAULT '0',
+  `APIkey` varchar(255) NOT NULL,
+  `IlliadURL` longtext NOT NULL,
+  `IlliadDATE` int NOT NULL,
+  `lbsyscourier` varchar(5) NOT NULL,
+  `lbUSPS` varchar(5) NOT NULL,
+  `lbEmpire` varchar(5) NOT NULL,
+  `lbCommCourier` varchar(5) NOT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `SENYLRC-SEAL2-Library-Data`
+--
+ALTER TABLE `SENYLRC-SEAL2-Library-Data`
+  ADD PRIMARY KEY (`recnum`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `SENYLRC-SEAL2-Library-Data`
+--
+ALTER TABLE `SENYLRC-SEAL2-Library-Data`
+  MODIFY `recnum` int NOT NULL AUTO_INCREMENT;
+COMMIT;
+
+
+-- phpMyAdmin SQL Dump
+-- version 5.2.1deb3
+-- https://www.phpmyadmin.net/
+--
+-- Host: localhost:3306
+-- Generation Time: Oct 17, 2025 at 02:22 PM
+-- Server version: 8.0.40
+-- PHP Version: 8.3.6
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+--
+-- Database: `sealILL`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `SENYLRC-SEAL2-STATS`
+--
+
+CREATE TABLE `SENYLRC-SEAL2-STATS` (
+  `index` int NOT NULL,
+  `illNUB` varchar(255) NOT NULL,
+  `Title` longtext NOT NULL,
+  `Author` varchar(255) NOT NULL,
+  `pubdate` varchar(255) NOT NULL,
+  `reqisbn` varchar(255) NOT NULL,
+  `reqissn` varchar(255) NOT NULL,
+  `Itype` varchar(255) NOT NULL,
+  `Call Number` varchar(255) NOT NULL,
+  `Location` text NOT NULL,
+  `Available` varchar(255) NOT NULL,
+  `article` longtext NOT NULL,
+  `needbydate` varchar(255) NOT NULL,
+  `reqnote` varchar(255) NOT NULL,
+  `patronnote` varchar(255) NOT NULL,
+  `Destination` varchar(255) NOT NULL,
+  `DestSystem` varchar(10) NOT NULL,
+  `Requester lib` varchar(255) NOT NULL,
+  `saddress` varchar(255) NOT NULL,
+  `saddress2` varchar(255) NOT NULL,
+  `caddress` varchar(255) NOT NULL,
+  `Requester LOC` varchar(255) NOT NULL,
+  `ReqSystem` varchar(10) NOT NULL,
+  `Requester person` varchar(255) NOT NULL,
+  `requesterEMAIL` longtext NOT NULL,
+  `requesterPhone` varchar(255) NOT NULL,
+  `Timestamp` varchar(255) NOT NULL,
+  `Fill` tinyint(1) NOT NULL DEFAULT '3',
+  `responderNOTE` longtext NOT NULL,
+  `emailsent` varchar(1) NOT NULL DEFAULT '0',
+  `receiveTimeStamp` varchar(255) DEFAULT NULL,
+  `receiveAccount` varchar(255) DEFAULT NULL,
+  `receiveDate` date DEFAULT '1900-01-01',
+  `returnDate` date DEFAULT '1900-01-01',
+  `fillNofillDate` date NOT NULL,
+  `returnTimeStamp` varchar(255) DEFAULT NULL,
+  `returnAccount` varchar(255) DEFAULT NULL,
+  `returnNote` varchar(255) NOT NULL,
+  `renewTimeStamp` varchar(255) DEFAULT NULL,
+  `renewAnswer` int NOT NULL DEFAULT '0',
+  `renewNote` varchar(255) DEFAULT NULL,
+  `renewNoteLender` varchar(255) DEFAULT NULL,
+  `renewAccountRequester` varchar(255) DEFAULT NULL,
+  `renewAccountLender` varchar(255) DEFAULT NULL,
+  `checkinTimeStamp` varchar(255) NOT NULL,
+  `checkinAccount` varchar(255) DEFAULT NULL,
+  `DueDate` varchar(255) DEFAULT NULL,
+  `reasonNotFilled` int NOT NULL DEFAULT '0',
+  `returnMethod` varchar(11) DEFAULT NULL,
+  `shipMethod` varchar(60) NOT NULL,
+  `IlliadDataResponse` longtext,
+  `IlliadStatus` varchar(255) NOT NULL,
+  `IlliadTransID` varchar(255) NOT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `SENYLRC-SEAL2-STATS`
+--
+ALTER TABLE `SENYLRC-SEAL2-STATS`
+  ADD PRIMARY KEY (`index`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `SENYLRC-SEAL2-STATS`
+--
+ALTER TABLE `SENYLRC-SEAL2-STATS`
+  MODIFY `index` int NOT NULL AUTO_INCREMENT;
+COMMIT;
+
+

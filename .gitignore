@@ -1,25 +1,68 @@
-# CakePHP 3
+# === SEAL 3 Git Ignore ===
+# OS / Editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.bak
+*.log
+*.tmp
+*.lock
+*.swo
+*.idea/
+.vscode/
 
-/vendor/*
-/config/app.php
+# === Sensitive local config ===
+seal_db.inc
+seal_db.php
+seal_db.local.php
+seal_db.*
+config.local.php
 
-/tmp/cache/models/*
-!/tmp/cache/models/empty
-/tmp/cache/persistent/*
-!/tmp/cache/persistent/empty
-/tmp/cache/views/*
-!/tmp/cache/views/empty
-/tmp/sessions/*
-!/tmp/sessions/empty
-/tmp/tests/*
-!/tmp/tests/empty
+# === Private credentials ===
+.env
+*.key
+*.pem
+*.crt
+*.csr
+*.p12
+*.keystore
 
-/logs/*
-!/logs/empty
+# === Cache / runtime data ===
+cache/
+tmp/
+*.cache
+*.pid
+*.sock
+*.session
+*.tar.gz
+*.zip
+*.gz
+*.bak
 
-# CakePHP 2
+# === Logs / exports ===
+logs/
+*.log
+export.csv
+export*.csv
+*.json
 
-/app/tmp/*
-/app/Config/core.php
-/app/Config/database.php
-/vendors/*
+# === PHP composer (if ever added) ===
+vendor/
+composer.lock
+
+# === Node / JS (if ever added) ===
+node_modules/
+package-lock.json
+
+# === WordPress specific ===
+wp-config.php
+wp-content/uploads/
+wp-content/upgrade/
+wp-content/cache/
+wp-content/backups/
+wp-content/debug.log
+
+# === Local environment ===
+/var/
+.env.local
+*.local
