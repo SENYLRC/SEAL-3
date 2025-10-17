@@ -1,0 +1,10 @@
+These are WordPress Plugins used for this service
+
+Insert PHP Code Snippet  http://xyzscripts.com/
+New User Approve   https://newuserapprove.com/
+User Role Editor  https://www.role-editor.com/
+WP Last Login http://en.wp.obenland.it/#utm_source=wordpress&utm_medium=plugin&utm_campaign=wp-last-login
+
+
+
+
