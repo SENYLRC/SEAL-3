@@ -23,7 +23,7 @@ $current_user = wp_get_current_user();
 $user_roles   = (array)$current_user->roles;
 
 // ✅ Allowed roles: Administrator, Library Staff, Lib Systems Staff
-$allowed_roles = ['administrator', 'library_staff', 'lib_systems_staff'];
+$allowed_roles = ['administrator', 'libstaff', 'libsys'];
 
 if (!array_intersect($allowed_roles, $user_roles)) {
     header('HTTP/1.1 403 Forbidden');

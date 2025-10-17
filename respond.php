@@ -28,7 +28,7 @@ if (!is_user_logged_in()) {
 $current_user = wp_get_current_user();
 $user_roles   = (array)$current_user->roles;
 
-if (!array_intersect(['administrator', 'library_staff'], $user_roles)) {
+if (!array_intersect(['administrator', 'libstaff'], $user_roles)) {
     die("<div style='padding:20px;color:red;font-weight:bold;'>
         Access Denied<br>You must have the <b>Administrator</b> or <b>Library Staff</b> role to access this page.
     </div>");
