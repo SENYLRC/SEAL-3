@@ -30,13 +30,16 @@ if (get_current_user_id() !== (int)$user_id && !current_user_can('edit_user', $u
 
 
 // Helper for safe output
-function h($v){ return esc_attr( (string)($v ?? '') ); }
+function h($v)
+{
+    return esc_attr((string)($v ?? ''));
+}
 
 // Load existing core fields
 $username     = $current_user->user_login; // immutable
 $email        = $current_user->user_email;
-$first_name   = get_user_meta( $user_id, 'first_name', true );
-$last_name    = get_user_meta( $user_id, 'last_name', true );
+$first_name   = get_user_meta($user_id, 'first_name', true);
+$last_name    = get_user_meta($user_id, 'last_name', true);
 $nickname     = $current_user->nickname;
 
 // Build display name choices
@@ -51,130 +54,150 @@ $name_options = array_unique(array_filter([
 ]));
 
 // Load custom meta fields
-$institution =        get_user_meta($user_id,'institution',true); 
-$home_system       = get_user_meta($user_id,'home_system',true);
-$work_phone        = get_user_meta($user_id,'work_phone',true);
-$alt_email         = get_user_meta($user_id,'additional_email',true);
-$loc_code          = get_user_meta($user_id,'address_loc_code',true);
-$oclc_symbol       = get_user_meta($user_id,'oclc_symbol',true);
-$delivery_address1 = get_user_meta($user_id,'delivery_address1',true);
-$delivery_address2 = get_user_meta($user_id,'delivery_address2',true);
-$city              = get_user_meta($user_id,'delivery_city',true);
-$state             = get_user_meta($user_id,'delivery_state',true);
-$zip               = get_user_meta($user_id,'delivery_zip',true);
+$institution =        get_user_meta($user_id, 'institution', true);
+$home_system       = get_user_meta($user_id, 'home_system', true);
+$work_phone        = get_user_meta($user_id, 'work_phone', true);
+$alt_email         = get_user_meta($user_id, 'additional_email', true);
+$loc_code          = get_user_meta($user_id, 'address_loc_code', true);
+$oclc_symbol       = get_user_meta($user_id, 'oclc_symbol', true);
+$delivery_address1 = get_user_meta($user_id, 'delivery_address1', true);
+$delivery_address2 = get_user_meta($user_id, 'delivery_address2', true);
+$city              = get_user_meta($user_id, 'delivery_city', true);
+$state             = get_user_meta($user_id, 'delivery_state', true);
+$zip               = get_user_meta($user_id, 'delivery_zip', true);
 
 $notice = '';
 $notice_class = '';
 
 // Handle POST
-if ( 'POST' === $_SERVER['REQUEST_METHOD'] && isset($_POST['wp_profile_nonce']) && wp_verify_nonce( $_POST['wp_profile_nonce'], 'update_wp_profile' ) ) {
+if ('POST' === $_SERVER['REQUEST_METHOD'] && isset($_POST['wp_profile_nonce']) && wp_verify_nonce($_POST['wp_profile_nonce'], 'update_wp_profile')) {
 
-  // Sanitize incoming
-  $new_first   = sanitize_text_field($_POST['first_name'] ?? '');
-  $new_last    = sanitize_text_field($_POST['last_name'] ?? '');
-  $new_email   = sanitize_email($_POST['email'] ?? $email);
+    // Sanitize incoming
+    $new_first   = sanitize_text_field($_POST['first_name'] ?? '');
+    $new_last    = sanitize_text_field($_POST['last_name'] ?? '');
+    $new_email   = sanitize_email($_POST['email'] ?? $email);
 
-  // nickname: use email by default if blank
-  $new_nick    = !empty($_POST['nickname']) ? sanitize_text_field($_POST['nickname']) : $new_email;
-  $new_disp    = sanitize_text_field($_POST['display_name'] ?? $display_name);
+    // nickname: use email by default if blank
+    $new_nick    = !empty($_POST['nickname']) ? sanitize_text_field($_POST['nickname']) : $new_email;
+    $new_disp    = sanitize_text_field($_POST['display_name'] ?? $display_name);
 
-  $new_pass    = (string)($_POST['new_password'] ?? '');
-  $new_pass2   = (string)($_POST['new_password_confirm'] ?? '');
+    $new_pass    = (string)($_POST['new_password'] ?? '');
+    $new_pass2   = (string)($_POST['new_password_confirm'] ?? '');
 
-  $new_institution   = sanitize_text_field($_POST['institution'] ?? '');
-  $new_system        = sanitize_text_field($_POST['home_system'] ?? '');
-  $new_work_phone    = sanitize_text_field($_POST['work_phone'] ?? '');
-  $new_alt_email     = sanitize_email($_POST['additional_email'] ?? '');
-  $new_loc_code      = sanitize_text_field($_POST['address_loc_code'] ?? '');
-  $new_oclc          = sanitize_text_field($_POST['oclc_symbol'] ?? '');
-  $new_address1      = sanitize_text_field($_POST['delivery_address1'] ?? '');
-  $new_address2      = sanitize_text_field($_POST['delivery_address2'] ?? '');
-  $new_city          = sanitize_text_field($_POST['delivery_city'] ?? '');
-  $new_state         = sanitize_text_field($_POST['delivery_state'] ?? '');
-  $new_zip           = sanitize_text_field($_POST['delivery_zip'] ?? '');
+    $new_institution   = sanitize_text_field($_POST['institution'] ?? '');
+    $new_system        = sanitize_text_field($_POST['home_system'] ?? '');
+    $new_work_phone    = sanitize_text_field($_POST['work_phone'] ?? '');
+    $new_alt_email     = sanitize_email($_POST['additional_email'] ?? '');
+    $new_loc_code      = sanitize_text_field($_POST['address_loc_code'] ?? '');
+    $new_oclc          = sanitize_text_field($_POST['oclc_symbol'] ?? '');
+    $new_address1      = sanitize_text_field($_POST['delivery_address1'] ?? '');
+    $new_address2      = sanitize_text_field($_POST['delivery_address2'] ?? '');
+    $new_city          = sanitize_text_field($_POST['delivery_city'] ?? '');
+    $new_state         = sanitize_text_field($_POST['delivery_state'] ?? '');
+    $new_zip           = sanitize_text_field($_POST['delivery_zip'] ?? '');
 
-  // Validate basics
-  $errors = new WP_Error();
+    // Validate basics
+    $errors = new WP_Error();
 
-  if ( empty($new_email) || ! is_email($new_email) ) {
-    $errors->add('email_invalid','Please enter a valid email.');
-  }
-  if ( ! empty($new_pass) || ! empty($new_pass2) ) {
-    if ( $new_pass !== $new_pass2 ) {
-      $errors->add('pass_mismatch','Passwords do not match.');
-    } elseif ( strlen($new_pass) < 8 ) {
-      $errors->add('pass_short','Password must be at least 8 characters.');
+    if (empty($new_email) || ! is_email($new_email)) {
+        $errors->add('email_invalid', 'Please enter a valid email.');
     }
-  }
-
-  if ( empty($errors->errors) ) {
-    // Update core user fields
-    $userdata = [
-      'ID'           => $user_id,
-      'user_email'   => $new_email,
-      'first_name'   => $new_first,
-      'last_name'    => $new_last,
-      'nickname'     => $new_nick,
-      'display_name' => $new_disp,
-    ];
-    if ( ! empty($new_pass) ) {
-      $userdata['user_pass'] = $new_pass;
+    if (! empty($new_pass) || ! empty($new_pass2)) {
+        if ($new_pass !== $new_pass2) {
+            $errors->add('pass_mismatch', 'Passwords do not match.');
+        } elseif (strlen($new_pass) < 8) {
+            $errors->add('pass_short', 'Password must be at least 8 characters.');
+        }
     }
 
-    $updated = wp_update_user( $userdata );
+    if (empty($errors->errors)) {
+        // Update core user fields
+        $userdata = [
+          'ID'           => $user_id,
+          'user_email'   => $new_email,
+          'first_name'   => $new_first,
+          'last_name'    => $new_last,
+          'nickname'     => $new_nick,
+          'display_name' => $new_disp,
+        ];
+        if (! empty($new_pass)) {
+            $userdata['user_pass'] = $new_pass;
+        }
 
-    if ( is_wp_error($updated) ) {
-      $notice = $updated->get_error_message();
-      $notice_class = 'error';
+        $updated = wp_update_user($userdata);
+
+        if (is_wp_error($updated)) {
+            $notice = $updated->get_error_message();
+            $notice_class = 'error';
+        } else {
+            // Update meta
+            if ($new_institution !== '') {
+                update_user_meta($user_id, 'institution', $new_institution);
+            }
+            if ($new_system      !== '') {
+                update_user_meta($user_id, 'home_system', $new_system);
+            }
+            if ($new_loc_code    !== '') {
+                update_user_meta($user_id, 'address_loc_code', $new_loc_code);
+            }
+            if ($new_oclc        !== '') {
+                update_user_meta($user_id, 'oclc_symbol', $new_oclc);
+            }
+            update_user_meta($user_id, 'work_phone', $new_work_phone);
+            update_user_meta($user_id, 'additional_email', $new_alt_email);
+            update_user_meta($user_id, 'delivery_address1', $new_address1);
+            update_user_meta($user_id, 'delivery_address2', $new_address2);
+            update_user_meta($user_id, 'delivery_city', $new_city);
+            update_user_meta($user_id, 'delivery_state', $new_state);
+            update_user_meta($user_id, 'delivery_zip', $new_zip);
+
+            // Refresh local vars for re-render
+            $first_name       = $new_first;
+            $last_name        = $new_last;
+            $nickname         = $new_nick;
+            $display_name     = $new_disp;
+            $email            = $new_email;
+            $institution      = $new_institution;
+            $home_system      = $new_system;
+            $work_phone       = $new_work_phone;
+            $alt_email        = $new_alt_email;
+            $loc_code         = $new_loc_code;
+            $oclc_symbol      = $new_oclc;
+            $delivery_address1 = $new_address1;
+            $delivery_address2 = $new_address2;
+            $city             = $new_city;
+            $state            = $new_state;
+            $zip              = $new_zip;
+
+            $notice = 'Profile updated successfully.';
+            $notice_class = 'success';
+            // Reload all values from the database to reflect current state
+            $institution      = get_user_meta($user_id, 'institution', true);
+            $home_system      = get_user_meta($user_id, 'home_system', true);
+            $loc_code         = get_user_meta($user_id, 'address_loc_code', true);
+            $oclc_symbol      = get_user_meta($user_id, 'oclc_symbol', true);
+            $delivery_address1 = get_user_meta($user_id, 'delivery_address1', true);
+            $delivery_address2 = get_user_meta($user_id, 'delivery_address2', true);
+            $city             = get_user_meta($user_id, 'delivery_city', true);
+            $state            = get_user_meta($user_id, 'delivery_state', true);
+            $zip              = get_user_meta($user_id, 'delivery_zip', true);
+            $work_phone       = get_user_meta($user_id, 'work_phone', true);
+            $alt_email        = get_user_meta($user_id, 'additional_email', true);
+        }
     } else {
-      // Update meta
-      update_user_meta($user_id, 'institution',          $new_institution);
-      update_user_meta($user_id, 'home_system',          $new_system);
-      update_user_meta($user_id, 'work_phone',           $new_work_phone);
-      update_user_meta($user_id, 'additional_email',     $new_alt_email);
-      update_user_meta($user_id, 'address_loc_code',    $new_loc_code);
-      update_user_meta($user_id, 'oclc_symbol',          $new_oclc);
-      update_user_meta($user_id, 'delivery_address1',    $new_address1);
-      update_user_meta($user_id, 'delivery_address2',    $new_address2);
-      update_user_meta($user_id, 'delivery_city',        $new_city);
-      update_user_meta($user_id, 'delivery_state',       $new_state);
-      update_user_meta($user_id, 'delivery_zip',         $new_zip);
-
-      // Refresh local vars for re-render
-      $first_name       = $new_first;
-      $last_name        = $new_last;
-      $nickname         = $new_nick;
-      $display_name     = $new_disp;
-      $email            = $new_email;
-      $institution      = $new_institution;
-      $home_system      = $new_system;
-      $work_phone       = $new_work_phone;
-      $alt_email        = $new_alt_email;
-      $loc_code         = $new_loc_code;
-      $oclc_symbol      = $new_oclc;
-      $delivery_address1= $new_address1;
-      $delivery_address2= $new_address2;
-      $city             = $new_city;
-      $state            = $new_state;
-      $zip              = $new_zip;
-
-      $notice = 'Profile updated successfully.';
-      $notice_class = 'success';
+        $notice = implode(' ', $errors->get_error_messages());
+        $notice_class = 'error';
     }
-  } else {
-    $notice = implode(' ', $errors->get_error_messages());
-    $notice_class = 'error';
-  }
 }
 ?>
 
 <div class="LibProfile_Form">
-  <?php if ( ! empty($notice) ) : ?>
+  <?php if (! empty($notice)) : ?>
     <div class="notice <?php echo esc_attr($notice_class); ?>"><?php echo esc_html($notice); ?></div>
   <?php endif; ?>
 
   <form method="post">
-    <?php wp_nonce_field( 'update_wp_profile', 'wp_profile_nonce' ); ?>
+    <?php wp_nonce_field('update_wp_profile', 'wp_profile_nonce'); ?>
 
     <div class="section-card">
       <h4>Account</h4>
