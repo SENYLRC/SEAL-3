@@ -156,15 +156,33 @@ if (strlen($filter_destination ?? '') > 2) {
 
 // Status conditions
 $conds = [];
-if ($filter_yes === "yes") $conds[] = "`Fill` = 1";
-if ($filter_no === "yes") $conds[] = "`Fill` = 0";
-if ($filter_noans === "yes") $conds[] = "`Fill` = 3";
-if ($filter_expire === "yes") $conds[] = "`Fill` = 4";
-if ($filter_cancel === "yes") $conds[] = "`Fill` = 6";
-if ($filter_checkin === "yes") $conds[] = "`checkinAccount` IS NOT NULL";
-if ($filter_recevied === "yes") $conds[] = "`receiveAccount` IS NOT NULL AND `returnAccount` IS NULL";
-if ($filter_return === "yes") $conds[] = "`returnAccount` IS NOT NULL AND `checkinAccount` IS NULL";
-if ($filter_renew === "yes") $conds[] = "`renewAnswer` > 1";
+if ($filter_yes === "yes") {
+    $conds[] = "`Fill` = 1";
+}
+if ($filter_no === "yes") {
+    $conds[] = "`Fill` = 0";
+}
+if ($filter_noans === "yes") {
+    $conds[] = "`Fill` = 3";
+}
+if ($filter_expire === "yes") {
+    $conds[] = "`Fill` = 4";
+}
+if ($filter_cancel === "yes") {
+    $conds[] = "`Fill` = 6";
+}
+if ($filter_checkin === "yes") {
+    $conds[] = "`checkinAccount` IS NOT NULL";
+}
+if ($filter_recevied === "yes") {
+    $conds[] = "`receiveAccount` IS NOT NULL AND `returnAccount` IS NULL";
+}
+if ($filter_return === "yes") {
+    $conds[] = "`returnAccount` IS NOT NULL AND `checkinAccount` IS NULL";
+}
+if ($filter_renew === "yes") {
+    $conds[] = "`renewAnswer` > 1";
+}
 
 $SQLMIDDLE = count($conds) ? implode(' OR ', $conds) : "`Fill` = ''";
 $GETLISTSQL = $SQLBASE . $SQL_DESTINATION . $SQL_DAYS . $SQLILL . " AND (" . $SQLMIDDLE . ")" . $SQLEND;
@@ -304,6 +322,52 @@ if (!$GETLIST) {
         }
 
         echo "</td></tr>";
+        // ----------------------------------------------
+        // Display notes as separate rows beneath each item
+        // ----------------------------------------------
+        $reqnote          = trim($row["reqnote"] ?? '');
+        $lendnote         = trim($row["responderNOTE"] ?? '');
+        $returnnote       = trim($row["returnnote"] ?? '');
+        $returnmethod     = trim($row["returnmethod"] ?? '');
+        $renewNote        = trim($row["renewNote"] ?? '');
+        $renewNoteLender  = trim($row["renewNoteLender"] ?? '');
+
+        // === Request / Lender Notes ===
+        $displaynotes = '';
+        if (strlen($reqnote) > 2) {
+            $displaynotes .= "<b>Requester Note:</b> " . htmlspecialchars($reqnote) . "<br>";
+        }
+        if (strlen($lendnote) > 2) {
+            $displaynotes .= "<b>Lender Note:</b> " . htmlspecialchars($lendnote) . "<br>";
+        }
+        if (!empty($displaynotes)) {
+            echo "<tr class='$rowclass'><td></td><td></td><td colspan='8' style='background:#f9f9f9;padding:6px;border-left:3px solid #ccc;'>$displaynotes</td></tr>";
+        }
+
+        // === Return Notes ===
+        if ((strlen($returnnote) > 2) || (strlen($returnmethod) > 2)) {
+            $displayreturnnotes = '';
+            if (strlen($returnnote) > 2) {
+                $displayreturnnotes .= "<b>Return Note:</b> " . htmlspecialchars($returnnote) . "<br>";
+            }
+            if (strlen($returnmethod) > 2) {
+                $displayreturnnotes .= "<b>Return Method:</b> " . htmlspecialchars($returnmethod);
+            }
+            echo "<tr class='$rowclass'><td></td><td></td><td colspan='8' style='background:#eef8ff;padding:6px;border-left:3px solid #6ba4d9;'>$displayreturnnotes</td></tr>";
+        }
+
+        // === Renewal Notes ===
+        if ((strlen($renewNote) > 2) || (strlen($renewNoteLender) > 2)) {
+            $displayrenewnotes = '';
+            if (strlen($renewNote) > 2) {
+                $displayrenewnotes .= "<b>Renewal Note (Borrower):</b> " . htmlspecialchars($renewNote) . "<br>";
+            }
+            if (strlen($renewNoteLender) > 2) {
+                $displayrenewnotes .= "<b>Renewal Note (Lender):</b> " . htmlspecialchars($renewNoteLender);
+            }
+            echo "<tr class='$rowclass'><td></td><td></td><td colspan='8' style='background:#f3fff1;padding:6px;border-left:3px solid #76c67a;'>$displayrenewnotes</td></tr>";
+        }
+
         $rowtype++;
     }
     echo "</tbody></table>";

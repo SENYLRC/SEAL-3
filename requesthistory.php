@@ -27,17 +27,25 @@ require '/var/www/seal_wp_script/seal_function.php';
 // -------------------------------
 if (isset($_GET['loc'])) {
     $loc = $field_loc_location_code;
-    $filter_yes = "yes"; $filter_no = "yes"; $filter_noans = "yes";
-    $filter_expire = ""; $filter_cancel = ""; $filter_recevied = "";
-    $filter_return = ""; $filter_checkin = ""; $filter_days = "365";
-    $filter_destination = ""; $filter_illnum = "";
+    $filter_yes = "yes";
+    $filter_no = "yes";
+    $filter_noans = "yes";
+    $filter_expire = "";
+    $filter_cancel = "";
+    $filter_recevied = "";
+    $filter_return = "";
+    $filter_checkin = "";
+    $filter_days = "365";
+    $filter_destination = "";
+    $filter_illnum = "";
 } elseif (isset($_REQUEST['loc'])) {
     $loc = $field_loc_location_code;
     $filter_illnum = $_REQUEST['filter_illnum'] ?? "";
     if ($filter_illnum != "") {
         $filter_yes = $filter_no = $filter_noans = $filter_expire = $filter_cancel =
         $filter_recevied = $filter_return = $filter_checkin = "yes";
-        $filter_days = "all"; $filter_destination = "";
+        $filter_days = "all";
+        $filter_destination = "";
     } else {
         $filter_yes = $_REQUEST['filter_yes'] ?? "";
         $filter_no = $_REQUEST['filter_no'] ?? "";
@@ -53,10 +61,17 @@ if (isset($_GET['loc'])) {
     }
 } else {
     $loc = $field_loc_location_code;
-    $filter_yes = "yes"; $filter_no = "yes"; $filter_noans = "yes";
-    $filter_expire = ""; $filter_cancel = ""; $filter_recevied = "";
-    $filter_return = ""; $filter_checkin = ""; $filter_days = "365";
-    $filter_destination = ""; $filter_illnum = "";
+    $filter_yes = "yes";
+    $filter_no = "yes";
+    $filter_noans = "yes";
+    $filter_expire = "";
+    $filter_cancel = "";
+    $filter_recevied = "";
+    $filter_return = "";
+    $filter_checkin = "";
+    $filter_days = "365";
+    $filter_destination = "";
+    $filter_illnum = "";
 }
 
 // -------------------------------
@@ -90,9 +105,9 @@ echo "<label><b>Time Frame&nbsp;</b>
           <option value='all' " . selected('all', $filter_days, false) . ">all days</option>
         </select></label>";
 echo "<label><b>&nbsp;ILL #&nbsp;</b>
-        <input name='filter_illnum' type='text' value='".htmlspecialchars($filter_illnum,ENT_QUOTES)."' style='min-width:160px;'></label>";
+        <input name='filter_illnum' type='text' value='".htmlspecialchars($filter_illnum, ENT_QUOTES)."' style='min-width:160px;'></label>";
 echo "<label><b>&nbsp;Lender Destination&nbsp;</b>
-        <input name='filter_destination' type='text' value='".htmlspecialchars($filter_destination,ENT_QUOTES)."' style='min-width:220px;'></label>";
+        <input name='filter_destination' type='text' value='".htmlspecialchars($filter_destination, ENT_QUOTES)."' style='min-width:220px;'></label>";
 echo "</div><br>";
 
 echo "<button><a style='color:#fff;' href='".$_SERVER['REDIRECT_URL']."?clear=yes'>Reset Filters</a></button> <b>OR</b> ";
@@ -108,29 +123,47 @@ $db = mysqli_connect($dbhost, $dbuser, $dbpass, $dbname);
 $loc = mysqli_real_escape_string($db, $loc);
 $SQLBASE = "SELECT *, DATE_FORMAT(`Timestamp`, '%Y/%m/%d') AS ts_fmt FROM `$sealSTAT` WHERE `Requester LOC` = '$loc'";
 $SQLEND  = " ORDER BY `Timestamp` DESC";
-$SQL_DAYS = ($filter_days=="all") ? "" : " AND (DATE(`Timestamp`) BETWEEN NOW() - INTERVAL ".intval($filter_days)." DAY AND NOW())";
-$SQLILL  = (strlen($filter_illnum)>2) ? " AND `illNUB` LIKE '%".mysqli_real_escape_string($db,$filter_illnum)."%' " : "";
-$conds=[];
-if($filter_yes=="yes")$conds[]="`fill`=1";
-if($filter_no=="yes")$conds[]="`fill`=0";
-if($filter_noans=="yes")$conds[]="`fill`=3";
-if($filter_expire=="yes")$conds[]="`fill`=4";
-if($filter_cancel=="yes")$conds[]="`fill`=6";
-if($filter_checkin=="yes")$conds[]="`checkinAccount` IS NOT NULL";
-if($filter_recevied=="yes")$conds[]="`receiveAccount` IS NOT NULL AND `returnAccount` IS NULL";
-if($filter_return=="yes")$conds[]="`returnAccount` IS NOT NULL AND `checkinAccount` IS NULL";
-$SQLMIDDLE = count($conds)?implode(" OR ",$conds):"`fill`=''";
+$SQL_DAYS = ($filter_days == "all") ? "" : " AND (DATE(`Timestamp`) BETWEEN NOW() - INTERVAL ".intval($filter_days)." DAY AND NOW())";
+$SQLILL  = (strlen($filter_illnum) > 2) ? " AND `illNUB` LIKE '%".mysqli_real_escape_string($db, $filter_illnum)."%' " : "";
+$conds = [];
+if ($filter_yes == "yes") {
+    $conds[] = "`fill`=1";
+}
+if ($filter_no == "yes") {
+    $conds[] = "`fill`=0";
+}
+if ($filter_noans == "yes") {
+    $conds[] = "`fill`=3";
+}
+if ($filter_expire == "yes") {
+    $conds[] = "`fill`=4";
+}
+if ($filter_cancel == "yes") {
+    $conds[] = "`fill`=6";
+}
+if ($filter_checkin == "yes") {
+    $conds[] = "`checkinAccount` IS NOT NULL";
+}
+if ($filter_recevied == "yes") {
+    $conds[] = "`receiveAccount` IS NOT NULL AND `returnAccount` IS NULL";
+}
+if ($filter_return == "yes") {
+    $conds[] = "`returnAccount` IS NOT NULL AND `checkinAccount` IS NULL";
+}
+$SQLMIDDLE = count($conds) ? implode(" OR ", $conds) : "`fill`=''";
 
 $GETLISTSQL = $SQLBASE.$SQL_DAYS.$SQLILL." AND (".$SQLMIDDLE.") ".$SQLEND;
-$GETLIST = mysqli_query($db,$GETLISTSQL);
-$GETLISTCOUNTwhole = $GETLIST?mysqli_num_rows($GETLIST):0;
+$GETLIST = mysqli_query($db, $GETLISTSQL);
+$GETLISTCOUNTwhole = $GETLIST ? mysqli_num_rows($GETLIST) : 0;
 
 // -------------------------------
 // Results
 // -------------------------------
-if(!$GETLIST){die('Error: '.mysqli_error($db));}
-elseif($GETLISTCOUNTwhole==0){echo "No results found.";}
-else {
+if (!$GETLIST) {
+    die('Error: '.mysqli_error($db));
+} elseif ($GETLISTCOUNTwhole == 0) {
+    echo "No results found.";
+} else {
     ?>
     <hr>
     <h4>Perform Bulk Action</h4>
@@ -161,46 +194,122 @@ else {
       </thead>
       <tbody>
     <?php
-    $rowtype=1;
-    while($row=mysqli_fetch_assoc($GETLIST)){
-        $illNUB=$row["illNUB"];
-        $rowclass=($rowtype&1)?"group-odd":"group-even";
+    $rowtype = 1;
+    while ($row = mysqli_fetch_assoc($GETLIST)) {
+        $illNUB = $row["illNUB"];
+        $rowclass = ($rowtype & 1) ? "group-odd" : "group-even";
         echo "<tr class='$rowclass'>
-              <td><input type='checkbox' class='check_item' value='".htmlspecialchars($illNUB,ENT_QUOTES)."'></td>
+              <td><input type='checkbox' class='check_item' value='".htmlspecialchars($illNUB, ENT_QUOTES)."'></td>
               <td>$illNUB</td>
               <td>{$row["Title"]}<br><i>{$row["Author"]}</i></td>
-              <td>{$row["Itype"]}<br>{$row["needbydate"]}</td>
-              <td>{$row["Destination"]}</td>
-              <td>{$row["DueDate"]}<br>".shipmtotxt($row["shipMethod"])."</td>
-              <td>".date("Y-m-d",strtotime($row["Timestamp"]))."<br>".itemstatus($row["Fill"],$row["receiveAccount"],$row["returnAccount"],$row["returnDate"],$row["receiveDate"],$row["checkinAccount"],$row["checkinTimeStamp"],$row["fillNofillDate"])."<br>{$row["IlliadTransID"]}</td>
+              <td>{$row["Itype"]}<br>{$row["needbydate"]}</td>";
+
+
+        $dest = $row['Destination'];
+        $destemail = '';
+
+        if (strlen($dest) > 0) {
+            $GETLISTSQLDEST = "SELECT `Name`, `ill_email` FROM `$sealLIB` WHERE loc = '" . mysqli_real_escape_string($db, $dest) . "' LIMIT 1";
+            $resultdest = mysqli_query($db, $GETLISTSQLDEST);
+
+            if ($resultdest && mysqli_num_rows($resultdest) > 0) {
+                $rowdest = mysqli_fetch_assoc($resultdest);
+                $dest = $rowdest['Name'];
+                $destemail = $rowdest['ill_email'];
+            }
+        } else {
+            $dest = "Error — No Library Selected";
+        }
+
+        // Output Lender / Contact
+        echo "<td>" . htmlspecialchars($dest);
+        if (!empty($destemail)) {
+            echo "<br><a href='mailto:" . htmlspecialchars($destemail) . "'>" . htmlspecialchars($destemail) . "</a>";
+        }
+        echo "</td>";
+
+
+        echo "<td>{$row["DueDate"]}<br>".shipmtotxt($row["shipMethod"])."</td>
+              <td>".date("Y-m-d", strtotime($row["Timestamp"]))."<br>".itemstatus($row["Fill"], $row["receiveAccount"], $row["returnAccount"], $row["returnDate"], $row["receiveDate"], $row["checkinAccount"], $row["checkinTimeStamp"], $row["fillNofillDate"])."<br>{$row["IlliadTransID"]}</td>
               <td>";
 
         // row-level actions preserved
-        if($row["Fill"]==3){
+        if ($row["Fill"] == 3) {
             echo "<form method='post' action='/status'>
                     <input type='hidden' name='a' value='6'>
-                    <input type='hidden' name='num' value='".htmlspecialchars($illNUB,ENT_QUOTES)."'>
+                    <input type='hidden' name='num' value='".htmlspecialchars($illNUB, ENT_QUOTES)."'>
                     <button type='submit'>Cancel Request</button>
                   </form>";
-        } elseif($row["Fill"]==1 && strlen($row["receiveAccount"])<2){
+        } elseif ($row["Fill"] == 1 && strlen($row["receiveAccount"]) < 2) {
             echo "<form method='post' action='/status'>
                     <input type='hidden' name='a' value='1'>
-                    <input type='hidden' name='num' value='".htmlspecialchars($illNUB,ENT_QUOTES)."'>
+                    <input type='hidden' name='num' value='".htmlspecialchars($illNUB, ENT_QUOTES)."'>
                     <button type='submit'>Received Item</button>
                   </form>";
-        } elseif($row["Fill"]==1 && strlen($row["receiveAccount"])>1 && strlen($row["returnAccount"])<1){
+        } elseif ($row["Fill"] == 1 && strlen($row["receiveAccount"]) > 1 && strlen($row["returnAccount"]) < 1) {
             echo "<form method='post' action='/renew'>
                     <input type='hidden' name='a' value='3'>
-                    <input type='hidden' name='num' value='".htmlspecialchars($illNUB,ENT_QUOTES)."'>
+                    <input type='hidden' name='num' value='".htmlspecialchars($illNUB, ENT_QUOTES)."'>
                     <button type='submit'>Request Renewal</button>
                   </form><hr>
                   <form method='post' action='/status'>
                     <input type='hidden' name='a' value='2'>
-                    <input type='hidden' name='num' value='".htmlspecialchars($illNUB,ENT_QUOTES)."'>
+                    <input type='hidden' name='num' value='".htmlspecialchars($illNUB, ENT_QUOTES)."'>
                     <button type='submit'>Return Item</button>
                   </form>";
         }
         echo "</td></tr>";
+        // ----------------------------------------------
+        // Display notes as separate rows beneath the item
+        // ----------------------------------------------
+        $reqnote     = trim($row["reqnote"] ?? '');
+        $patronnote  = trim($row["patronnote"] ?? '');
+        $lendnote    = trim($row["responderNOTE"] ?? '');
+        $returnnote  = trim($row["returnnote"] ?? '');
+        $returnmethod = trim($row["returnmethod"] ?? '');
+        $renewNote   = trim($row["renewNote"] ?? '');
+        $renewNoteLender = trim($row["renewNoteLender"] ?? '');
+
+        // combine and format
+        $displaynotes = '';
+        if (strlen($reqnote) > 2) {
+            $displaynotes .= "<b>Requester Note:</b> " . htmlspecialchars($reqnote) . "<br>";
+        }
+        if (strlen($patronnote) > 2) {
+            $displaynotes .= "<b>Patron Note:</b> " . htmlspecialchars($patronnote) . "<br>";
+        }
+        if (strlen($lendnote) > 2) {
+            $displaynotes .= "<b>Lender Note:</b> " . htmlspecialchars($lendnote) . "<br>";
+        }
+
+        if (!empty($displaynotes)) {
+            echo "<tr class='$rowclass'><td></td><td></td><td colspan='9' style='background:#f9f9f9;padding:6px;border-left:3px solid #ccc;'>$displaynotes</td></tr>";
+        }
+
+        // Return Notes
+        if ((strlen($returnnote) > 2) || (strlen($returnmethod) > 2)) {
+            $displayreturnnotes = '';
+            if (strlen($returnnote) > 2) {
+                $displayreturnnotes .= "<b>Return Note:</b> " . htmlspecialchars($returnnote) . "<br>";
+            }
+            if (strlen($returnmethod) > 2) {
+                $displayreturnnotes .= "<b>Return Method:</b> " . htmlspecialchars($returnmethod);
+            }
+            echo "<tr class='$rowclass'><td></td><td></td><td colspan='9' style='background:#eef8ff;padding:6px;border-left:3px solid #6ba4d9;'>$displayreturnnotes</td></tr>";
+        }
+
+        // Renewal Notes
+        if ((strlen($renewNote) > 2) || (strlen($renewNoteLender) > 2)) {
+            $displayrenewnotes = '';
+            if (strlen($renewNote) > 2) {
+                $displayrenewnotes .= "<b>Renewal Note (Borrower):</b> " . htmlspecialchars($renewNote) . "<br>";
+            }
+            if (strlen($renewNoteLender) > 2) {
+                $displayrenewnotes .= "<b>Renewal Note (Lender):</b> " . htmlspecialchars($renewNoteLender);
+            }
+            echo "<tr class='$rowclass'><td></td><td></td><td colspan='9' style='background:#f3fff1;padding:6px;border-left:3px solid #76c67a;'>$displayrenewnotes</td></tr>";
+        }
+
         $rowtype++;
     }
     echo "</tbody></table>";
