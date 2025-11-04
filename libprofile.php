@@ -4,17 +4,20 @@
 
 <!-- Load the separated CSS file; adjust path if needed -->
 <link rel="stylesheet" href="/assets/css/libprofile.css">
-
 <script>
   jQuery(function($){
+    var currentYear = new Date().getFullYear();
+
     $("#datepicker").datepicker({
       dateFormat: "yy-mm-dd",
       changeMonth: true,
       changeYear: true,
+      yearRange: currentYear + ":" + (currentYear + 3), // ← limit to current year through +3 years
       showAnim: "fadeIn"
     });
   });
 </script>
+
 
 <?php
 // ==========================================================
