@@ -236,7 +236,7 @@ if (!$GETLIST || $totalResults == 0) {
     <th>Borrower</th>
     <th>Due Date / Shipping</th>
     <th>Timestamp</th>
-    <th>Status</th>
+    <th>Status/Illiad#</th>
   </tr></thead><tbody>";
 
     $rowtype = 1;
@@ -278,7 +278,11 @@ if (!$GETLIST || $totalResults == 0) {
       <td>".htmlspecialchars($r['Requester person'])."<br>".htmlspecialchars($r['Requester lib'])."</td>
       <td>".htmlspecialchars($r['DueDate'])."</td>
       <td>".htmlspecialchars($r['ts_fmt'])."</td>
-      <td>$status<br>".htmlspecialchars($shiptxt)."</td>
+      <td>
+  $status<br>
+  ".htmlspecialchars($shiptxt)."
+  ".(!empty($r['IlliadTransID']) ? "<br><span style='font-size:0.9em;color:#555;'><b>ILLiad ID:</b> " . htmlspecialchars($r['IlliadTransID']) . "</span>" : "")."
+</td>
     </tr>";
     }
     echo "</tbody></table>";
