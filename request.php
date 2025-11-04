@@ -407,6 +407,8 @@ $message_to_requester = "
   <li><strong>Author:</strong> " . htmlspecialchars($_POST['bibauthor']) . "</li>
   <li><strong>Publication Date:</strong> " . htmlspecialchars($_POST['pubdate']) . "</li>
   <li><strong>ISBN:</strong> " . htmlspecialchars($_POST['isbn']) . "</li>
+  <li><strong>Need By Date:</strong> " . htmlspecialchars($_POST['needbydate']) . "</li>
+  <li><strong>Request Note:</strong> " . nl2br(htmlspecialchars($_POST['reqnote'])) . "</li>
 </ul>
 
 $articleDetails
@@ -458,6 +460,8 @@ $message_to_library = "
   <li><strong>Author:</strong> " . htmlspecialchars($_POST['bibauthor']) . "</li>
   <li><strong>Publication Date:</strong> " . htmlspecialchars($_POST['pubdate']) . "</li>
   <li><strong>ISBN:</strong> " . htmlspecialchars($_POST['isbn']) . "</li>
+  <li><strong>Need By Date:</strong> " . htmlspecialchars($_POST['needbydate']) . "</li>
+  <li><strong>Request Note:</strong> " . nl2br(htmlspecialchars($_POST['reqnote'])) . "</li>
 </ul>
 
 $articleDetailsLibrary
@@ -644,7 +648,7 @@ mail($destination_email, $subject_to_library, $message_to_library, $headers, "-f
     <p><b>This is a request for:</b></p>
     <label><input type="radio" name="singlemulti" id="singleCheck" checked onclick="multiRequest();"> Single copy</label>
     <label><input type="radio" name="singlemulti" id="multiCheck" onclick="multiRequest();"> Multiple copies</label>
-
+<br><br>
     <?php
 $loccount = 0;
     $deadlibraries = array();
