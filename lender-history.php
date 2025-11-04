@@ -344,17 +344,40 @@ if (!$GETLIST) {
             echo "<tr class='$rowclass'><td></td><td></td><td colspan='8' style='background:#f9f9f9;padding:6px;border-left:3px solid #ccc;'>$displaynotes</td></tr>";
         }
 
-        // === Return Notes ===
-        if ((strlen($returnnote) > 2) || (strlen($returnmethod) > 2)) {
-            $displayreturnnotes = '';
-            if (strlen($returnnote) > 2) {
-                $displayreturnnotes .= "<b>Return Note:</b> " . htmlspecialchars($returnnote) . "<br>";
-            }
-            if (strlen($returnmethod) > 2) {
-                $displayreturnnotes .= "<b>Return Method:</b> " . htmlspecialchars($returnmethod);
-            }
-            echo "<tr class='$rowclass'><td></td><td></td><td colspan='8' style='background:#eef8ff;padding:6px;border-left:3px solid #6ba4d9;'>$displayreturnnotes</td></tr>";
-        }
+     // === Return Notes ===
+$returnnote   = trim($row["returnNote"] ?? '');
+$returnmethod = trim($row["returnMethod"] ?? '');
+$returnDate   = trim($row["returnDate"] ?? '');
+$returnAccount = trim($row["returnAccount"] ?? '');
+// Suppress invalid or placeholder return dates before 1980
+if (!empty($returnDate) && strtotime($returnDate) < strtotime('1980-01-01')) {
+    $returnDate = '';
+}
+
+if ($returnnote || $returnmethod || $returnDate || $returnAccount) {
+    $displayreturnnotes = '';
+
+    if (strlen($returnnote) > 2) {
+        $displayreturnnotes .= "<b>Return Note:</b> " . nl2br(htmlspecialchars($returnnote)) . "<br>";
+    }
+    if (strlen($returnmethod) > 2) {
+        $displayreturnnotes .= "<b>Return Method:</b> " . htmlspecialchars($returnmethod) . "<br>";
+    }
+    if (strlen($returnDate) > 2) {
+        $displayreturnnotes .= "<b>Returned On:</b> " . htmlspecialchars($returnDate) . "<br>";
+    }
+    if (strlen($returnAccount) > 2) {
+        $displayreturnnotes .= "<b>Checked In By:</b> " . htmlspecialchars($returnAccount);
+    }
+
+    echo "<tr class='$rowclass'>
+            <td></td><td></td>
+            <td colspan='8' style='background:#eef8ff;padding:6px;border-left:3px solid #6ba4d9;'>
+              $displayreturnnotes
+            </td>
+          </tr>";
+}
+
 
         // === Renewal Notes ===
         if ((strlen($renewNote) > 2) || (strlen($renewNoteLender) > 2)) {
