@@ -4,14 +4,20 @@
 
 <script>
   jQuery(function($){
+    const currentYear = new Date().getFullYear();
+
     $("#datepicker").datepicker({
       dateFormat: "yy-mm-dd",
       changeMonth: true,
       changeYear: true,
-      showAnim: "fadeIn"
+      showAnim: "fadeIn",
+      yearRange: currentYear + ":" + (currentYear + 3),
+      minDate: new Date(currentYear, 0, 1),
+      maxDate: new Date(currentYear + 3, 11, 31)
     });
   });
 </script>
+
 <?php
 // Load WordPress if needed
 if (!defined('ABSPATH')) {
