@@ -89,7 +89,7 @@ echo "<label><input type='checkbox' name='filter_no' value='yes' " . checked($fi
 echo "<label><input type='checkbox' name='filter_noans' value='yes' " . checked($filter_noans, 'yes', false) . "> No Answer</label>";
 echo "<label><input type='checkbox' name='filter_expire' value='yes' " . checked($filter_expire, 'yes', false) . "> Expired</label>";
 echo "<label><input type='checkbox' name='filter_cancel' value='yes' " . checked($filter_cancel, 'yes', false) . "> Canceled</label>";
-echo "<label><input type='checkbox' name='filter_recevied' value='yes' " . checked($filter_recevied, 'yes', false) . "> Received</label>";
+echo "<label><input type='checkbox' name='filter_recevied' value='yes' " . checked($filter_recevied, 'yes', false) . "> Receive</label>";
 echo "<label><input type='checkbox' name='filter_return' value='yes' " . checked($filter_return, 'yes', false) . "> Return</label>";
 echo "<label><input type='checkbox' name='filter_checkin' value='yes' " . checked($filter_checkin, 'yes', false) . "> Check In</label>";
 echo "<label><input type='checkbox' name='filter_renew' value='yes' " . checked($filter_renew ?? '', 'yes', false) . "> Renew Pending</label>";
@@ -170,7 +170,7 @@ if (!$GETLIST) {
     <select id="bulkaction" required>
         <option value="">--Select Action--</option>
         <option value="1">Cancel Requests</option>
-        <option value="3">Received Items</option>
+        <option value="3">Receive Items</option>
         <option value="2">Renew Requests</option>
         <option value="4">Return Items</option>
     </select>
@@ -244,7 +244,7 @@ if (!$GETLIST) {
             echo "<form method='post' action='/status'>
                     <input type='hidden' name='a' value='1'>
                     <input type='hidden' name='num' value='".htmlspecialchars($illNUB, ENT_QUOTES)."'>
-                    <button type='submit'>Received Item</button>
+                    <button type='submit'>Receive Item</button>
                   </form>";
         } elseif ($row["Fill"] == 1 && strlen($row["receiveAccount"]) > 1 && strlen($row["returnAccount"]) < 1) {
             echo "<form method='post' action='/renew'>
