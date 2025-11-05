@@ -529,10 +529,12 @@ mail($destination_email, $subject_to_library, $message_to_library, $headers, "-f
 </ul>
 
 <p><a href="/" style="display:inline-block; margin-top:15px; padding:10px 20px; background:#337ab7; color:#fff; text-decoration:none; border-radius:5px;">Submit another request</a></p>
-</body>
-</html>
 
-<?php exit; ?>
+<?php
+// ✅ Allow WordPress to continue rendering the sidebar and footer
+get_footer();
+return;
+?>
 <?php endif; ?>
 
   <p>Please review the details of your request and then select a library to send your request to.</p>
