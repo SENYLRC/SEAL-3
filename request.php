@@ -372,7 +372,8 @@ $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
 $headers = preg_replace('/(?<!\r)\n/', "\r\n", $headers);
 
 // Email to requester
-$subject_to_requester = "Your SEAL ILL Request Confirmation";
+$subject_to_requester = "SEAL ILL #$illnum — Request to $library Confirmation";
+
 
 // Check if it's an article request
 $isArticle = !empty($_POST['arttile']);
