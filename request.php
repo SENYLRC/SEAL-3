@@ -423,8 +423,7 @@ $articleDetails
 mail($requester_email, $subject_to_requester, $message_to_requester, $headers, "-f donotreply@senylrc.org");
 
 // Email to lending library
-$subject_to_library = "New SEAL ILL Request for \"" . htmlspecialchars($_POST['bibtitle']) . "\"";
-
+$subject_to_library = "SEAL ILL #$illnum — New Request for \"" . htmlspecialchars($_POST['bibtitle']) . "\"";
 $articleDetailsLibrary = "";
 if ($isArticle) {
     $articleDetailsLibrary = "
@@ -448,7 +447,7 @@ $message_to_library = "
 
 <ul>
   <li><strong>Requester Name:</strong> " . htmlspecialchars($_POST['fname']) . " " . htmlspecialchars($_POST['lname']) . "</li>
-  <li><strong>Institution:</strong> " . htmlspecialchars($_POST['inst']) . "</li>
+  <li><strong>Library:</strong> " . htmlspecialchars($_POST['inst']) . "</li>
   <li><strong>Email:</strong> " . htmlspecialchars($_POST['email']) . "</li>
   <li><strong>Phone:</strong> " . htmlspecialchars($_POST['wphone']) . "</li>
 </ul>
@@ -458,8 +457,12 @@ $message_to_library = "
   <li><strong>ILL#:</strong> $illnum</li>
   <li><strong>Title:</strong> " . htmlspecialchars($_POST['bibtitle']) . "</li>
   <li><strong>Author:</strong> " . htmlspecialchars($_POST['bibauthor']) . "</li>
+  <li><strong>Item Type:</strong> " . htmlspecialchars($_POST['bibtype']) . "</li>
   <li><strong>Publication Date:</strong> " . htmlspecialchars($_POST['pubdate']) . "</li>
   <li><strong>ISBN:</strong> " . htmlspecialchars($_POST['isbn']) . "</li>
+  <li><strong>Call Number:</strong> " . htmlspecialchars($itemcall) . "</li>
+  <li><strong>Availability Status:</strong> " . htmlspecialchars($_POST['isbn']) . "</li>
+  <li><strong>Location:</strong> " . htmlspecialchars($_POST['needbydate']) . "</li>
   <li><strong>Need By Date:</strong> " . htmlspecialchars($_POST['needbydate']) . "</li>
   <li><strong>Request Note:</strong> " . nl2br(htmlspecialchars($_POST['reqnote'])) . "</li>
 </ul>
@@ -624,19 +627,38 @@ return;
 </div>
 
 
-    <h4>Bibliographic Details</h4>
-    <div class="form-grid">
-      <div><label>Requested Title:&nbsp</label><?php echo $requestedtitle . " " . $requestedtitle2; ?></div>
-      <div><label>Author:&nbsp</label><?php echo $requestedauthor; ?></div>
-      <div><label>Item Type:&nbsp</label><?php echo $itemtype; ?></div>
-      <div><label>Publication Date:&nbsp</label><?php echo $pubdate; ?></div>
-      <?php if (strlen($issn) > 0): ?>
-        <div><label>ISSN:&nbsp</label><?php echo $issn; ?></div>
-      <?php endif; ?>
-      <?php if (strlen($isbn) > 0): ?>
-        <div><label>ISBN:&nbsp</label><?php echo $isbn; ?></div>
-      <?php endif; ?>
-    </div>
+ <h4>Bibliographic Details</h4>
+<table style="width:100%; border-collapse:collapse; margin-bottom:10px;">
+  <tr>
+    <td style="width:25%; font-weight:bold; border-bottom:0; padding:5px;">Requested Title:</td>
+    <td style="width:75%; border-bottom:0; padding:5px;"><?php echo $requestedtitle . " " . $requestedtitle2; ?></td>
+  </tr>
+  <tr>
+    <td style="font-weight:bold; border-bottom:0; padding:5px;">Author:</td>
+    <td style="border-bottom:0; padding:5px;"><?php echo $requestedauthor; ?></td>
+  </tr>
+  <tr>
+    <td style="font-weight:bold; border-bottom:0; padding:5px;">Item Type:</td>
+    <td style="border-bottom:0; padding:5px;"><?php echo $itemtype; ?></td>
+  </tr>
+  <tr>
+    <td style="font-weight:bold; border-bottom:0; padding:5px;">Publication Date:</td>
+    <td style="border-bottom:0; padding:5px;"><?php echo $pubdate; ?></td>
+  </tr>
+  <?php if (strlen($isbn) > 0): ?>
+  <tr>
+    <td style="font-weight:bold; border-bottom:0; padding:5px;">ISBN:</td>
+    <td style="border-bottom:0; padding:5px;"><?php echo $isbn; ?></td>
+  </tr>
+  <?php endif; ?>
+  <?php if (strlen($issn) > 0): ?>
+  <tr>
+    <td style="font-weight:bold; border-bottom:0; padding:5px;">ISSN:</td>
+    <td style="border-bottom:0; padding:5px;"><?php echo $issn; ?></td>
+  </tr>
+  <?php endif; ?>
+</table>
+
 
     <!-- Hidden bib fields -->
     <input type="hidden" name="bibtitle" value="<?php echo $requestedtitle . " " . $requestedtitle2; ?>">
