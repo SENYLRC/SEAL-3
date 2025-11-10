@@ -1,8 +1,8 @@
 <?php
 /**
- * SEAL / ILLiad Auto-Status Updater
- * Location: /var/www/seal_wp_script/illiad_cron.php
- * Purpose: Poll ILLiad API for recent SEAL requests and update statuses.
+ * SEAL / ILLiad Auto-Status Updater with Status Change Logging
+ * Location: /var/www/seal_wp_script/seal_check_illiad.php
+ * Purpose: Poll ILLiad API for recent SEAL requests, update statuses, and log when they change.
  */
 
 set_time_limit(1800); // 30-minute max runtime
@@ -50,6 +50,7 @@ while ($row = mysqli_fetch_assoc($retval)) {
     $title            = $row['Title'];
     $eformFILL        = $row['Fill'];
     $requesterEMAIL   = trim($row['requesterEMAIL']);
+    $oldStatus        = trim($row['IlliadStatus']);
 
     // --- Look up destination library info ---
     $destlib_safe = mysqli_real_escape_string($db, $destlib);
@@ -70,12 +71,12 @@ while ($row = mysqli_fetch_assoc($retval)) {
         continue;
     }
 
-    // --- Prepare curl command ---
+    // --- Fetch ILLiad JSON ---
     $url = rtrim($illiadURL, '/') . '/' . $Illiadid;
     $cmd = "curl -s -H 'ApiKey: $apikey' '$url'";
     $output = shell_exec($cmd);
 
-    // --- Decode response ---
+     // --- Decode response ---
     $output_decoded = json_decode($output, true);
     if (!is_array($output_decoded)) {
         error_log(date('c') . " - Invalid JSON from ILLiad for $Illiadid\n", 3, '/var/log/seal_illiad_cron.log');
@@ -92,6 +93,19 @@ while ($row = mysqli_fetch_assoc($retval)) {
 
     echo "Processing ILL# $reqnumb | Status: $status | Dest: $destlibname\n";
 
+    // === NEW: Log only if status changed ===
+    if ($status !== $oldStatus && $status !== '') {
+        $logMsg = sprintf(
+            "%s - ILL# %s | Status changed: '%s' → '%s' | Dest: %s\n",
+            date('c'), $reqnumb, $oldStatus, $status, $destlibname
+        );
+        error_log($logMsg, 3, '/var/log/seal_illiad_cron.log');
+
+        // Update DB with the new ILLiadStatus immediately
+        $updateStatus = "UPDATE `$sealSTAT` SET `IlliadStatus` = '" . mysqli_real_escape_string($db, $status) . "' WHERE `index` = $sqlidnumb";
+        mysqli_query($db, $updateStatus);
+    }
+
     // === Email setup ===
     $headers  = "From: SEAL <donotreply@senylrc.org>\r\n";
     $headers .= "MIME-Version: 1.0\r\n";
@@ -106,7 +120,7 @@ while ($row = mysqli_fetch_assoc($retval)) {
             SET `shipMethod`='', 
                 `DueDate` = '$dueDate',
                 `Fill` = '1',
-                `IlliadStatus` = '$status'
+                 `IlliadStatus` = '$status'
             WHERE `index` = $sqlidnumb
         ";
         if (mysqli_query($db, $sqlupdate2)) {
@@ -158,7 +172,7 @@ while ($row = mysqli_fetch_assoc($retval)) {
             UPDATE `$sealSTAT`
             SET `reasonNotFilled` = '$nofillreason',
                 `Fill` = '0',
-                `IlliadStatus` = '$status'
+                 `IlliadStatus` = '$status'
             WHERE `index` = $sqlidnumb
         ";
         if (mysqli_query($db, $sqlupdate2)) {
@@ -169,11 +183,11 @@ while ($row = mysqli_fetch_assoc($retval)) {
             mail($requesterEMAIL, $subject, $message, $headers, "-f donotreply@senylrc.org");
         } else {
             error_log(date('c') . " - DB update failed for cancelled item $reqnumb: " . mysqli_error($db) . "\n", 3, '/var/log/seal_illiad_cron.log');
-        }
-    }
 
-    // === CASE 4: Still pending ===
-    else {
+        }
+
+         // === CASE 4: Still pending ===
+    } else {
         echo "ILL# $reqnumb not yet filled or cancelled.\n";
     }
 }
