@@ -38,6 +38,38 @@ It enables participating libraries to search, request, and manage interlibrary l
 
 ---
 
+## ⚙️ Configuration
+
+Before using SEAL 3.0, create a **database configuration file** at:
+/var/www/seal_wp_script/seal_db.inc
+
+
+For security, this file **should never be committed to GitHub**.  
+Instead, include a **template** named:  seal_db.sample.inc
+
+
+
+### 🧩 Example: `seal_db.sample.inc`
+
+```php
+<?php
+// SEAL 3.0 Database Configuration (Sample)
+// Copy this file to seal_db.inc and fill in your credentials
+
+$dbhost = "localhost";
+$dbuser = "seal_user";
+$dbpass = "your_password_here";
+$dbname = "seal_database";
+
+// Table references (used by scripts and reporting)
+$sealSTAT="STATS";    //request history for stats and handling request
+$sealLIB="Library-Data";    //Library profile data
+$sealILLiadMapping="ILLIAD-ADD-MAPPING";   //map of LOC to ILLad ID
+?>
+
+
+
+
 ## 🔒 Security Notice
 
 This repository **should not include** production credentials, `.inc` files containing database logins, or server-specific configuration paths.  
