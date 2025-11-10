@@ -19,30 +19,35 @@ if ( ! in_array('administrator', $user_roles, true) ) {
 }
 
 // ==========================================================
-// CSV Export Logic (Emails Only)
+// CSV Export Logic (Email + Institution)
 // ==========================================================
 if ( isset($_GET['download']) && $_GET['download'] === 'csv' ) {
 
-    // Turn off any active buffering
+    // Turn off any output buffering
     while (ob_get_level()) {
         ob_end_clean();
     }
 
-    // Fetch users
+    // Fetch all users
     $users = get_users();
 
-    // Send headers
+    // Send file headers
     header('Content-Description: File Transfer');
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename=staff-emails.csv');
     header('Pragma: no-cache');
     header('Expires: 0');
 
+    // Open output stream
     $output = fopen('php://output', 'w');
 
-    // Just output emails, one per line
+    // Header row
+    fputcsv($output, ['Email', 'Institution']);
+
+    // Data rows
     foreach ($users as $user) {
-        fputcsv($output, [$user->user_email]);
+        $institution = get_user_meta($user->ID, 'institution', true);
+        fputcsv($output, [$user->user_email, $institution]);
     }
 
     fclose($output);
@@ -50,13 +55,13 @@ if ( isset($_GET['download']) && $_GET['download'] === 'csv' ) {
 }
 
 // ==========================================================
-// On-screen Display (Emails + Institution)
+// On-screen Display (Email + Institution)
 // ==========================================================
 get_header();
 ?>
 <div class="wrap">
     <h1>Staff Email Addresses</h1>
-    <p><a href="?download=csv" class="button button-primary">⬇️ Download CSV (Emails Only)</a></p>
+    <p><a href="?download=csv" class="button button-primary">⬇️ Download CSV (Email + Institution)</a></p>
 
     <ul>
         <?php
