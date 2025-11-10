@@ -18,10 +18,10 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `SENYLRC-SEAL2-ILLIAD-ADD-MAPPING`
+-- Table structure for table `ILLIAD-ADD-MAPPING`
 --
 
-CREATE TABLE `SENYLRC-SEAL2-ILLIAD-ADD-MAPPING` (
+CREATE TABLE `ILLIAD-ADD-MAPPING` (
   `num` int NOT NULL,
   `LOC` varchar(10) NOT NULL,
   `illiadID` varchar(10) NOT NULL,
@@ -34,9 +34,9 @@ CREATE TABLE `SENYLRC-SEAL2-ILLIAD-ADD-MAPPING` (
 --
 
 --
--- Indexes for table `SENYLRC-SEAL2-ILLIAD-ADD-MAPPING`
+-- Indexes for table `ILLIAD-ADD-MAPPING`
 --
-ALTER TABLE `SENYLRC-SEAL2-ILLIAD-ADD-MAPPING`
+ALTER TABLE `LLIAD-ADD-MAPPING`
   ADD UNIQUE KEY `num` (`num`) USING BTREE;
 
 --
@@ -44,9 +44,9 @@ ALTER TABLE `SENYLRC-SEAL2-ILLIAD-ADD-MAPPING`
 --
 
 --
--- AUTO_INCREMENT for table `SENYLRC-SEAL2-ILLIAD-ADD-MAPPING`
+-- AUTO_INCREMENT for table `ILLIAD-ADD-MAPPING`
 --
-ALTER TABLE `SENYLRC-SEAL2-ILLIAD-ADD-MAPPING`
+ALTER TABLE `ILLIAD-ADD-MAPPING`
   MODIFY `num` int NOT NULL AUTO_INCREMENT;
 COMMIT;
 
@@ -70,10 +70,10 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `SENYLRC-SEAL2-Library-Data`
+-- Table structure for table `Library-Data`
 --
 
-CREATE TABLE `SENYLRC-SEAL2-Library-Data` (
+CREATE TABLE `Library-Data` (
   `recnum` int NOT NULL,
   `Name` varchar(255) NOT NULL,
   `ill_email` varchar(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL,
@@ -114,9 +114,9 @@ CREATE TABLE `SENYLRC-SEAL2-Library-Data` (
 --
 
 --
--- Indexes for table `SENYLRC-SEAL2-Library-Data`
+-- Indexes for table `Library-Data`
 --
-ALTER TABLE `SENYLRC-SEAL2-Library-Data`
+ALTER TABLE `Library-Data`
   ADD PRIMARY KEY (`recnum`);
 
 --
@@ -124,9 +124,9 @@ ALTER TABLE `SENYLRC-SEAL2-Library-Data`
 --
 
 --
--- AUTO_INCREMENT for table `SENYLRC-SEAL2-Library-Data`
+-- AUTO_INCREMENT for table `Library-Data`
 --
-ALTER TABLE `SENYLRC-SEAL2-Library-Data`
+ALTER TABLE `Library-Data`
   MODIFY `recnum` int NOT NULL AUTO_INCREMENT;
 COMMIT;
 
@@ -151,10 +151,10 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `SENYLRC-SEAL2-STATS`
+-- Table structure for table `STATS`
 --
 
-CREATE TABLE `SENYLRC-SEAL2-STATS` (
+CREATE TABLE `STATS` (
   `index` int NOT NULL,
   `illNUB` varchar(255) NOT NULL,
   `Title` longtext NOT NULL,
@@ -215,9 +215,9 @@ CREATE TABLE `SENYLRC-SEAL2-STATS` (
 --
 
 --
--- Indexes for table `SENYLRC-SEAL2-STATS`
+-- Indexes for table `STATS`
 --
-ALTER TABLE `SENYLRC-SEAL2-STATS`
+ALTER TABLE `STATS`
   ADD PRIMARY KEY (`index`);
 
 --
@@ -225,9 +225,9 @@ ALTER TABLE `SENYLRC-SEAL2-STATS`
 --
 
 --
--- AUTO_INCREMENT for table `SENYLRC-SEAL2-STATS`
+-- AUTO_INCREMENT for table `STATS`
 --
-ALTER TABLE `SENYLRC-SEAL2-STATS`
+ALTER TABLE `STATS`
   MODIFY `index` int NOT NULL AUTO_INCREMENT;
 COMMIT;
 
