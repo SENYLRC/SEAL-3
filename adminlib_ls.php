@@ -302,15 +302,15 @@ $lbCommCourier  = $row["lbCommCourier"];
 
 <!-- Items Willing to Loan -->
  <?php
-echo '<pre style="background:#eef;border:1px solid #99f;padding:10px;margin-bottom:15px;">';
-echo "DEBUG – ITEM VALUES LOADED FROM DB\n";
-printf("book_loan: [%s]\n", $book_loan ?? '(missing)');
-printf("periodical_loan: [%s]\n", $periodical_loan ?? '(missing)');
-printf("av_loan: [%s]\n", $av_loan ?? '(missing)');
-printf("theses_loan: [%s]\n", $theses_loan ?? '(missing)');
-printf("ebook_request: [%s]\n", $ebook_request ?? '(missing)');
-printf("ejournal_request: [%s]\n", $ejournal_request ?? '(missing)');
-echo "</pre>";
+//echo '<pre style="background:#eef;border:1px solid #99f;padding:10px;margin-bottom:15px;">';
+//echo "DEBUG – ITEM VALUES LOADED FROM DB\n";
+//printf("book_loan: [%s]\n", $book_loan ?? '(missing)');
+//printf("periodical_loan: [%s]\n", $periodical_loan ?? '(missing)');
+//printf("av_loan: [%s]\n", $av_loan ?? '(missing)');
+//printf("theses_loan: [%s]\n", $theses_loan ?? '(missing)');
+//printf("ebook_request: [%s]\n", $ebook_request ?? '(missing)');
+//printf("ejournal_request: [%s]\n", $ejournal_request ?? '(missing)');
+//echo "</pre>";
 ?>
 
 <div class="section-card">
