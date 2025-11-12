@@ -162,7 +162,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $ebook          = $row["ebook_request"];
         $ejournal       = $row["ejournal_request"];
         $journal        = $row["periodical_loan"];
-        $enddate        = $row["SuspendDateEnd"];
+        $enddate = $row["SuspendDateEnd"];
+if (empty($enddate) || $enddate == '0000-00-00' || $enddate == '1970-01-01') {
+    $enddate = date('Y-m-d', strtotime('+7 days'));
+}
+
         $timestamp      = $row["ModifyDate"];
         $lastmodemail   = $row["ModEmail"];
         $libilliad      = $row["Illiad"];
