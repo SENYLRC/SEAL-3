@@ -68,7 +68,8 @@ $sql = "SELECT s.*, DATE_FORMAT(s.`Timestamp`, '%Y/%m/%d') AS ts_fmt,
         LEFT JOIN `$sealLIB` borrower ON s.`Requester lib` = borrower.`LOC`
         WHERE (s.`ReqSystem`='$esc_home' OR s.`DestSystem`='$esc_home')
         AND DATE(s.`Timestamp`) BETWEEN '$esc_sd' AND '$esc_ed'";
-echo "<pre style='background:#fff;padding:10px;border:1px solid #ccc;'>$sql</pre>";
+//for debuging
+//echo "<pre style='background:#fff;padding:10px;border:1px solid #ccc;'>$sql</pre>";
 
 
 if ($esc_ill !== '') {
@@ -297,7 +298,28 @@ $shipping_methods = [
                     <td>$lender</td>
                     <td>$borrower</td>
                     <td>$due<br>$ship</td>
-                    <td>$status</td>
+                    <td>";
+    echo "<div class='status-text'>$status</div>";
+    echo "<div class='shiptxt'>" . htmlspecialchars($ship) . "</div>";
+
+    $emailsent = (int)($r['emailsent'] ?? 0);
+    $note = strtolower($r['responderNOTE'] ?? '');
+    $fill = (int)($r['Fill'] ?? 0);
+
+    // 🟢 Filled
+    if ($fill === 1) {
+        echo "<div class='status-badge filled' title='Request filled successfully'>✅ Filled</div>";
+    }
+    // 🟡 Reminder Sent
+    elseif ($emailsent === 2 || str_contains($note, 'reminder')) {
+        echo "<div class='status-badge reminder' title='3-Day Reminder sent automatically'>⚠️ Reminder Sent</div>";
+    }
+    // 🔴 Expired
+    elseif ($emailsent === 3 || str_contains($note, 'expire')) {
+        echo "<div class='status-badge expired' title='5-Day Expired automatically'>⏰ Expired</div>";
+    }
+  
+echo "</td>
                   </tr>";
         }
         echo "</tbody></table>";

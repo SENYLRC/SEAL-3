@@ -278,11 +278,30 @@ if (!$GETLIST || $totalResults == 0) {
       <td>".htmlspecialchars($r['Requester person'])."<br>".htmlspecialchars($r['Requester lib'])."</td>
       <td>".htmlspecialchars($r['DueDate'])."</td>
       <td>".htmlspecialchars($r['ts_fmt'])."</td>
-      <td>
-  $status<br>
-  ".htmlspecialchars($shiptxt)."
-  ".(!empty($r['IlliadTransID']) ? "<br><span style='font-size:0.9em;color:#555;'><b>ILLiad ID:</b> " . htmlspecialchars($r['IlliadTransID']) . "</span>" : "")."
-</td>
+      <td>";
+  
+     echo "<div class='status-text'>$status</div>";
+    echo "<div class='shiptxt'>" . htmlspecialchars($shiptxt) . "</div>";
+    // Show reminder / expire status from emailsent or responderNOTE
+    $emailsent = (int)($r['emailsent'] ?? 0);
+    $note = strtolower($r['responderNOTE'] ?? '');
+    $fill = (int)($r['Fill'] ?? 0);
+
+    // Display color-coded badges
+    if ($fill === 1) {
+        echo "<div class='status-badge filled' title='Request filled successfully'>✅ Filled</div>";
+    } elseif ($emailsent === 2 || str_contains($note, 'reminder')) {
+        echo "<div class='status-badge reminder' title='3-Day Reminder sent automatically'>⚠️ Reminder Sent</div>";
+    } elseif ($emailsent === 3 || str_contains($note, 'expire')) {
+        echo "<div class='status-badge expired' title='5-Day Expired automatically'>⏰ Expired</div>";
+    }
+
+    if (!empty($r['IlliadTransID'])) {
+        echo "<br><span style='font-size:0.9em;color:#555;'><b>ILLiad ID:</b> "
+           . htmlspecialchars($r['IlliadTransID']) . "</span>";
+    }
+  echo "</td>
+
     </tr>";
     }
     echo "</tbody></table>";
