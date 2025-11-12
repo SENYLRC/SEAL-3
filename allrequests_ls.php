@@ -309,9 +309,10 @@ $shipping_methods = [
     // 🟢 Filled
     if ($fill === 1) {
         echo "<div class='status-badge filled' title='Request filled successfully'>✅ Filled</div>";
-    }
+    }elseif ($fill === 0) {
+    echo "<div class='status-badge notfilled' title='Request not filled'>❌ Not Filled</div>"; 
     // 🟡 Reminder Sent
-    elseif ($emailsent === 2 || str_contains($note, 'reminder')) {
+    }elseif ($emailsent === 2 || str_contains($note, 'reminder')) {
         echo "<div class='status-badge reminder' title='3-Day Reminder sent automatically'>⚠️ Reminder Sent</div>";
     }
     // 🔴 Expired

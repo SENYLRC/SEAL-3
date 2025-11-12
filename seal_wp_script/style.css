@@ -697,6 +697,13 @@ input#datepicker {
   border:1px solid #a61e1e;
   color:#fff;
 }
+/* ❌ Not Filled */
+.status-badge.notfilled {
+  background: linear-gradient(135deg, #ff8787, #c92a2a);
+  border: 1px solid #a61e1e;
+  color: #fff;
+}
+
 
 /* 🟢 Filled */
 .status-badge.filled {

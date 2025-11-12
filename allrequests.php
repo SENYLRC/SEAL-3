@@ -290,7 +290,9 @@ if (!$GETLIST || $totalResults == 0) {
     // Display color-coded badges
     if ($fill === 1) {
         echo "<div class='status-badge filled' title='Request filled successfully'>✅ Filled</div>";
-    } elseif ($emailsent === 2 || str_contains($note, 'reminder')) {
+    }elseif ($fill === 0) {
+    echo "<div class='status-badge notfilled' title='Request not filled'>❌ Not Filled</div>"; 
+    }elseif ($emailsent === 2 || str_contains($note, 'reminder')) {
         echo "<div class='status-badge reminder' title='3-Day Reminder sent automatically'>⚠️ Reminder Sent</div>";
     } elseif ($emailsent === 3 || str_contains($note, 'expire')) {
         echo "<div class='status-badge expired' title='5-Day Expired automatically'>⏰ Expired</div>";
