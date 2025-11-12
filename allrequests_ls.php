@@ -318,6 +318,11 @@ $shipping_methods = [
     elseif ($emailsent === 3 || str_contains($note, 'expire')) {
         echo "<div class='status-badge expired' title='5-Day Expired automatically'>⏰ Expired</div>";
     }
+     // Display ILLiad Transaction ID
+    if (!empty($r['IlliadTransID'])) {
+        echo "<div class='illiad-id'><b>ILLiad ID:</b> "
+           . htmlspecialchars($r['IlliadTransID']) . "</div>";
+    }
   
 echo "</td>
                   </tr>";
