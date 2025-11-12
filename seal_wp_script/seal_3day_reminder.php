@@ -1,6 +1,6 @@
 <?php
 /**
- * SEAL / 3-Day Reminder Script (Self-Contained with Holiday Logic)
+ * SEAL / 3-Day Reminder Script (Business Day Logic)
  * ------------------------------------------------------------
  *  - Sends reminder emails if 3 business days (excl. weekends & holidays)
  *    have passed since an ILL request was created.
@@ -8,20 +8,22 @@
  */
 
 set_time_limit(1800);
+date_default_timezone_set('America/New_York');
+
 $logfile = '/var/log/seal_illiad_cron.log';
 error_log(date('c') . " - ===== Starting seal_3day_reminder.php =====\n", 3, $logfile);
 
 // ----------------------------------------------------
-//  Auto-Updating Holiday Function (Option 1 + Winter Break)
+//  Auto-Updating Holiday Function (Nager.Date + Winter Break)
 // ----------------------------------------------------
 function getHolidaysAuto($country = 'US') {
     $currentYear = (int)date('Y');
     $month = (int)date('n');
     $day = (int)date('j');
 
-    // If it's mid-December, also include next year
+    // If it's December, include next year as well
     $years = [$currentYear];
-    if ($month === 12 && $day >= 15) {
+    if ($month === 12) {
         $years[] = $currentYear + 1;
     }
 
@@ -81,22 +83,37 @@ if (!$db) {
 $db->set_charset("utf8mb4");
 
 // ----------------------------------------------------
-//  Helper: Count working days excluding holidays/weekends
+//  Helper functions for business days
 // ----------------------------------------------------
-function getWorkingDays($startDate, $endDate, $holidays) {
-    $start = strtotime($startDate);
-    $end   = strtotime($endDate);
-    $workingDays = 0;
+function isBusinessDay(string $ymd, array $holidays): bool {
+    $dow = (int)date('N', strtotime($ymd)); // 1=Mon .. 7=Sun
+    return $dow < 6 && !in_array($ymd, $holidays, true);
+}
 
-    while ($start <= $end) {
-        $dow = date('N', $start); // 1=Mon,7=Sun
-        $dateStr = date('Y-m-d', $start);
-        if ($dow < 6 && !in_array($dateStr, $holidays)) {
-            $workingDays++;
-        }
-        $start = strtotime('+1 day', $start);
+/**
+ * Add exactly $days business days to $startDate, skipping weekends/holidays
+ */
+function addBusinessDays(string $startDate, int $days, array $holidays, bool $includeStart = false): string {
+    $tz   = new DateTimeZone('America/New_York');
+    $date = new DateTime($startDate, $tz);
+
+    if (!$includeStart) {
+        $date->modify('+1 day');
     }
-    return $workingDays;
+
+    $added = 0;
+    while ($added < $days) {
+        $dstr = $date->format('Y-m-d');
+        if (isBusinessDay($dstr, $holidays)) {
+            $added++;
+            if ($added === $days) {
+                break; // stop when we’ve reached exactly $days business days
+            }
+        }
+        $date->modify('+1 day');
+    }
+
+    return $date->format('Y-m-d');
 }
 
 // ----------------------------------------------------
@@ -143,20 +160,14 @@ while ($row = mysqli_fetch_assoc($retval)) {
     $email       = $row["requesterEMAIL"];
     $wphone      = $row["requesterPhone"];
 
-    $reqdate     = substr($timestamp, 0, 10);
-    $today       = date("Y-m-d");
-    $calenddate  = date("Y-m-d", strtotime("$reqdate +3 day"));
-    $workdays    = getWorkingDays($reqdate, $calenddate, $holidays);
-
-    if ($workdays < 3) {
-        $diff = 3 - $workdays;
-        $calenddate = date("Y-m-d", strtotime("$calenddate +$diff day"));
-    }
+    $reqdate = substr($timestamp, 0, 10);
+    $today   = date("Y-m-d");
+    $dueDate = addBusinessDays($reqdate, 3, $holidays, false); // Start counting next business day
 
     $logprefix = "ILL#$illnum ($destination)";
-    error_log(date('c') . " - Checking $logprefix | req=$reqdate calc=$calenddate workdays=$workdays\n", 3, $logfile);
+    error_log(date('c') . " - Checking $logprefix | req=$reqdate due=$dueDate (3 business days)\n", 3, $logfile);
 
-    if ($today <= $calenddate) continue; // not yet due
+    if ($today <= $dueDate) continue; // Not yet due
 
     // --- Get destination ILL email ---
     $destemail = '';

@@ -1,6 +1,6 @@
 <?php
 /**
- * SEAL / 5-Day Expiration Script
+ * SEAL / 5-Day Expiration Script (Business Day Logic)
  * ------------------------------------------------------------
  * Purpose:
  *   Automatically expire ILL requests that remain unfilled
@@ -11,6 +11,8 @@
  */
 
 set_time_limit(1800);
+date_default_timezone_set('America/New_York');
+
 $logfile = '/var/log/seal_illiad_cron.log';
 error_log(date('c') . " - ===== Starting seal_5day_expire.php =====\n", 3, $logfile);
 
@@ -20,10 +22,8 @@ error_log(date('c') . " - ===== Starting seal_5day_expire.php =====\n", 3, $logf
 function getHolidaysAuto($country = 'US') {
     $currentYear = (int)date('Y');
     $month = (int)date('n');
-    $day = (int)date('j');
-
     $years = [$currentYear];
-    if ($month === 12 && $day >= 15) $years[] = $currentYear + 1;
+    if ($month === 12) $years[] = $currentYear + 1;
 
     $holidays = [];
     $logfile = '/var/log/seal_illiad_cron.log';
@@ -59,25 +59,44 @@ function getHolidaysAuto($country = 'US') {
             $d1->modify('+1 day');
         }
     }
+
     $holidays = array_unique($holidays);
     sort($holidays);
     return $holidays;
 }
 
 // ----------------------------------------------------
-//  Helper: working-day counter
+//  Business-day helpers (same as 3-day reminder)
 // ----------------------------------------------------
-function getWorkingDays($startDate, $endDate, $holidays) {
-    $start = strtotime($startDate);
-    $end   = strtotime($endDate);
-    $workingDays = 0;
-    while ($start <= $end) {
-        $dow = date('N', $start);
-        $dateStr = date('Y-m-d', $start);
-        if ($dow < 6 && !in_array($dateStr, $holidays)) $workingDays++;
-        $start = strtotime('+1 day', $start);
+function isBusinessDay(string $ymd, array $holidays): bool {
+    $dow = (int)date('N', strtotime($ymd)); // 1=Mon .. 7=Sun
+    return $dow < 6 && !in_array($ymd, $holidays, true);
+}
+
+/**
+ * Return date exactly $days business days after $startDate.
+ */
+function addBusinessDays(string $startDate, int $days, array $holidays, bool $includeStart = false): string {
+    $tz   = new DateTimeZone('America/New_York');
+    $date = new DateTime($startDate, $tz);
+
+    if (!$includeStart) {
+        $date->modify('+1 day');
     }
-    return $workingDays;
+
+    $added = 0;
+    while ($added < $days) {
+        $dstr = $date->format('Y-m-d');
+        if (isBusinessDay($dstr, $holidays)) {
+            $added++;
+            if ($added === $days) {
+                break;
+            }
+        }
+        $date->modify('+1 day');
+    }
+
+    return $date->format('Y-m-d');
 }
 
 // ----------------------------------------------------
@@ -114,24 +133,26 @@ error_log(date('c') . " - Found $count open requests for expiration check\n", 3,
 //  Process each record
 // ----------------------------------------------------
 while ($row = mysqli_fetch_assoc($res)) {
-    $timestamp = $row["Timestamp"];
-    $illnum    = trim($row["illNUB"]);
-    $title     = $row["Title"];
-    $requester = $row["Requester lib"];
-    $email     = trim($row["requesterEMAIL"]);
+    $timestamp   = $row["Timestamp"];
+    $illnum      = trim($row["illNUB"]);
+    $title       = $row["Title"];
+    $requester   = $row["Requester lib"];
+    $email       = trim($row["requesterEMAIL"]);
     $destination = trim($row["Destination"]);
 
     $reqdate = substr($timestamp, 0, 10);
     $today   = date("Y-m-d");
 
-    $workdays = getWorkingDays($reqdate, $today, $holidays);
-    if ($workdays < 5) continue; // not expired yet
+    $expireDate = addBusinessDays($reqdate, 5, $holidays, false);
+    $logprefix  = "ILL#$illnum ($destination)";
+    error_log(date('c') . " - Checking $logprefix | req=$reqdate expire=$expireDate (5 business days)\n", 3, $logfile);
 
-    $logprefix = "ILL#$illnum ($destination)";
-    error_log(date('c') . " - $logprefix | Expiring after $workdays business days\n", 3, $logfile);
+    if ($today <= $expireDate) continue; // not yet expired
+
+    error_log(date('c') . " - $logprefix | Expiring now after 5 business days\n", 3, $logfile);
 
     // ----------------------------------------------------
-    //  Mark as expired (SEAL standard)
+    //  Mark as expired
     // ----------------------------------------------------
     $sqlupdate = "
         UPDATE `$sealSTAT`
@@ -168,7 +189,7 @@ while ($row = mysqli_fetch_assoc($res)) {
     mail($email, $subject, $message, $headers, "-f donotreply@senylrc.org");
 
     // Notify NOC
-    $nocMessage = "$logprefix expired after $workdays business days.\n$title\nRequester: $requester <$email>";
+    $nocMessage = "$logprefix expired after 5 business days.\n$title\nRequester: $requester <$email>";
     mail("noc@senylrc.org", "SEAL ILL Expired $illnum", $nocMessage, $headers, "-f donotreply@senylrc.org");
 }
 
