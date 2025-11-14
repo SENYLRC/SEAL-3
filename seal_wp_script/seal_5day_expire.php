@@ -118,7 +118,7 @@ $holidays = getHolidaysAuto();
 // ----------------------------------------------------
 //  Select requests that are still unfilled
 // ----------------------------------------------------
-$sqlselect = "SELECT * FROM `$sealSTAT` WHERE `emailsent`='0' AND `fill`='3'";
+$sqlselect = "SELECT * FROM `$sealSTAT` WHERE `fill`='3' AND `emailsent` IN ('0','2')";
 $res = mysqli_query($db, $sqlselect);
 if (!$res) {
     error_log(date('c') . " - Query failed: " . mysqli_error($db) . "\n", 3, $logfile);
