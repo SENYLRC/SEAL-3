@@ -171,26 +171,87 @@ while ($row = mysqli_fetch_assoc($res)) {
     }
 
     // ----------------------------------------------------
-    //  Email notifications
-    // ----------------------------------------------------
-    $subject = "ILL Request Expired — ILL# $illnum";
-    $headers  = "From: SEAL <donotreply@senylrc.org>\r\n";
-    $headers .= "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+//  Email notifications
+// ----------------------------------------------------
+$subject = "ILL Request Expired — ILL# $illnum";
+$headers  = "From: SEAL <donotreply@senylrc.org>\r\n";
+$headers .= "MIME-Version: 1.0\r\n";
+$headers .= "Content-Type: text/html; charset=UTF-8\r\n";
 
-    $message = "
-        <p>Your SEAL ILL request (<b>$illnum</b>) for <b>$title</b> has expired after
-        five business days without a response from <b>$destination</b>.</p>
-        <p>You may wish to submit a new request to a different library.</p>
+// Link back to SEAL
+$seal_link = "https://seal.senylrc.org/";
+
+// Lending library email (field from DB)
+$lender_email = trim($row["responderEMAIL"]);
+
+$message = "
+    <p>Your SEAL ILL request (<b>$illnum</b>) for <b>$title</b> has expired after
+    five business days without a response from <b>$destination</b>.</p>
+
+    <p>You may wish to submit a new request to another library.</p>
+
+    <p>
+        <a href=\"$seal_link\" 
+           style=\"display:inline-block;padding:10px 16px;
+                  background:#003366;color:white;text-decoration:none;
+                  border-radius:6px;font-weight:bold;\">
+           Return to SEAL
+        </a>
+    </p>
+
+    <hr>
+    <p>This is an automated message from the SEAL ILL System.</p>
+";
+
+// Notify requester
+mail($email, $subject, $message, $headers, "-f donotreply@senylrc.org");
+
+// ----------------------------------------------------
+//  Notify the LENDING library
+// ----------------------------------------------------
+if (!empty($lender_email)) {
+    $lenderSubject = "SEAL ILL Expired — ILL# $illnum";
+    $lenderMsg = "
+        <p>The SEAL request you received (<b>$illnum</b>) for the title:</p>
+        <p><b>$title</b></p>
+
+        <p>has expired after five business days with no response.</p>
+
+        <p><b>Requester:</b> $requester &lt;$email&gt;</p>
+
+        <p>This request is now closed.</p>
+
         <hr>
-        <p>This is an automated message from the SEAL ILL System.</p>";
+        <p>This is an automated message from SEAL.</p>
+    ";
 
-    // Notify requester
-    mail($email, $subject, $message, $headers, "-f donotreply@senylrc.org");
+    mail($lender_email, $lenderSubject, $lenderMsg, $headers, "-f donotreply@senylrc.org");
 
-    // Notify NOC
-    $nocMessage = "$logprefix expired after 5 business days.\n$title\nRequester: $requester <$email>";
-    mail("noc@senylrc.org", "SEAL ILL Expired $illnum", $nocMessage, $headers, "-f donotreply@senylrc.org");
+    error_log(date('c') . " - $logprefix | Notified lending library at $lender_email\n", 3, $logfile);
+}
+
+// ----------------------------------------------------
+//  Notify ILL admin
+// ----------------------------------------------------
+$nocMessage = 
+"ILL Request Expired After 5 Business Days\n" .
+"----------------------------------------\n" .
+"ILL#: $illnum\n" .
+"Title: $title\n" .
+"Requester: $requester <$email>\n" .
+"Lending Library: $destination\n" .
+"Lending Library Email: $lender_email\n" .
+"Expired Date: $today\n";
+
+mail(
+    "ill@senylrc.org",
+    "SEAL ILL Expired $illnum ($destination)",
+    $nocMessage,
+    $headers,
+    "-f donotreply@senylrc.org"
+);
+
+
 }
 
 mysqli_close($db);
