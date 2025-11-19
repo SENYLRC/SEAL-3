@@ -76,91 +76,91 @@ $issn            = $records->location->{'md-issn'};
 
 <?php
 $illsystemhost = $_SERVER["SERVER_NAME"];
-// Connect to database
-require '/var/www/seal_wp_script/seal_db.inc';
-$db = mysqli_connect($dbhost, $dbuser, $dbpass);
-mysqli_select_db($db, $dbname);
-$today = date('Y-m-d H:i:s');
-// Loop through all selected libraries
-$destinationCount = count($_POST['libdestination']);
-foreach ($_POST['libdestination'] as $destination) {
-    list($libcode, $library, $destsystem, $itemavail, $itemcall, $itemlocation, $destemail, $destloc) = explode(":", $destination);
+     // Connect to database
+     require '/var/www/seal_wp_script/seal_db.inc';
+     $db = mysqli_connect($dbhost, $dbuser, $dbpass);
+     mysqli_select_db($db, $dbname);
+     $today = date('Y-m-d H:i:s');
+     // Loop through all selected libraries
+     $destinationCount = count($_POST['libdestination']);
+     foreach ($_POST['libdestination'] as $destination) {
+         list($libcode, $library, $destsystem, $itemavail, $itemcall, $itemlocation, $destemail, $destloc) = explode(":", $destination);
 
-    // Query the lending library's Illiad details
-    $illiadchecksql = "SELECT IlliadDATE, IlliadURL, Illiad, APIkey, LibEmailAlert FROM `$sealLIB` WHERE `loc` = '" . mysqli_real_escape_string($db, $destloc) . "'";
-    //for testing
-    //echo  $illiadchecksql;
+         // Query the lending library's Illiad details
+         $illiadchecksql = "SELECT IlliadDATE, IlliadURL, Illiad, APIkey, LibEmailAlert FROM `$sealLIB` WHERE `loc` = '" . mysqli_real_escape_string($db, $destloc) . "'";
+         //for testing
+         //echo  $illiadchecksql;
 
-    $illiadGETLIST = mysqli_query($db, $illiadchecksql);
-    $illiadrow = mysqli_fetch_assoc($illiadGETLIST);
+         $illiadGETLIST = mysqli_query($db, $illiadchecksql);
+         $illiadrow = mysqli_fetch_assoc($illiadGETLIST);
 
-    $libilliadurl = $illiadrow["IlliadURL"] ?? '';
-    $libilliaddate = $illiadrow["IlliadDATE"] ?? '';
-    $libilliad = $illiadrow["Illiad"] ?? '';
-    $libilliadkey = $illiadrow["APIkey"] ?? '';
-    $libemailalert = $illiadrow["LibEmailAlert"] ?? '';
-    // Sanitize and trim inputs
-    $ititle = trim(mysqli_real_escape_string($db, $_POST['bibtitle']));
-    $article = trim(mysqli_real_escape_string($db, $_POST['article'] ?? ''));
-    $iauthor = trim(mysqli_real_escape_string($db, $_POST['bibauthor']));
-    $pubdate = trim(mysqli_real_escape_string($db, $_POST['pubdate']));
-    $isbn = trim(mysqli_real_escape_string($db, $_POST['isbn']));
-    $issn = trim(mysqli_real_escape_string($db, $_POST['issn']));
-    $itemcall = trim(mysqli_real_escape_string($db, $itemcall));
-    $itemlocation = trim(mysqli_real_escape_string($db, $itemlocation));
-    $itype = trim(mysqli_real_escape_string($db, $_POST['bibtype']));
-    $itemavail = trim(mysqli_real_escape_string($db, $itemavail));
-    $inst = trim(mysqli_real_escape_string($db, $_POST['inst']));
-    $fname = trim(mysqli_real_escape_string($db, $_POST['fname']));
-    $lname = trim(mysqli_real_escape_string($db, $_POST['lname']));
-    $email = trim(mysqli_real_escape_string($db, $_POST['email']));
-    $needbydate = trim(mysqli_real_escape_string($db, $_POST['needbydate']));
-    $reqnote = trim(mysqli_real_escape_string($db, $_POST['reqnote']));
-    $patronnote = trim(mysqli_real_escape_string($db, $_POST['patronnote']));
-    $reqLOCcode = trim(mysqli_real_escape_string($db, $_POST['reqLOCcode']));
-    $wphone = trim(mysqli_real_escape_string($db, $_POST['wphone']));
-    $saddress = trim(mysqli_real_escape_string($db, $_POST['address']));
-    $saddress2 = trim(mysqli_real_escape_string($db, $_POST['address2']));
-    $caddress = trim(mysqli_real_escape_string($db, $_POST['caddress']));
-    $reqsystem = ''; // Add logic to determine system if needed
+         $libilliadurl = $illiadrow["IlliadURL"] ?? '';
+         $libilliaddate = $illiadrow["IlliadDATE"] ?? '';
+         $libilliad = $illiadrow["Illiad"] ?? '';
+         $libilliadkey = $illiadrow["APIkey"] ?? '';
+         $libemailalert = $illiadrow["LibEmailAlert"] ?? '';
+         // Sanitize and trim inputs
+         $ititle = trim(mysqli_real_escape_string($db, $_POST['bibtitle']));
+         $article = trim(mysqli_real_escape_string($db, $_POST['article'] ?? ''));
+         $iauthor = trim(mysqli_real_escape_string($db, $_POST['bibauthor']));
+         $pubdate = trim(mysqli_real_escape_string($db, $_POST['pubdate']));
+         $isbn = trim(mysqli_real_escape_string($db, $_POST['isbn']));
+         $issn = trim(mysqli_real_escape_string($db, $_POST['issn']));
+         $itemcall = trim(mysqli_real_escape_string($db, $itemcall));
+         $itemlocation = trim(mysqli_real_escape_string($db, $itemlocation));
+         $itype = trim(mysqli_real_escape_string($db, $_POST['bibtype']));
+         $itemavail = trim(mysqli_real_escape_string($db, $itemavail));
+         $inst = trim(mysqli_real_escape_string($db, $_POST['inst']));
+         $fname = trim(mysqli_real_escape_string($db, $_POST['fname']));
+         $lname = trim(mysqli_real_escape_string($db, $_POST['lname']));
+         $email = trim(mysqli_real_escape_string($db, $_POST['email']));
+         $needbydate = trim(mysqli_real_escape_string($db, $_POST['needbydate']));
+         $reqnote = trim(mysqli_real_escape_string($db, $_POST['reqnote']));
+         $patronnote = trim(mysqli_real_escape_string($db, $_POST['patronnote']));
+         $reqLOCcode = trim(mysqli_real_escape_string($db, $_POST['reqLOCcode']));
+         $wphone = trim(mysqli_real_escape_string($db, $_POST['wphone']));
+         $saddress = trim(mysqli_real_escape_string($db, $_POST['address']));
+         $saddress2 = trim(mysqli_real_escape_string($db, $_POST['address2']));
+         $caddress = trim(mysqli_real_escape_string($db, $_POST['caddress']));
+         $reqsystem = ''; // Add logic to determine system if needed
 
-// -------------------------------
-// Article field handling
-// -------------------------------
-$arttile = $artauthor = $artissue = $artvolume = $artpage = $artmonth = $artyear = $artcopyright = '';
+         // -------------------------------
+         // Article field handling
+         // -------------------------------
+         $arttile = $artauthor = $artissue = $artvolume = $artpage = $artmonth = $artyear = $artcopyright = '';
 
-if (isset($_REQUEST['arttile'])) {
-    $arttile = mysqli_real_escape_string($db, $_REQUEST['arttile']);
-}
-if (isset($_REQUEST['artauthor'])) {
-    $artauthor = mysqli_real_escape_string($db, $_REQUEST['artauthor']);
-}
-if (isset($_REQUEST['artissue'])) {
-    $artissue = mysqli_real_escape_string($db, $_REQUEST['artissue']);
-}
-if (isset($_REQUEST['artvolume'])) {
-    $artvolume = mysqli_real_escape_string($db, $_REQUEST['artvolume']);
-}
-if (isset($_REQUEST['artpage'])) {
-    $artpage = mysqli_real_escape_string($db, $_REQUEST['artpage']);
-}
-if (isset($_REQUEST['artmonth'])) {
-    $artmonth = mysqli_real_escape_string($db, $_REQUEST['artmonth']);
-}
-if (isset($_REQUEST['artyear'])) {
-    $artyear = mysqli_real_escape_string($db, $_REQUEST['artyear']);
-}
-if (isset($_REQUEST['artcopyright'])) {
-    $artcopyright = mysqli_real_escape_string($db, $_REQUEST['artcopyright']);
-}
+         if (isset($_REQUEST['arttile'])) {
+             $arttile = mysqli_real_escape_string($db, $_REQUEST['arttile']);
+         }
+         if (isset($_REQUEST['artauthor'])) {
+             $artauthor = mysqli_real_escape_string($db, $_REQUEST['artauthor']);
+         }
+         if (isset($_REQUEST['artissue'])) {
+             $artissue = mysqli_real_escape_string($db, $_REQUEST['artissue']);
+         }
+         if (isset($_REQUEST['artvolume'])) {
+             $artvolume = mysqli_real_escape_string($db, $_REQUEST['artvolume']);
+         }
+         if (isset($_REQUEST['artpage'])) {
+             $artpage = mysqli_real_escape_string($db, $_REQUEST['artpage']);
+         }
+         if (isset($_REQUEST['artmonth'])) {
+             $artmonth = mysqli_real_escape_string($db, $_REQUEST['artmonth']);
+         }
+         if (isset($_REQUEST['artyear'])) {
+             $artyear = mysqli_real_escape_string($db, $_REQUEST['artyear']);
+         }
+         if (isset($_REQUEST['artcopyright'])) {
+             $artcopyright = mysqli_real_escape_string($db, $_REQUEST['artcopyright']);
+         }
 
-// Combine article details into one string for database
-$article = "Article Title: $arttile <br>Article Author: $artauthor <br>Volume: $artvolume <br>Issue: $artissue <br>Pages: $artpage <br>Month: $artmonth <br>Year: $artyear <br>Copyright: $artcopyright";
+         // Combine article details into one string for database
+         $article = "Article Title: $arttile <br>Article Author: $artauthor <br>Volume: $artvolume <br>Issue: $artissue <br>Pages: $artpage <br>Month: $artmonth <br>Year: $artyear <br>Copyright: $artcopyright";
 
 
 
-    // Final INSERT SQL
-    $sql = "INSERT INTO `$sealSTAT` 
+         // Final INSERT SQL
+         $sql = "INSERT INTO `$sealSTAT` 
         (`illNUB`,`Title`,`Author`,`pubdate`,`reqisbn`,`reqissn`,`itype`,`Call Number`,`Location`,`Available`,`article`,`needbydate`,`reqnote`,`patronnote`,`Destination`,`DestSystem`,`Requester lib`,`Requester LOC`,`ReqSystem`,`Requester person`,`requesterEMAIL`,`Timestamp`,`Fill`,`responderNOTE`,`requesterPhone`,`saddress`,`saddress2`,`caddress`)
         VALUES (
             '0',
@@ -192,195 +192,195 @@ $article = "Article Title: $arttile <br>Article Author: $artauthor <br>Volume: $
             '$saddress2',
             '$caddress'
         )";
-//for debuing
-//echo $sql;
-    // Run the insert
-    if (!mysqli_query($db, $sql)) {
-        // Failsafe email to admin
-        $headers  = "From: Southeastern SEAL <dontreply@senylrc.org>\r\n";
-        $headers .= "MIME-Version: 1.0\r\n";
-        $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
-        $headers = preg_replace('/(?<!\r)\n/', "\r\n", $headers);
-        $msg = "INSERT FAILED:<br><br><code>" . htmlspecialchars($sql) . "</code><br><br>Error: " . mysqli_error($db);
-        mail("spalding@senylrc.org", "SEAL Request DB Insert Failure", $msg, $headers, "-f donotreply@senylrc.org");
-    }
+         //for debuing
+         //echo $sql;
+         // Run the insert
+         if (!mysqli_query($db, $sql)) {
+             // Failsafe email to admin
+             $headers  = "From: Southeastern SEAL <dontreply@senylrc.org>\r\n";
+             $headers .= "MIME-Version: 1.0\r\n";
+             $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
+             $headers = preg_replace('/(?<!\r)\n/', "\r\n", $headers);
+             $msg = "INSERT FAILED:<br><br><code>" . htmlspecialchars($sql) . "</code><br><br>Error: " . mysqli_error($db);
+             mail("spalding@senylrc.org", "SEAL Request DB Insert Failure", $msg, $headers, "-f donotreply@senylrc.org");
+         }
 
-// Get the auto-increment ID from the last insert
-$sqlidnumb = mysqli_insert_id($db);
+         // Get the auto-increment ID from the last insert
+         $sqlidnumb = mysqli_insert_id($db);
 
-if ($sqlidnumb > 0) {
-    // Build the ILL number (e.g., 2025-1234)
-    $yearid = date('Y');
-    $illnum = "$yearid-$sqlidnumb";
+         if ($sqlidnumb > 0) {
+             // Build the ILL number (e.g., 2025-1234)
+             $yearid = date('Y');
+             $illnum = "$yearid-$sqlidnumb";
 
-    // Escape the ILL number (in case formatting changes in future)
-    $illnum = mysqli_real_escape_string($db, $illnum);
+             // Escape the ILL number (in case formatting changes in future)
+             $illnum = mysqli_real_escape_string($db, $illnum);
 
-    // Update the record with the ILL number
-    $sqlupdate = "UPDATE `$sealSTAT` SET `illNUB` = '$illnum' WHERE `index` = $sqlidnumb";
+             // Update the record with the ILL number
+             $sqlupdate = "UPDATE `$sealSTAT` SET `illNUB` = '$illnum' WHERE `index` = $sqlidnumb";
 
-    if (!mysqli_query($db, $sqlupdate)) {
-        // Log or email error if the update fails
-        $headers  = "From: Southeastern SEAL <dontreply@senylrc.org>\r\n";
-        $headers .= "MIME-Version: 1.0\r\n";
-        $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
-        $headers = preg_replace('/(?<!\r)\n/', "\r\n", $headers);
+             if (!mysqli_query($db, $sqlupdate)) {
+                 // Log or email error if the update fails
+                 $headers  = "From: Southeastern SEAL <dontreply@senylrc.org>\r\n";
+                 $headers .= "MIME-Version: 1.0\r\n";
+                 $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
+                 $headers = preg_replace('/(?<!\r)\n/', "\r\n", $headers);
 
-        $errormsg = "Failed to update illNUB:<br><br><code>$sqlupdate</code><br><br>Error: " . mysqli_error($db);
-        mail("spalding@senylrc.org", "SEAL ILL Number Update Failure", $errormsg, $headers, "-f donotreply@senylrc.org");
-    }
-} else {
-    // Log insert failure (if insert ID is 0 or false)
-    $headers  = "From: Southeastern SEAL <dontreply@senylrc.org>\r\n";
-    $headers .= "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
-    $headers = preg_replace('/(?<!\r)\n/', "\r\n", $headers);
+                 $errormsg = "Failed to update illNUB:<br><br><code>$sqlupdate</code><br><br>Error: " . mysqli_error($db);
+                 mail("spalding@senylrc.org", "SEAL ILL Number Update Failure", $errormsg, $headers, "-f donotreply@senylrc.org");
+             }
+         } else {
+             // Log insert failure (if insert ID is 0 or false)
+             $headers  = "From: Southeastern SEAL <dontreply@senylrc.org>\r\n";
+             $headers .= "MIME-Version: 1.0\r\n";
+             $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
+             $headers = preg_replace('/(?<!\r)\n/', "\r\n", $headers);
 
-    $msg = "mysqli_insert_id() failed. Could not retrieve ID for assigning illNUB.";
-    mail("spalding@senylrc.org", "SEAL Insert ID Retrieval Failure", $msg, $headers, "-f donotreply@senylrc.org");
-}
+             $msg = "mysqli_insert_id() failed. Could not retrieve ID for assigning illNUB.";
+             mail("spalding@senylrc.org", "SEAL Insert ID Retrieval Failure", $msg, $headers, "-f donotreply@senylrc.org");
+         }
 
- // Send to ILLiad via API
-            if ($libilliad=='1') {
-                $sqlseloclc = "SELECT loc,Name,`ill_email`,address2,address3,OCLC,`system` FROM `$sealLIB` WHERE `loc`='$reqLOCcode'";
-                //for debugging
-                //echo $sqlseloclc;
-                $sqlseloclcGETLIST = mysqli_query($db, $sqlseloclc);
-                $sqlseloclcGETLISTCOUNT = '1';
-                $sqlseloclcrow = mysqli_fetch_assoc($sqlseloclcGETLIST);
-                $libreqOCLC = $sqlseloclcrow["oclc"];
-                $libreqLOC = $sqlseloclcrow["loc"];
-                $libreqemail = $sqlseloclcrow["ill_email"];
-                $libreqname = $sqlseloclcrow["Name"];
-                $libreqsystem =  $sqlseloclcrow["system"];
-                $libreqaddress2 = $sqlseloclcrow["address2"];
-                $libreqaddress3 = $sqlseloclcrow["address3"];
-                $libreqaddress3=trim($libreqaddress3);
-                $libreqaddress3 = str_replace(',', '', $libreqaddress3);
-                $pieces = explode(" ", $libreqaddress3);
-                $libreqcity= $pieces[0];
-                $libreqstate= $pieces[1];
-                $libreqzip= $pieces[2];
-        
-                $sqlilliadmp = "SELECT * FROM `$sealILLiadMapping` WHERE `LOC`='$reqLOCcode' and `illiadID`='$destloc'";
-                // echo $sqlilliadmp."<br>";
-                $sqlilliadmpGETLIST = mysqli_query($db, $sqlilliadmp);
-                $sqlilliadmpGETLISTCOUNT = '1';
-                $sqlilliadmprow = mysqli_fetch_assoc($sqlilliadmpGETLIST);
-                $illiadADDnumb  = $sqlilliadmprow["illiadADDnumb"];
-                $illiadLIBSymbol =  $sqlilliadmprow["illiadLIBSymbol"];
-                // Add slashes to these string to prevent coding issue
-                $ititle=addslashes($ititle);
-                $iauthor=addslashes($iauthor);   
-                //Generate the due date, requrired for ILLiad Loans
-                if (ctype_digit($libilliaddate)) {
-                    $date = date("Y-m-d");
-                    $illduedateCAL= date('Y-m-d', strtotime($date. ' + '.$libilliaddate.' days'));
-                }
-                //for testing
-                //echo $illduedateCAL."part 2".$date."part 3".$libilliaddate."";
-                // Store data for request in array
-                if (empty($arttile)) {
-                    //book request have to be sent as an article or API won't take them
-                    //note about being a book loan is set so ILLiad users know to press loan radio button
-                    $jsonstr = array( 'Username' =>'Lending','LendingString'=> $reqnote, 'RequestType'=>'Loan','DueDate'=>$illduedateCAL.'T00:00:00-04:00','ProcessType'=>'Lending','LenderAddressNumber'=>$illiadADDnumb,'LendingLibrary'=>$illiadLIBSymbol,'TransactionStatus'=>'Awaiting Lending Request Processing','LoanTitle'=>$ititle,'LoanAuthor'=>$iauthor,'CallNumber'=>$itemcall,'LoanDate'=>$pubdate,'ISSN'=>$isbn,'ILLNumber'=>$illnum ,'TAddress'=>$libreqname,'TAddress2'=>$libreqaddress2,'TCity'=>$libreqcity,'TState'=>$libreqcity,'TZip'=>$libreqzip,'TEMailAddress'=>$libreqemail);
-                } else {
-                    $jsonstr = array('Username' =>'Lending','LendingString'=> $reqnote, 'ProcessType'=>'Lending','LenderAddressNumber'=>$illiadADDnumb,'LendingLibrary'=>$illiadLIBSymbol,'TransactionStatus'=>'Awaiting Lending Request Processing','LoanTitle'=>$ititle,'LoanAuthor'=>$iauthor,'CallNumber'=>$itemcall,'LoanDate'=>$pubdate,'PhotoArticleTitle'=>$arttile,'PhotoArticleAuthor'=>$artauthor,'PhotoJournalVolume'=>$artvolume,'PhotoJournalIssue'=>$artissue,'PhotoJournalYear'=>$artyear,'PhotoJournalInclusivePages'=>$artpage,'ISSN'=>$issn,'ILLNumber'=>$illnum,'TAddress'=>$libreqname,'TAddress2'=>$libreqaddress2,'TCity'=>$libreqcity,'TState'=>$libreqcity,'TZip'=>$libreqzip,'TEMailAddress'=>$libreqemail );
-                }
-        
-                // Enocde the array in to json data
-                $json_enc=json_encode($jsonstr);
-        
-                //just so we can see this on screen
-                //echo "<br /><br /><br />";
-                //echo $json_enc;
-                //echo "<br /><br /><br />";
-                // variables to pass through cURL
-        
-                define("ILLIAD_REQUEST_TOKEN_URL", $libilliadurl);
-        
-                $key = $libilliadkey;
-                // create the cURL request
-                $ch = curl_init();
-                curl_setopt($ch, CURLOPT_URL, ILLIAD_REQUEST_TOKEN_URL);
-                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-                curl_setopt($ch, CURLOPT_POSTFIELDS, $json_enc);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);  // commenting this out prints to screen (via echo)
-                curl_setopt(
-                    $ch,
-                    CURLOPT_HTTPHEADER,
-                    array(
-                      "Content-Type: application/json",
-                      "Content-Length: " . strlen($json_enc),
-                      "ApiKey: $key")
-                );
-        
-                // make the call
-                if (!curl_errno($ch)) {
-                    // $output contains the output string
-                    $output = curl_exec($ch);
-                }
-        
-                // close curl resource to free up system resources
-                curl_close($ch);
-        
-        
-                // print the results of the call to the screen
-                echo "<!--API output-->";
-                echo "<!--".$output."-->";
-                $output_decoded = json_decode($output, true);
-                $illiadtxnub= $output_decoded['TransactionNumber'];
-                $illstatus = $output_decoded['TransactionStatus'];
-        
-                if (strlen($illiadtxnub)<4) {
-                    $headers = "From: Southeastern SEAL <dontreply@senylrc.org>\r\n" ;
-                    $headers .= "MIME-Version: 1.0\r\n";
-                    $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
-                    $messagereq = "Request did not go to ILLiad Ill ".$illnum." ".$output." ";
-                    $headers = preg_replace('/(?<!\r)\n/', "\r\n", $headers);
-                    mail("spalding@senylrc.org", "ILLiad Failure", $messagereq, $headers, "-f donotreply@senylrc.org");
-                } //end check if ILLad transaction did not happen
-        
-                //save API output to the request
-                $sqlupdate2 = "UPDATE `$sealSTAT` SET `IlliadStatus` = '$illstatus', `IlliadTransID` = '$illiadtxnub' WHERE `index` = $sqlidnumb";
-                //echo $sqlupdate2;
-        
-                if (mysqli_query($db, $sqlupdate2)) {
-                    //mysqli_query($db, $sqlupdate2);
-                    //no error and everthing is fine
-                } else {
-                    // Something happen and could not update request, will email the sql to admin
-                    $headers = "From: Southeastern SEAL <dontreply@senylrc.org>\r\n" ;
-                    $headers .= "MIME-Version: 1.0\r\n";
-                    $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
-                    $messagereq = "UPDATE SENYLRC-SEAL2-STATS SET IlliadStatus = ".$illstatus.", IlliadTransID = ".$illiadtxnub." WHERE index = ".$sqlidnumb." ";
-                    $headers = preg_replace('/(?<!\r)\n/', "\r\n", $headers);
-                    mail("spalding@senylrc.org", "sql update Failure", $messagereq, $headers, "-f donotreply@senylrc.org");
-                }
-            }// end the $libilliad check
+         // Send to ILLiad via API
+         if ($libilliad == '1') {
+             $sqlseloclc = "SELECT loc,Name,`ill_email`,address2,address3,OCLC,`system` FROM `$sealLIB` WHERE `loc`='$reqLOCcode'";
+             //for debugging
+             //echo $sqlseloclc;
+             $sqlseloclcGETLIST = mysqli_query($db, $sqlseloclc);
+             $sqlseloclcGETLISTCOUNT = '1';
+             $sqlseloclcrow = mysqli_fetch_assoc($sqlseloclcGETLIST);
+             $libreqOCLC = $sqlseloclcrow["oclc"];
+             $libreqLOC = $sqlseloclcrow["loc"];
+             $libreqemail = $sqlseloclcrow["ill_email"];
+             $libreqname = $sqlseloclcrow["Name"];
+             $libreqsystem =  $sqlseloclcrow["system"];
+             $libreqaddress2 = $sqlseloclcrow["address2"];
+             $libreqaddress3 = $sqlseloclcrow["address3"];
+             $libreqaddress3 = trim($libreqaddress3);
+             $libreqaddress3 = str_replace(',', '', $libreqaddress3);
+             $pieces = explode(" ", $libreqaddress3);
+             $libreqcity = $pieces[0];
+             $libreqstate = $pieces[1];
+             $libreqzip = $pieces[2];
+
+             $sqlilliadmp = "SELECT * FROM `$sealILLiadMapping` WHERE `LOC`='$reqLOCcode' and `illiadID`='$destloc'";
+             // echo $sqlilliadmp."<br>";
+             $sqlilliadmpGETLIST = mysqli_query($db, $sqlilliadmp);
+             $sqlilliadmpGETLISTCOUNT = '1';
+             $sqlilliadmprow = mysqli_fetch_assoc($sqlilliadmpGETLIST);
+             $illiadADDnumb  = $sqlilliadmprow["illiadADDnumb"];
+             $illiadLIBSymbol =  $sqlilliadmprow["illiadLIBSymbol"];
+             // Add slashes to these string to prevent coding issue
+             $ititle = addslashes($ititle);
+             $iauthor = addslashes($iauthor);
+             //Generate the due date, requrired for ILLiad Loans
+             if (ctype_digit($libilliaddate)) {
+                 $date = date("Y-m-d");
+                 $illduedateCAL = date('Y-m-d', strtotime($date. ' + '.$libilliaddate.' days'));
+             }
+             //for testing
+             //echo $illduedateCAL."part 2".$date."part 3".$libilliaddate."";
+             // Store data for request in array
+             if (empty($arttile)) {
+                 //book request have to be sent as an article or API won't take them
+                 //note about being a book loan is set so ILLiad users know to press loan radio button
+                 $jsonstr = array( 'Username' => 'Lending','LendingString' => $reqnote, 'RequestType' => 'Loan','DueDate' => $illduedateCAL.'T00:00:00-04:00','ProcessType' => 'Lending','LenderAddressNumber' => $illiadADDnumb,'LendingLibrary' => $illiadLIBSymbol,'TransactionStatus' => 'Awaiting Lending Request Processing','LoanTitle' => $ititle,'LoanAuthor' => $iauthor,'CallNumber' => $itemcall,'LoanDate' => $pubdate,'ISSN' => $isbn,'ILLNumber' => $illnum ,'TAddress' => $libreqname,'TAddress2' => $libreqaddress2,'TCity' => $libreqcity,'TState' => $libreqcity,'TZip' => $libreqzip,'TEMailAddress' => $libreqemail);
+             } else {
+                 $jsonstr = array('Username' => 'Lending','LendingString' => $reqnote, 'ProcessType' => 'Lending','LenderAddressNumber' => $illiadADDnumb,'LendingLibrary' => $illiadLIBSymbol,'TransactionStatus' => 'Awaiting Lending Request Processing','LoanTitle' => $ititle,'LoanAuthor' => $iauthor,'CallNumber' => $itemcall,'LoanDate' => $pubdate,'PhotoArticleTitle' => $arttile,'PhotoArticleAuthor' => $artauthor,'PhotoJournalVolume' => $artvolume,'PhotoJournalIssue' => $artissue,'PhotoJournalYear' => $artyear,'PhotoJournalInclusivePages' => $artpage,'ISSN' => $issn,'ILLNumber' => $illnum,'TAddress' => $libreqname,'TAddress2' => $libreqaddress2,'TCity' => $libreqcity,'TState' => $libreqcity,'TZip' => $libreqzip,'TEMailAddress' => $libreqemail );
+             }
+
+             // Enocde the array in to json data
+             $json_enc = json_encode($jsonstr);
+
+             //just so we can see this on screen
+             //echo "<br /><br /><br />";
+             //echo $json_enc;
+             //echo "<br /><br /><br />";
+             // variables to pass through cURL
+
+             define("ILLIAD_REQUEST_TOKEN_URL", $libilliadurl);
+
+             $key = $libilliadkey;
+             // create the cURL request
+             $ch = curl_init();
+             curl_setopt($ch, CURLOPT_URL, ILLIAD_REQUEST_TOKEN_URL);
+             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+             curl_setopt($ch, CURLOPT_POSTFIELDS, $json_enc);
+             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);  // commenting this out prints to screen (via echo)
+             curl_setopt(
+                 $ch,
+                 CURLOPT_HTTPHEADER,
+                 array(
+                   "Content-Type: application/json",
+                   "Content-Length: " . strlen($json_enc),
+                   "ApiKey: $key")
+             );
+
+             // make the call
+             if (!curl_errno($ch)) {
+                 // $output contains the output string
+                 $output = curl_exec($ch);
+             }
+
+             // close curl resource to free up system resources
+             curl_close($ch);
 
 
+             // print the results of the call to the screen
+             echo "<!--API output-->";
+             echo "<!--".$output."-->";
+             $output_decoded = json_decode($output, true);
+             $illiadtxnub = $output_decoded['TransactionNumber'];
+             $illstatus = $output_decoded['TransactionStatus'];
 
-$requester_email = $_POST['email'];
-$lib_parts = explode(':', $_POST['libdestination'][0]);
-$destination_email = $lib_parts[6]; // Can be semicolon-separated list
+             if (strlen($illiadtxnub) < 4) {
+                 $headers = "From: Southeastern SEAL <dontreply@senylrc.org>\r\n" ;
+                 $headers .= "MIME-Version: 1.0\r\n";
+                 $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
+                 $messagereq = "Request did not go to ILLiad Ill ".$illnum." ".$output." ";
+                 $headers = preg_replace('/(?<!\r)\n/', "\r\n", $headers);
+                 mail("spalding@senylrc.org", "ILLiad Failure", $messagereq, $headers, "-f donotreply@senylrc.org");
+             } //end check if ILLad transaction did not happen
 
-// Build shared email headers
-$headers  = "From: Southeastern SEAL <dontreply@senylrc.org>\r\n";
-$headers .= "MIME-Version: 1.0\r\n";
-$headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
-$headers = preg_replace('/(?<!\r)\n/', "\r\n", $headers);
+             //save API output to the request
+             $sqlupdate2 = "UPDATE `$sealSTAT` SET `IlliadStatus` = '$illstatus', `IlliadTransID` = '$illiadtxnub' WHERE `index` = $sqlidnumb";
+             //echo $sqlupdate2;
 
-// Email to requester
-$subject_to_requester = "SEAL ILL #$illnum — Request to $library Confirmation";
+             if (mysqli_query($db, $sqlupdate2)) {
+                 //mysqli_query($db, $sqlupdate2);
+                 //no error and everthing is fine
+             } else {
+                 // Something happen and could not update request, will email the sql to admin
+                 $headers = "From: Southeastern SEAL <dontreply@senylrc.org>\r\n" ;
+                 $headers .= "MIME-Version: 1.0\r\n";
+                 $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
+                 $messagereq = "UPDATE SENYLRC-SEAL2-STATS SET IlliadStatus = ".$illstatus.", IlliadTransID = ".$illiadtxnub." WHERE index = ".$sqlidnumb." ";
+                 $headers = preg_replace('/(?<!\r)\n/', "\r\n", $headers);
+                 mail("spalding@senylrc.org", "sql update Failure", $messagereq, $headers, "-f donotreply@senylrc.org");
+             }
+         }// end the $libilliad check
 
 
-// Check if it's an article request
-$isArticle = !empty($_POST['arttile']);
 
-$articleDetails = "";
-if ($isArticle) {
-    $articleDetails = "
+         $requester_email = $_POST['email'];
+         $lib_parts = explode(':', $_POST['libdestination'][0]);
+         $destination_email = $lib_parts[6]; // Can be semicolon-separated list
+
+         // Build shared email headers
+         $headers  = "From: Southeastern SEAL <dontreply@senylrc.org>\r\n";
+         $headers .= "MIME-Version: 1.0\r\n";
+         $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
+         $headers = preg_replace('/(?<!\r)\n/', "\r\n", $headers);
+
+         // Email to requester
+         $subject_to_requester = "SEAL ILL #$illnum — Request to $library Confirmation";
+
+
+         // Check if it's an article request
+         $isArticle = !empty($_POST['arttile']);
+
+         $articleDetails = "";
+         if ($isArticle) {
+             $articleDetails = "
     <h4>Article Details</h4>
     <ul>
       <li><strong>Article Title:</strong> " . htmlspecialchars($_POST['arttile']) . "</li>
@@ -392,9 +392,9 @@ if ($isArticle) {
       <li><strong>Year:</strong> " . htmlspecialchars($_POST['artyear']) . "</li>
       <li><strong>Copyright Compliance:</strong> " . htmlspecialchars($_POST['artcopyright']) . "</li>
     </ul>";
-}
+         }
 
-$message_to_requester = "
+         $message_to_requester = "
 <html>
 <body>
 <p>Dear " . htmlspecialchars($_POST['fname']) . " " . htmlspecialchars($_POST['lname']) . ",</p>
@@ -421,13 +421,13 @@ $articleDetails
 </html>
 ";
 
-mail($requester_email, $subject_to_requester, $message_to_requester, $headers, "-f donotreply@senylrc.org");
+         mail($requester_email, $subject_to_requester, $message_to_requester, $headers, "-f donotreply@senylrc.org");
 
-// Email to lending library
-$subject_to_library = "SEAL ILL #$illnum — New Request for \"" . htmlspecialchars($_POST['bibtitle']) . "\"";
-$articleDetailsLibrary = "";
-if ($isArticle) {
-    $articleDetailsLibrary = "
+         // Email to lending library
+         $subject_to_library = "SEAL ILL #$illnum — New Request for \"" . htmlspecialchars($_POST['bibtitle']) . "\"";
+         $articleDetailsLibrary = "";
+         if ($isArticle) {
+             $articleDetailsLibrary = "
     <h4>Article Details</h4>
     <ul>
       <li><strong>Article Title:</strong> " . htmlspecialchars($_POST['arttile']) . "</li>
@@ -439,9 +439,9 @@ if ($isArticle) {
       <li><strong>Year:</strong> " . htmlspecialchars($_POST['artyear']) . "</li>
       <li><strong>Copyright Compliance:</strong> " . htmlspecialchars($_POST['artcopyright']) . "</li>
     </ul>";
-}
+         }
 
-$message_to_library = "
+         $message_to_library = "
 <html>
 <body>
 <p>A new ILL request has been submitted to your library:</p>
@@ -451,6 +451,11 @@ $message_to_library = "
   <li><strong>Library:</strong> " . htmlspecialchars($_POST['inst']) . "</li>
   <li><strong>Email:</strong> " . htmlspecialchars($_POST['email']) . "</li>
   <li><strong>Phone:</strong> " . htmlspecialchars($_POST['wphone']) . "</li>
+    <li><strong>Mailing Address:</strong><br>
+      " . nl2br(htmlspecialchars($_POST['address'])) . "<br>
+      " . nl2br(htmlspecialchars($_POST['address2'])) . "<br>
+      " . nl2br(htmlspecialchars($_POST['caddress'])) . "
+  </li>
 </ul>
 
 <h4>Requested Item</h4>
@@ -480,10 +485,10 @@ Will you fill this request?<br>
 </html>
 ";
 
-mail($destination_email, $subject_to_library, $message_to_library, $headers, "-f donotreply@senylrc.org");
+         mail($destination_email, $subject_to_library, $message_to_library, $headers, "-f donotreply@senylrc.org");
 
 
-}//end of the lib dest for each loop
+     }//end of the lib dest for each loop
 ?>
 
 <p class="alert success">✔️ Your request has been submitted successfully.</p>
@@ -676,9 +681,9 @@ return;
 <br><br>
     <?php
 $loccount = 0;
-    $deadlibraries = array();
-    foreach ($records->location as $location) {
-        $catalogtype = find_catalog($location['name']);
+$deadlibraries = array();
+foreach ($records->location as $location) {
+    $catalogtype = find_catalog($location['name']);
     $urlrecipe = $location->{'md-url_recipe'};
     $mdid = $location->{'md-id'};
     //echo "zack my location is ".$location['name']."<br>";
@@ -743,21 +748,21 @@ $loccount = 0;
         // translate system code to text name
         if (strcmp($destlibsystem, 'MH') == 0) {
             $destlibsystemtxt = "Mid Hudson Library System";
-        } else if (strcmp($destlibsystem, 'RC') == 0) {
+        } elseif (strcmp($destlibsystem, 'RC') == 0) {
             $destlibsystemtxt = "Ramapo Catskill Library System";
-        } else if (strcmp($destlibsystem, 'SE') == 0) {
+        } elseif (strcmp($destlibsystem, 'SE') == 0) {
             $destlibsystemtxt = "SENYLRC";
-        } else if (strcmp($destlibsystem, 'DU') == 0) {
+        } elseif (strcmp($destlibsystem, 'DU') == 0) {
             $destlibsystemtxt = "Dutchess BOCES";
-        } else if (strcmp($destlibsystem, 'OU') == 0) {
+        } elseif (strcmp($destlibsystem, 'OU') == 0) {
             $destlibsystemtxt = "Orange Ulster BOCES";
-        } else if (strcmp($destlibsystem, 'RB') == 0) {
+        } elseif (strcmp($destlibsystem, 'RB') == 0) {
             $destlibsystemtxt = "Rockland BOCES";
-        } else if (strcmp($destlibsystem, 'SB') == 0) {
+        } elseif (strcmp($destlibsystem, 'SB') == 0) {
             $destlibsystemtxt = "Sullivan BOCES";
-        } else if (strcmp($destlibsystem, 'UB') == 0) {
+        } elseif (strcmp($destlibsystem, 'UB') == 0) {
             $destlibsystemtxt = "Ulster BOCES";
-        } else if (strlen($destlibsystem) < 1) {
+        } elseif (strlen($destlibsystem) < 1) {
             $destlibsystemtxt = "All";
         } else {
             $destlibsystemtxt = "SENYLRC Group";
@@ -851,7 +856,7 @@ $loccount = 0;
             $itemcallnum = $d952->so;
             $itemavail = $d952->s7;
             // Remove colon from call numbers
-          $itemcallnum = str_replace(':', '.', $itemcallnum);
+            $itemcallnum = str_replace(':', '.', $itemcallnum);
             // Check if the location is 'Ramapo-Catskill Library System' and adjust item availability if needed
             if ($location['name'] == 'Ramapo-Catskill Library System') {
                 $itemavail = trim(strtolower($d952->sk)); // Adjusting item availability based on the location
@@ -877,21 +882,21 @@ $loccount = 0;
             // translate system code to text name
             if (strcmp($destlibsystem, 'MH') == 0) {
                 $destlibsystemtxt = "Mid Hudson Library System";
-            } else if (strcmp($destlibsystem, 'RC') == 0) {
+            } elseif (strcmp($destlibsystem, 'RC') == 0) {
                 $destlibsystemtxt = "Ramapo Catskill Library System";
-            } else if (strcmp($destlibsystem, 'SE') == 0) {
+            } elseif (strcmp($destlibsystem, 'SE') == 0) {
                 $destlibsystemtxt = "SENYLRC";
-            } else if (strcmp($destlibsystem, 'DU') == 0) {
+            } elseif (strcmp($destlibsystem, 'DU') == 0) {
                 $destlibsystemtxt = "Dutchess BOCES";
-            } else if (strcmp($destlibsystem, 'OU') == 0) {
+            } elseif (strcmp($destlibsystem, 'OU') == 0) {
                 $destlibsystemtxt = "Orange Ulster BOCES";
-            } else if (strcmp($destlibsystem, 'RB') == 0) {
+            } elseif (strcmp($destlibsystem, 'RB') == 0) {
                 $destlibsystemtxt = "Rockland BOCES";
-            } else if (strcmp($destlibsystem, 'SB') == 0) {
+            } elseif (strcmp($destlibsystem, 'SB') == 0) {
                 $destlibsystemtxt = "Sullivan BOCES";
-            } else if (strcmp($destlibsystem, 'UB') == 0) {
+            } elseif (strcmp($destlibsystem, 'UB') == 0) {
                 $destlibsystemtxt = "Ulster BOCES";
-            } else if (strlen($destlibsystem) < 1) {
+            } elseif (strlen($destlibsystem) < 1) {
                 $destlibsystemtxt = "All";
             } else {
                 $destlibsystemtxt = "SENYLRC Group";
@@ -958,15 +963,17 @@ $loccount = 0;
             }
         } //end foreach $recordssSESLC
     } //end if cat type koha
-    }
-    foreach ($deadlibraries as $line) { echo $line; }
+}
+foreach ($deadlibraries as $line) {
+    echo $line;
+}
 
-      if ($loccount > 0) {
-          echo "<div class='actions'><input type='submit' value='Submit'></div>";
-      } else {
-          echo "<p class='alert error'><b>Sorry, no available library to route your request at this time.</b> <a href='/'>Try another search?</a></p>";
-      }
-    ?>
+if ($loccount > 0) {
+    echo "<div class='actions'><input type='submit' value='Submit'></div>";
+} else {
+    echo "<p class='alert error'><b>Sorry, no available library to route your request at this time.</b> <a href='/'>Try another search?</a></p>";
+}
+?>
   </form>
 </div>
 
