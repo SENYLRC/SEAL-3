@@ -1,4 +1,5 @@
 <?php
+
 /**
  * SEAL / 5-Day Expiration Script (Business Day Logic)
  * ------------------------------------------------------------
@@ -19,11 +20,14 @@ error_log(date('c') . " - ===== Starting seal_5day_expire.php =====\n", 3, $logf
 // ----------------------------------------------------
 //  Auto-Updating Holiday Function (Nager.Date + Winter Break)
 // ----------------------------------------------------
-function getHolidaysAuto($country = 'US') {
+function getHolidaysAuto($country = 'US')
+{
     $currentYear = (int)date('Y');
     $month = (int)date('n');
     $years = [$currentYear];
-    if ($month === 12) $years[] = $currentYear + 1;
+    if ($month === 12) {
+        $years[] = $currentYear + 1;
+    }
 
     $holidays = [];
     $logfile = '/var/log/seal_illiad_cron.log';
@@ -35,7 +39,9 @@ function getHolidaysAuto($country = 'US') {
 
         if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < 604800) {
             $data = json_decode(file_get_contents($cacheFile), true);
-            if (!is_array($data)) $data = [];
+            if (!is_array($data)) {
+                $data = [];
+            }
         } else {
             $context = stream_context_create(['http' => ['timeout' => 10]]);
             $json = @file_get_contents($url, false, $context);
@@ -48,8 +54,11 @@ function getHolidaysAuto($country = 'US') {
             }
         }
 
-        foreach ($data as $holiday)
-            if (!empty($holiday['date'])) $holidays[] = $holiday['date'];
+        foreach ($data as $holiday) {
+            if (!empty($holiday['date'])) {
+                $holidays[] = $holiday['date'];
+            }
+        }
 
         // Winter Break (Dec 24 → Jan 1)
         $d1 = new DateTime("$year-12-24");
@@ -68,7 +77,8 @@ function getHolidaysAuto($country = 'US') {
 // ----------------------------------------------------
 //  Business-day helpers (same as 3-day reminder)
 // ----------------------------------------------------
-function isBusinessDay(string $ymd, array $holidays): bool {
+function isBusinessDay(string $ymd, array $holidays): bool
+{
     $dow = (int)date('N', strtotime($ymd)); // 1=Mon .. 7=Sun
     return $dow < 6 && !in_array($ymd, $holidays, true);
 }
@@ -76,7 +86,8 @@ function isBusinessDay(string $ymd, array $holidays): bool {
 /**
  * Return date exactly $days business days after $startDate.
  */
-function addBusinessDays(string $startDate, int $days, array $holidays, bool $includeStart = false): string {
+function addBusinessDays(string $startDate, int $days, array $holidays, bool $includeStart = false): string
+{
     $tz   = new DateTimeZone('America/New_York');
     $date = new DateTime($startDate, $tz);
 
@@ -140,14 +151,25 @@ while ($row = mysqli_fetch_assoc($res)) {
     $email       = trim($row["requesterEMAIL"]);
     $destination = trim($row["Destination"]);
 
+    // Build a nice display for the lending library: "Name (CODE)" or just CODE if name missing
+    $lenderCode = $destination;
+    $lenderName = $libsByCode[$lenderCode] ?? '';
+    if ($lenderName !== '' && $lenderCode !== '') {
+        $lenderDisplay = "$lenderName ($lenderCode)";
+    } else {
+        $lenderDisplay = $lenderCode; // fallback
+    }
+
     $reqdate = substr($timestamp, 0, 10);
     $today   = date("Y-m-d");
 
     $expireDate = addBusinessDays($reqdate, 5, $holidays, false);
-    $logprefix  = "ILL#$illnum ($destination)";
+    $logprefix  = "ILL#$illnum ($lenderDisplay)";
     error_log(date('c') . " - Checking $logprefix | req=$reqdate expire=$expireDate (5 business days)\n", 3, $logfile);
 
-    if ($today <= $expireDate) continue; // not yet expired
+    if ($today <= $expireDate) {
+        continue;
+    } // not yet expired
 
     error_log(date('c') . " - $logprefix | Expiring now after 5 business days\n", 3, $logfile);
 
@@ -171,22 +193,22 @@ while ($row = mysqli_fetch_assoc($res)) {
     }
 
     // ----------------------------------------------------
-//  Email notifications
-// ----------------------------------------------------
-$subject = "ILL Request Expired — ILL# $illnum";
-$headers  = "From: SEAL <donotreply@senylrc.org>\r\n";
-$headers .= "MIME-Version: 1.0\r\n";
-$headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+    //  Email notifications
+    // ----------------------------------------------------
+    $subject = "ILL Request Expired — ILL# $illnum";
+    $headers  = "From: SEAL <donotreply@senylrc.org>\r\n";
+    $headers .= "MIME-Version: 1.0\r\n";
+    $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
 
-// Link back to SEAL
-$seal_link = "https://seal.senylrc.org/";
+    // Link back to SEAL
+    $seal_link = "https://seal.senylrc.org/";
 
-// Lending library email (field from DB)
-$lender_email = trim($row["responderEMAIL"]);
+    // Lending library email (field from DB)
+    $lender_email = trim($row["responderEMAIL"]);
 
-$message = "
+    $message = "
     <p>Your SEAL ILL request (<b>$illnum</b>) for <b>$title</b> has expired after
-    five business days without a response from <b>$destination</b>.</p>
+    five business days without a response from <b>$lenderDisplay</b>.</p>
 
     <p>You may wish to submit a new request to another library.</p>
 
@@ -203,15 +225,15 @@ $message = "
     <p>This is an automated message from the SEAL ILL System.</p>
 ";
 
-// Notify requester
-mail($email, $subject, $message, $headers, "-f donotreply@senylrc.org");
+    // Notify requester
+    mail($email, $subject, $message, $headers, "-f donotreply@senylrc.org");
 
-// ----------------------------------------------------
-//  Notify the LENDING library
-// ----------------------------------------------------
-if (!empty($lender_email)) {
-    $lenderSubject = "SEAL ILL Expired — ILL# $illnum";
-    $lenderMsg = "
+    // ----------------------------------------------------
+    //  Notify the LENDING library
+    // ----------------------------------------------------
+    if (!empty($lender_email)) {
+        $lenderSubject = "SEAL ILL Expired — ILL# $illnum";
+        $lenderMsg = "
         <p>The SEAL request you received (<b>$illnum</b>) for the title:</p>
         <p><b>$title</b></p>
 
@@ -225,31 +247,31 @@ if (!empty($lender_email)) {
         <p>This is an automated message from SEAL.</p>
     ";
 
-    mail($lender_email, $lenderSubject, $lenderMsg, $headers, "-f donotreply@senylrc.org");
+        mail($lender_email, $lenderSubject, $lenderMsg, $headers, "-f donotreply@senylrc.org");
 
-    error_log(date('c') . " - $logprefix | Notified lending library at $lender_email\n", 3, $logfile);
-}
+        error_log(date('c') . " - $logprefix | Notified lending library at $lender_email\n", 3, $logfile);
+    }
 
-// ----------------------------------------------------
-//  Notify ILL admin
-// ----------------------------------------------------
-$nocMessage = 
-"ILL Request Expired After 5 Business Days\n" .
-"----------------------------------------\n" .
-"ILL#: $illnum\n" .
-"Title: $title\n" .
-"Requester: $requester <$email>\n" .
-"Lending Library: $destination\n" .
-"Lending Library Email: $lender_email\n" .
-"Expired Date: $today\n";
+    // ----------------------------------------------------
+    //  Notify ILL admin
+    // ----------------------------------------------------
+    $nocMessage =
+    "ILL Request Expired After 5 Business Days\n" .
+    "----------------------------------------\n" .
+    "ILL#: $illnum\n" .
+    "Title: $title\n" .
+    "Requester: $requester <$email>\n" .
+    "Lending Library: $lenderDisplay\n" .
+    "Lending Library Email: $lender_email\n" .
+    "Expired Date: $today\n";
 
-mail(
-    "ill@senylrc.org",
-    "SEAL ILL Expired $illnum ($destination)",
-    $nocMessage,
-    $headers,
-    "-f donotreply@senylrc.org"
-);
+    mail(
+        "ill@senylrc.org",
+        "SEAL ILL Expired $illnum ($lenderDisplay)",
+        $nocMessage,
+        $headers,
+        "-f donotreply@senylrc.org"
+    );
 
 
 }
@@ -257,4 +279,3 @@ mail(
 mysqli_close($db);
 error_log(date('c') . " - ===== Completed seal_5day_expire.php =====\n", 3, $logfile);
 echo "5-day expiration processing complete.\n";
-?>
