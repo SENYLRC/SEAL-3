@@ -10,7 +10,7 @@
       dateFormat: "yy-mm-dd",
       changeMonth: true,
       changeYear: true,
-      yearRange: currentYear + ":" + (currentYear + 3), // ← limit to current year through +3 years
+      yearRange: currentYear + ":" + (currentYear + 3),
       showAnim: "fadeIn"
     });
   });
@@ -36,15 +36,16 @@ if (!array_intersect(['administrator', 'libstaff'], $user_roles)) {
         Access Denied<br>You must have the <b>Administrator</b> or <b>Library Staff</b> role to access this page.
     </div>");
 }
+
 // renew.php
 require '/var/www/seal_wp_script/seal_function.php';
 
-// Collect inputs
-$reqnumb         = $_POST["num"]         ?? ($_REQUEST["num"] ?? '');
-$renewNote       = $_POST["renewNote"]   ?? ($_REQUEST["renewNote"] ?? '');
-$duedate         = $_POST["duedate"]     ?? ($_REQUEST["duedate"] ?? '');
-$renewNoteLender = $_POST["renewNoteLender"] ?? ($_REQUEST["renewNoteLender"] ?? '');
-$renanswer       = $_POST["a"]           ?? ($_REQUEST["a"] ?? '');
+// Collect inputs (raw)
+$reqnumb         = $_POST["num"]              ?? ($_REQUEST["num"] ?? '');
+$renewNote       = $_POST["renewNote"]        ?? ($_REQUEST["renewNote"] ?? '');
+$duedate         = $_POST["duedate"]          ?? ($_REQUEST["duedate"] ?? '');
+$renewNoteLender = $_POST["renewNoteLender"]  ?? ($_REQUEST["renewNoteLender"] ?? '');
+$renanswer       = $_POST["a"]                ?? ($_REQUEST["a"] ?? '');
 
 // Timestamps
 $timestamp = date("Y-m-d H:i:s");
@@ -55,7 +56,7 @@ require '/var/www/seal_wp_script/seal_db.inc';
 $db = mysqli_connect($dbhost, $dbuser, $dbpass);
 mysqli_select_db($db, $dbname);
 
-// Escape
+// Escape for SQL
 $reqnumb         = mysqli_real_escape_string($db, $reqnumb);
 $renewNote       = mysqli_real_escape_string($db, $renewNote);
 $renewNoteLender = mysqli_real_escape_string($db, $renewNoteLender);
@@ -77,13 +78,17 @@ if ($renanswer === '1') {
                 WHERE `illNUB` = '$reqnumb'";
         if (mysqli_query($db, $sql)) {
             echo "Renewal request has been approved. <a href='/lender-history'>Back to lender history</a>";
+
             // Email borrower
             $res = mysqli_query($db, "SELECT Title,RequesterEMAIL FROM `$sealSTAT` WHERE `illNUB` = '$reqnumb' LIMIT 1");
             if ($res && ($value = mysqli_fetch_object($res))) {
                 $reqemail = $value->RequesterEMAIL;
                 $title    = $value->Title;
                 $messagedest = "Your renewal request for ILL# $reqnumb ($title) has been approved with a due date of $duedate.<br>";
-                if ($renewNoteLender) $messagedest .= "Lender Note: $renewNoteLender<br>";
+                if ($renewNoteLender) {
+                    $safeLenderNote = nl2br(htmlspecialchars($renewNoteLender, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+                    $messagedest   .= "Lender Note: {$safeLenderNote}<br>";
+                }
                 $subject = "SEAL Renewal Approved: ILL# $reqnumb";
                 $headers = "From: Southeastern SEAL <donotreply@senylrc.org>\r\n".
                            "MIME-Version: 1.0\r\n".
@@ -94,6 +99,19 @@ if ($renanswer === '1') {
             echo "Error: unable to approve renewal.";
         }
     } else {
+
+        // Show borrower note (if any) to lender
+        $borrowerNote = '';
+        $resNote = mysqli_query($db, "SELECT renewNote FROM `$sealSTAT` WHERE `illNUB` = '$reqnumb' LIMIT 1");
+        if ($resNote && ($rowNote = mysqli_fetch_assoc($resNote))) {
+            $borrowerNote = $rowNote['renewNote'] ?? '';
+        }
+
+        if (!empty($borrowerNote)) {
+            echo "<p><strong>Borrower Note:</strong><br>" .
+                 nl2br(htmlspecialchars($borrowerNote, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) .
+                 "</p>";
+        }
         ?>
         <form method="post" action="/renew">
           <input type="hidden" name="a" value="1">
@@ -117,13 +135,17 @@ if ($renanswer === '1') {
                 WHERE `illNUB` = '$reqnumb'";
         if (mysqli_query($db, $sql)) {
             echo "Renewal request has been denied. <a href='/lender-history'>Back to lender history</a>";
+
             // Email borrower
             $res = mysqli_query($db, "SELECT Title,RequesterEMAIL FROM `$sealSTAT` WHERE `illNUB` = '$reqnumb' LIMIT 1");
             if ($res && ($value = mysqli_fetch_object($res))) {
                 $reqemail = $value->RequesterEMAIL;
                 $title    = $value->Title;
                 $messagedest = "Your renewal request for ILL# $reqnumb ($title) has been denied. Please return by the original due date.<br>";
-                if ($renewNoteLender) $messagedest .= "Lender Note: $renewNoteLender<br>";
+                if ($renewNoteLender) {
+                    $safeLenderNote = nl2br(htmlspecialchars($renewNoteLender, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+                    $messagedest   .= "Lender Note: {$safeLenderNote}<br>";
+                }
                 $subject = "SEAL Renewal Denied: ILL# $reqnumb";
                 $headers = "From: Southeastern SEAL <donotreply@senylrc.org>\r\n".
                            "MIME-Version: 1.0\r\n".
@@ -134,6 +156,19 @@ if ($renanswer === '1') {
             echo "Error: unable to deny renewal.";
         }
     } else {
+
+        // Show borrower note (if any) to lender
+        $borrowerNote = '';
+        $resNote = mysqli_query($db, "SELECT renewNote FROM `$sealSTAT` WHERE `illNUB` = '$reqnumb' LIMIT 1");
+        if ($resNote && ($rowNote = mysqli_fetch_assoc($resNote))) {
+            $borrowerNote = $rowNote['renewNote'] ?? '';
+        }
+
+        if (!empty($borrowerNote)) {
+            echo "<p><strong>Borrower Note:</strong><br>" .
+                 nl2br(htmlspecialchars($borrowerNote, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) .
+                 "</p>";
+        }
         ?>
         <form method="post" action="/renew">
           <input type="hidden" name="a" value="2">
@@ -147,7 +182,10 @@ if ($renanswer === '1') {
 
 // 3 = borrower requests renewal
 } elseif ($renanswer === '3') {
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    // Only finalize the renewal once we actually have a note
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && $renewNote !== '') {
+
         $sql = "UPDATE `$sealSTAT`
                 SET `renewTimeStamp` = '$timestamp',
                     `renewAccountRequester` = '$wholename',
@@ -155,18 +193,29 @@ if ($renanswer === '1') {
                 WHERE `illNUB` = '$reqnumb'";
         if (mysqli_query($db, $sql)) {
             echo "Renewal request for ILL $reqnumb has been submitted. <a href='/requesthistory'>Back to request history</a>";
+
             // Email lender
             $res = mysqli_query($db, "SELECT Title,Destination,RequesterEMAIL FROM `$sealSTAT` WHERE `illNUB` = '$reqnumb' LIMIT 1");
             if ($res && ($value = mysqli_fetch_object($res))) {
                 $lenderid = $value->Destination;
                 $title    = $value->Title;
                 $reqemail = $value->RequesterEMAIL;
+
                 $res2 = mysqli_query($db, "SELECT ill_email FROM `$sealLIB` WHERE loc = '$lenderid' LIMIT 1");
                 if ($res2 && ($rowdest = mysqli_fetch_assoc($res2))) {
-                    $destemail = $rowdest["ill_email"];
+                    $destemail    = $rowdest["ill_email"];
                     $destemail_to = implode(',', explode(';', $destemail));
-                    $messagedest = "$field_your_institution has requested a renewal for ILL# $reqnumb<br>Title: $title<br><br>";
+
+                    $messagedest  = "$field_your_institution has requested a renewal for ILL# $reqnumb<br>Title: $title<br><br>";
+
+                    // Include borrower note in email
+                    if (!empty($renewNote)) {
+                        $safeRenewNote = nl2br(htmlspecialchars($renewNote, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+                        $messagedest  .= "<strong>Borrower Note:</strong><br>{$safeRenewNote}<br><br>";
+                    }
+
                     $messagedest .= "Please respond in SEAL: Approve or Deny this renewal.<br>";
+
                     $subject = "SEAL Renewal Request: ILL# $reqnumb";
                     $headers = "From: Southeastern SEAL <donotreply@senylrc.org>\r\n".
                                "MIME-Version: 1.0\r\n".
@@ -177,20 +226,22 @@ if ($renanswer === '1') {
         } else {
             echo "Error: unable to create renewal request.";
         }
+
     } else {
+        // First visit / initial POST with no note: show the form
         ?>
         <h2>Renew ILL: <?php echo htmlspecialchars($reqnumb); ?></h2>
         <form method="post" action="/renew">
           <input type="hidden" name="a" value="3">
           <input type="hidden" name="num" value="<?php echo htmlspecialchars($reqnumb); ?>">
           Reason:<br>
-          <textarea name="renewNote" rows="6" cols="40" maxlength="255"></textarea><br>
+          <textarea name="renewNote" rows="6" cols="40" maxlength="255" required></textarea><br>
           <button type="submit">Submit</button>
         </form>
         <?php
     }
 
-// 4 = lender edits due date
+// 4 = lender edits due date (no renew note change)
 } elseif ($renanswer === '4') {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sql = "UPDATE `$sealSTAT`
