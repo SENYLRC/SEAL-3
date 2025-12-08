@@ -265,7 +265,7 @@ if (!$GETLIST) {
         $reqnote     = trim($row["reqnote"] ?? '');
         $patronnote  = trim($row["patronnote"] ?? '');
         $lendnote    = trim($row["responderNOTE"] ?? '');
-        $returnnote  = trim($row["returnnote"] ?? '');
+        $returnnote  = trim($row["returnNote"] ?? '');
         $returnmethod = trim($row["returnmethod"] ?? '');
         $renewNote   = trim($row["renewNote"] ?? '');
         $renewNoteLender = trim($row["renewNoteLender"] ?? '');
