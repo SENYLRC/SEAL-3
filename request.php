@@ -857,6 +857,11 @@ foreach ($records->location as $location) {
             $itemavail = $d952->s7;
             // Remove colon from call numbers
             $itemcallnum = str_replace(':', '.', $itemcallnum);
+            // IMPORTANT: HTML-escape values that go into value=''
+            $itemlocation    = htmlspecialchars($itemlocation, ENT_QUOTES);
+            $itemcallnum     = htmlspecialchars($itemcallnum, ENT_QUOTES);
+            $itemlocallocation = $itemlocation; // already escaped
+
             // Check if the location is 'Ramapo-Catskill Library System' and adjust item availability if needed
             if ($location['name'] == 'Ramapo-Catskill Library System') {
                 $itemavail = trim(strtolower($d952->sk)); // Adjusting item availability based on the location
