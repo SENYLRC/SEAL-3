@@ -73,6 +73,33 @@ function getHolidaysAuto($country = 'US')
     sort($holidays);
     return $holidays;
 }
+// ----------------------------------------------------
+//  Helper: get library name by LOC code
+// ----------------------------------------------------
+function libsbycode(mysqli $db, string $sealLIB, string $loccode): string
+{
+    $loccode = trim($loccode);
+    if ($loccode === '') {
+        return '';
+    }
+
+    $sql = "
+        SELECT `Name`
+        FROM `{$sealLIB}`
+        WHERE `loc` = '" . mysqli_real_escape_string($db, $loccode) . "'
+        LIMIT 1
+    ";
+
+    $result = mysqli_query($db, $sql);
+    if (!$result) {
+        return '';
+    }
+
+    $row = mysqli_fetch_assoc($result);
+    return isset($row['Name']) ? trim($row['Name']) : '';
+}
+
+
 
 // ----------------------------------------------------
 //  Business-day helpers (same as 3-day reminder)
@@ -152,13 +179,60 @@ while ($row = mysqli_fetch_assoc($res)) {
     $destination = trim($row["Destination"]);
 
     // Build a nice display for the lending library: "Name (CODE)" or just CODE if name missing
-    $lenderCode = $destination;
-    $lenderName = $libsByCode[$lenderCode] ?? '';
+    $lenderCode = $destination; // LOC code from sealSTAT
+    $lenderName = libsbycode($db, $sealLIB, $lenderCode);
+
     if ($lenderName !== '' && $lenderCode !== '') {
-        $lenderDisplay = "$lenderName ($lenderCode)";
+        $lenderDisplay = "$lenderName ";
     } else {
         $lenderDisplay = $lenderCode; // fallback
     }
+
+    // ============================================================
+    // GET LENDER RESPONDER EMAIL (from sealLIB using loc code)
+    // ============================================================
+
+    // $destination or $destill should contain the LOC code.
+    // If your script uses a different variable name, replace it here.
+    $loccode = trim($destination ?? $destill ?? '');
+
+    // Default to empty
+    $lender_email = '';
+
+    if ($loccode !== '') {
+        // Query sealLIB for the ILL email address
+        $sql = "
+        SELECT `ill_email`
+        FROM `$sealLIB`
+        WHERE `loc` = '" . mysqli_real_escape_string($db, $loccode) . "'
+        LIMIT 1
+    ";
+
+        $resultEmail = mysqli_query($db, $sql);
+
+        if ($resultEmail && mysqli_num_rows($resultEmail) > 0) {
+            $rowEmail = mysqli_fetch_assoc($resultEmail);
+
+            if (!empty($rowEmail['ill_email'])) {
+                // Handle multiple emails separated by semicolons
+                $emails = array_map('trim', explode(';', $rowEmail['ill_email']));
+                // Convert to comma-separated list for mail()
+                $lender_email = implode(',', $emails);
+            }
+        }
+
+
+    }
+
+    // Optional debug logging
+    if ($lender_email === '') {
+        error_log(
+            date('c') . " - WARNING: No responder email found in sealLIB for LOC '$loccode' during 5-day expire.\n",
+            3,
+            $logfile
+        );
+    }
+
 
     $reqdate = substr($timestamp, 0, 10);
     $today   = date("Y-m-d");
@@ -202,9 +276,6 @@ while ($row = mysqli_fetch_assoc($res)) {
 
     // Link back to SEAL
     $seal_link = "https://seal.senylrc.org/";
-
-    // Lending library email (field from DB)
-    $lender_email = trim($row["responderEMAIL"]);
 
     $message = "
     <p>Your SEAL ILL request (<b>$illnum</b>) for <b>$title</b> has expired after
@@ -255,15 +326,19 @@ while ($row = mysqli_fetch_assoc($res)) {
     // ----------------------------------------------------
     //  Notify ILL admin
     // ----------------------------------------------------
-    $nocMessage =
-    "ILL Request Expired After 5 Business Days\n" .
-    "----------------------------------------\n" .
-    "ILL#: $illnum\n" .
-    "Title: $title\n" .
-    "Requester: $requester <$email>\n" .
-    "Lending Library: $lenderDisplay\n" .
-    "Lending Library Email: $lender_email\n" .
-    "Expired Date: $today\n";
+    $nocMessage = "
+    <p><strong>ILL Request Expired After 5 Business Days</strong></p>
+    <p>
+        <strong>ILL#:</strong> $illnum<br>
+        <strong>Title:</strong> $title<br>
+        <strong>Lending Library:</strong> $lenderDisplay<br>
+        <strong>Lending Library Email:</strong> $lender_email<br>
+        <strong>Lending Library:</strong> $requester<br>
+        <strong>Expired Date:</strong> $today
+    </p>
+    <hr>
+    <p>This is an automated message from the SEAL ILL System.</p>
+";
 
     mail(
         "ill@senylrc.org",
