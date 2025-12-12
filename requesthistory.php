@@ -75,12 +75,67 @@ if (isset($_GET['loc'])) {
 }
 
 // -------------------------------
+// Library scope (primary + extra LOCs)
+// -------------------------------
+$primary_loc = trim($field_loc_location_code);
+
+// extra LOCs from user meta: "NHIGS,NWATTJ"
+$extra_locs_raw = get_user_meta($current_user->ID, 'seal_extra_locs', true);
+$extra_locs_raw = is_string($extra_locs_raw) ? trim($extra_locs_raw) : '';
+
+$extra_locs = [];
+if ($extra_locs_raw !== '') {
+    foreach (explode(',', $extra_locs_raw) as $c) {
+        $c = strtoupper(trim($c));
+        if ($c !== '') $extra_locs[] = $c;
+    }
+}
+
+// normalize list
+$all_locs = array_values(array_unique(array_filter(array_merge([strtoupper($primary_loc)], $extra_locs))));
+
+// chosen library scope from form
+$filter_loc = $_REQUEST['filter_loc'] ?? '';   // '', 'all', or LOC
+$has_multi = (count($all_locs) > 1);
+
+if (!$has_multi) {
+    // only one LOC available
+    $filter_loc = $all_locs[0] ?? strtoupper($primary_loc);
+} else {
+    if ($filter_loc === '') $filter_loc = 'all';
+    // validate
+    if ($filter_loc !== 'all' && !in_array(strtoupper($filter_loc), $all_locs, true)) {
+        $filter_loc = 'all';
+    }
+}
+
+
+
+
+// -------------------------------
 // Filter Form
 // -------------------------------
 echo "<form action='".$_SERVER['REDIRECT_URL']."' method='post'>";
 echo "<input type='hidden' name='loc' value='$loc'>";
 echo "<h3>Borrowing Requests Submitted By Your Library</h3>";
 echo "<h3>Limit Results</h3>";
+
+// Show library selector only if user has more than one LOC
+if ($has_multi) {
+    echo "<p><b>Library:</b></p>";
+    echo "<div style='display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:12px;'>";
+    echo "<label><select name='filter_loc' style='min-width:240px;'>";
+    echo "<option value='all' " . selected('all', $filter_loc, false) . ">All My Libraries</option>";
+    foreach ($all_locs as $code) {
+        echo "<option value='" . esc_attr($code) . "' " . selected($code, strtoupper($filter_loc), false) . ">" . esc_html($code) . "</option>";
+    }
+    echo "</select></label>";
+    echo "</div>";
+} else {
+    // keep scope stable even without dropdown
+    echo "<input type='hidden' name='filter_loc' value='" . esc_attr($filter_loc) . "'>";
+}
+
 
 echo "<p><b>By Fill Status:</b></p>";
 echo "<div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;max-width:720px;align-items:center;'>";
@@ -120,8 +175,22 @@ echo "</form>";
 require '/var/www/seal_wp_script/seal_db.inc';
 $db = mysqli_connect($dbhost, $dbuser, $dbpass, $dbname);
 
-$loc = mysqli_real_escape_string($db, $loc);
-$SQLBASE = "SELECT *, DATE_FORMAT(`Timestamp`, '%Y/%m/%d') AS ts_fmt FROM `$sealSTAT` WHERE `Requester LOC` = '$loc'";
+// Build WHERE clause for Requester LOC based on filter_loc
+if ($has_multi && $filter_loc === 'all') {
+    $esc_locs = [];
+    foreach ($all_locs as $c) {
+        $esc_locs[] = "'" . mysqli_real_escape_string($db, $c) . "'";
+    }
+    $where_loc = "`Requester LOC` IN (" . implode(',', $esc_locs) . ")";
+} else {
+    $chosen = strtoupper($filter_loc ?: $primary_loc);
+    $chosen = mysqli_real_escape_string($db, $chosen);
+    $where_loc = "`Requester LOC` = '$chosen'";
+}
+
+$SQLBASE = "SELECT *, DATE_FORMAT(`Timestamp`, '%Y/%m/%d') AS ts_fmt FROM `$sealSTAT` WHERE $where_loc";
+
+
 $SQLEND  = " ORDER BY `Timestamp` DESC";
 $SQL_DAYS = ($filter_days == "all") ? "" : " AND (DATE(`Timestamp`) BETWEEN NOW() - INTERVAL ".intval($filter_days)." DAY AND NOW())";
 $SQLILL  = (strlen($filter_illnum) > 2) ? " AND `illNUB` LIKE '%".mysqli_real_escape_string($db, $filter_illnum)."%' " : "";

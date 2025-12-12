@@ -22,6 +22,21 @@ if (!is_user_logged_in()) {
 }
 
 $current_user = wp_get_current_user();
+$primary_loc = strtoupper(trim(get_user_meta($current_user->ID, 'address_loc_code', true) ?? ''));
+
+$extra_locs_raw = get_user_meta($current_user->ID, 'seal_extra_locs', true);
+$extra_locs_raw = is_string($extra_locs_raw) ? trim($extra_locs_raw) : '';
+
+$extra_locs = [];
+if ($extra_locs_raw !== '') {
+    foreach (explode(',', $extra_locs_raw) as $c) {
+        $c = strtoupper(trim($c));
+        if ($c !== '') $extra_locs[] = $c;
+    }
+}
+
+$all_locs  = array_values(array_unique(array_filter(array_merge([$primary_loc], $extra_locs))));
+$has_multi = (count($all_locs) > 1);
 $user_roles   = (array)$current_user->roles;
 
 // Only allow Administrator or Library Staff roles
@@ -59,27 +74,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($startdated)) $startdated = date('m/d/Y', strtotime('-7 days'));
     if (empty($enddated))   $enddated   = date('m/d/Y');
 
-    // User’s library location
-    $loc = get_user_meta($current_user->ID, 'address_loc_code', true) ?? '';
-    $loc = trim($loc);
+    // --------------------------------------------------
+// Library scope (primary + extra LOCs) + selection
+// --------------------------------------------------
+$primary_loc = get_user_meta($current_user->ID, 'address_loc_code', true) ?? '';
+$primary_loc = strtoupper(trim($primary_loc));
+
+// extra LOCs from user meta: "NHIGS,NWATTJ"
+$extra_locs_raw = get_user_meta($current_user->ID, 'seal_extra_locs', true);
+$extra_locs_raw = is_string($extra_locs_raw) ? trim($extra_locs_raw) : '';
+
+$extra_locs = [];
+if ($extra_locs_raw !== '') {
+    foreach (explode(',', $extra_locs_raw) as $c) {
+        $c = strtoupper(trim($c));
+        if ($c !== '') $extra_locs[] = $c;
+    }
+}
+
+$all_locs = array_values(array_unique(array_filter(array_merge([$primary_loc], $extra_locs))));
+$has_multi = (count($all_locs) > 1);
+
+// dropdown selection: 'all' or a LOC
+$filter_loc = $_REQUEST['filter_loc'] ?? '';
+if (!$has_multi) {
+    $filter_loc = $all_locs[0] ?? $primary_loc;
+} else {
+    if ($filter_loc === '') $filter_loc = 'all';
+    if ($filter_loc !== 'all' && !in_array(strtoupper($filter_loc), $all_locs, true)) {
+        $filter_loc = 'all';
+    }
+}
+
+
 
     // Date validation regex (mm/dd/yyyy or mm-dd-yyyy)
     $reg = '~(0[1-9]|1[0-2])[-/](0[1-9]|[12][0-9]|3[01])[-/](19|20)\d\d~';
 
     if (!preg_match($reg, $startdated) || !preg_match($reg, $enddated)) {
         echo "<h1 style='color:red;'>Date must be in the format mm/dd/yyyy</h1>";
-    } elseif (empty($loc)) {
+    } elseif (empty($primary_loc)) {
         echo "<h3 style='color:red;'>No library location code found for your account.</h3>";
     } else {
         // Sanitize + format
-        $loc = mysqli_real_escape_string($db, $loc);
         $startdate = date('Y-m-d 00:00:00', strtotime(str_replace('-', '/', $startdated)));
         $enddate   = date('Y-m-d 23:59:59', strtotime(str_replace('-', '/', $enddated)));
+
+        // Build WHERE clause for Requester LOC based on filter_loc
+if ($has_multi && $filter_loc === 'all') {
+    $esc = [];
+    foreach ($all_locs as $c) {
+        $esc[] = "'" . mysqli_real_escape_string($db, $c) . "'";
+    }
+    $where_loc = "`Requester LOC` IN (" . implode(',', $esc) . ")";
+} else {
+    $chosen = strtoupper($filter_loc ?: $primary_loc);
+    $chosen = mysqli_real_escape_string($db, $chosen);
+    $where_loc = "`Requester LOC` = '$chosen'";
+}
+
+
 
         // Build base query
         $GETREQUESTCOUNTSQL = "
             SELECT * FROM `$sealSTAT`
-            WHERE `Requester LOC` = '$loc'
+            WHERE $where_loc
             AND `Timestamp` BETWEEN '$startdate' AND '$enddate'";
 
         $retval = mysqli_query($db, $GETREQUESTCOUNTSQL);
@@ -93,10 +152,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $row_cnt = mysqli_num_rows($retval);
 
             // Helper function for counts
-            function get_count($db, $sealSTAT, $loc, $startdate, $enddate, $fillVal) {
+            function get_count($db, $sealSTAT, $where_loc, $startdate, $enddate, $fillVal) {
                 $fillVal = (int)$fillVal;
                 $sql = "SELECT COUNT(*) AS cnt FROM `$sealSTAT`
-                        WHERE `Requester LOC` = '$loc'
+                        WHERE $where_loc
                         AND `Timestamp` BETWEEN '$startdate' AND '$enddate'
                         AND `Fill` = '$fillVal'";
                 $r = mysqli_query($db, $sql);
@@ -104,11 +163,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 return (int)($d['cnt'] ?? 0);
             }
 
-            $row_fill    = get_count($db, $sealSTAT, $loc, $startdate, $enddate, 1);
-            $row_notfill = get_count($db, $sealSTAT, $loc, $startdate, $enddate, 0);
-            $row_expire  = get_count($db, $sealSTAT, $loc, $startdate, $enddate, 4);
-            $row_noansw  = get_count($db, $sealSTAT, $loc, $startdate, $enddate, 3);
-            $row_cancel  = get_count($db, $sealSTAT, $loc, $startdate, $enddate, 6);
+            $row_fill    = get_count($db, $sealSTAT, $where_loc, $startdate, $enddate, 1);
+            $row_notfill = get_count($db, $sealSTAT, $where_loc, $startdate, $enddate, 0);
+            $row_expire  = get_count($db, $sealSTAT, $where_loc, $startdate, $enddate, 4);
+            $row_noansw  = get_count($db, $sealSTAT, $where_loc, $startdate, $enddate, 3);
+            $row_cancel  = get_count($db, $sealSTAT, $where_loc, $startdate, $enddate, 6);
 
             // Calculate percentages safely
             $safe_pct = fn($num) => ($row_cnt > 0) ? number_format(($num / $row_cnt) * 100, 2) . '%' : '0%';
@@ -119,7 +178,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $percent_friendly_cancel  = $safe_pct($row_cancel);
 
             // Get library name
-            $libnames = "SELECT Name FROM `$sealLIB` WHERE `LOC` = '$loc'";
+            if ($has_multi && $filter_loc === 'all') {
+    $libname = "All My Libraries";
+} else {
+    $chosen = strtoupper($filter_loc ?: $primary_loc);
+    $chosen_esc = mysqli_real_escape_string($db, $chosen);
+    $libnames = "SELECT Name FROM `$sealLIB` WHERE `LOC` = '$chosen_esc' LIMIT 1";
+    $libnameq = mysqli_query($db, $libnames);
+    $libname  = ($row = mysqli_fetch_assoc($libnameq)) ? $row["Name"] : $chosen;
+}
+
             $libnameq = mysqli_query($db, $libnames);
             $libname  = ($row = mysqli_fetch_assoc($libnameq)) ? $row["Name"] : $loc;
 
@@ -138,7 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $destsystem = "
                 SELECT DISTINCT(`DestSystem`)
                 FROM `$sealSTAT`
-                WHERE `Requester LOC` = '$loc'
+                WHERE $where_loc
                 AND `Timestamp` BETWEEN '$startdate' AND '$enddate'";
 
             $destsystemq = mysqli_query($db, $destsystem);
@@ -158,7 +226,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $dessysvartxt = $system_names[$dessysvar] ?? 'SENYLRC Group';
 
                 $destcount = "SELECT COUNT(*) AS cnt FROM `$sealSTAT`
-                              WHERE `Requester LOC` = '$loc'
+                              WHERE $where_loc
                               AND `DestSystem` = '$dessysvar'
                               AND `Timestamp` BETWEEN '$startdate' AND '$enddate'";
                 $destcountq = mysqli_query($db, $destcount);
@@ -171,7 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $destitype = "
                     SELECT DISTINCT(`Itype`)
                     FROM `$sealSTAT`
-                    WHERE `Requester LOC` = '$loc'
+                    WHERE $where_loc
                     AND `DestSystem` = '$dessysvar'
                     AND `Timestamp` BETWEEN '$startdate' AND '$enddate'";
                 $destitypeq = mysqli_query($db, $destitype);
@@ -182,7 +250,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     $destitemcount = "SELECT COUNT(*) AS cnt FROM `$sealSTAT`
                                       WHERE `Itype` = '$itype'
-                                      AND `Requester LOC` = '$loc'
+                                      AND $where_loc
                                       AND `DestSystem` = '$dessysvar'
                                       AND `Timestamp` BETWEEN '$startdate' AND '$enddate'";
                     $destitemcountq = mysqli_query($db, $destitemcount);
@@ -196,7 +264,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             SELECT COUNT(*) AS cnt FROM `$sealSTAT`
                             WHERE `Fill` = '$fillVal'
                             AND `Itype` = '$itype'
-                            AND `Requester LOC` = '$loc'
+                            AND $where_loc
                             AND `DestSystem` = '$dessysvar'
                             AND `Timestamp` BETWEEN '$startdate' AND '$enddate'");
                         $num = (int)mysqli_fetch_assoc($countq)['cnt'];
@@ -219,6 +287,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h2>Borrowing Statistics</h2>
     <h3>Enter your desired date range:</h3>
     <form action="" method="post">
+        <?php if ($has_multi): ?>
+    Library:
+    <select name="filter_loc" style="min-width:240px;">
+        <option value="all">All My Libraries</option>
+        <?php foreach ($all_locs as $code): ?>
+            <option value="<?php echo esc_attr($code); ?>">
+                <?php echo esc_html($code); ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
+    <br><br>
+<?php else: ?>
+    <input type="hidden" name="filter_loc" value="<?php echo esc_attr($all_locs[0] ?? ''); ?>">
+<?php endif; ?>
+
         Start Date: <input id="datepicker" name="startdate" value="<?php echo date('m/d/Y', strtotime('-7 days')); ?>" required>
         End Date: <input id="datepicker2" name="enddate" value="<?php echo date('m/d/Y'); ?>" required>
         <br><br>
