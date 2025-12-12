@@ -1,8 +1,7 @@
 <?php
 /*
 Plugin Name: SENYLC Custom User Fields
-Description: Adds and manages custom fields for user profiles, removes default fields, shows in add-new-user, and adds Institution, Home System, and LOC Code
-to Users list. Adds full custom registration form.
+Description: Adds and manages custom fields for user profiles, removes default fields, shows in add-new-user, and adds Institution, Home System, and LOC Code to Users list. Adds full custom registration form.
 Version: 1.5
 Author: SENYLRC
 */
@@ -10,8 +9,7 @@ Author: SENYLRC
 // -------------------------------
 // Add custom fields (Profile + Add User)
 // -------------------------------
-function custom_user_profile_fields($user)
-{
+function custom_user_profile_fields($user) {
     ?>
     <h3>Additional User Information</h3>
     <table class="form-table">
@@ -24,20 +22,18 @@ function custom_user_profile_fields($user)
             <td>
                 <?php
                 $home_system = get_the_author_meta('home_system', $user->ID);
-    if (empty($home_system)) {
-        $home_system = 'SE';
-    }
-    $options = [
-        'DU' => 'Dutchess BOCES',
-        'MH' => 'Mid-Hudson Library System',
-        'OU' => 'Orange-Ulster BOCES',
-        'RC' => 'Ramapo Catskill Library System',
-        'RB' => 'Rockland BOCES',
-        'SB' => 'Sullivan BOCES',
-        'UB' => 'Ulster BOCES',
-        'SE' => 'SENYLRC'
-    ];
-    ?>
+                if (empty($home_system)) $home_system = 'SE';
+                $options = [
+                    'DU' => 'Dutchess BOCES',
+                    'MH' => 'Mid-Hudson Library System',
+                    'OU' => 'Orange-Ulster BOCES',
+                    'RC' => 'Ramapo Catskill Library System',
+                    'RB' => 'Rockland BOCES',
+                    'SB' => 'Sullivan BOCES',
+                    'UB' => 'Ulster BOCES',
+                    'SE' => 'SENYLRC'
+                ];
+                ?>
                 <select name="home_system" id="home_system">
                     <?php foreach ($options as $code => $label): ?>
                         <option value="<?php echo esc_attr($code); ?>" <?php selected($home_system, $code); ?>>
@@ -62,6 +58,14 @@ function custom_user_profile_fields($user)
             <td><input type="text" name="address_loc_code" id="address_loc_code"
                 value="<?php echo esc_attr(get_the_author_meta('address_loc_code', $user->ID)); ?>"
                 class="regular-text" /></td></tr>
+<tr><th><label for="seal_extra_locs">Additional Managed Library Codes</label></th>
+  <td><input type="text" name="seal_extra_locs" id="seal_extra_locs"
+      value="<?php echo esc_attr(get_the_author_meta('seal_extra_locs', $user->ID)); ?>"
+      class="regular-text" />
+      <p class="description">Comma-separated LOC codes (example: <code>NHIGS,NWATTJ</code>).</p>
+  </td>
+</tr>
+
 
         <tr><th><label for="oclc_symbol">OCLC Symbol</label></th>
             <td><input type="text" name="oclc_symbol" id="oclc_symbol"
@@ -86,10 +90,8 @@ function custom_user_profile_fields($user)
         <tr><th><label for="delivery_state">State</label></th>
             <?php
             $delivery_state = get_the_author_meta('delivery_state', $user->ID);
-    if (empty($delivery_state)) {
-        $delivery_state = 'NY';
-    }
-    ?>
+            if (empty($delivery_state)) $delivery_state = 'NY';
+            ?>
             <td><input type="text" name="delivery_state" id="delivery_state"
                 value="<?php echo esc_attr($delivery_state); ?>"
                 class="regular-text" /></td></tr>
@@ -105,25 +107,78 @@ add_action('show_user_profile', 'custom_user_profile_fields');
 add_action('edit_user_profile', 'custom_user_profile_fields');
 add_action('user_new_form', 'custom_user_profile_fields');
 
+
+// ---------------------------------------------------------
+// Show Extra LOCs on "Add New User" screen
+// ---------------------------------------------------------
+function senylrc_user_new_form_extra_locs() {
+    ?>
+    <h2>Additional User Information</h2>
+    <table class="form-table">
+        <tr>
+            <th><label for="seal_extra_locs">Additional Managed Library Codes</label></th>
+            <td>
+                <input type="text" name="seal_extra_locs" id="seal_extra_locs"
+                       class="regular-text" />
+                <p class="description">
+                    Comma-separated LOC codes (example:
+                    <code>NHIGS,NWATTJ</code>)
+                </p>
+            </td>
+        </tr>
+    </table>
+    <?php
+}
+add_action('user_new_form', 'senylrc_user_new_form_extra_locs');
+
+
+
+// ---------------------------------------------------------
+// Save Extra LOCs on user creation
+// ---------------------------------------------------------
+function senylrc_save_user_new_form_extra_locs($user_id) {
+    if (!current_user_can('create_users')) {
+        return;
+    }
+
+    if (!isset($_POST['seal_extra_locs'])) {
+        return;
+    }
+
+    $value = sanitize_text_field($_POST['seal_extra_locs']);
+
+    // Normalize: uppercase, no spaces
+    $value = strtoupper($value);
+    $value = preg_replace('/\s+/', '', $value);
+    $value = preg_replace('/,+/', ',', $value);
+    $value = trim($value, ',');
+
+    update_user_meta($user_id, 'seal_extra_locs', $value);
+}
+add_action('user_register', 'senylrc_save_user_new_form_extra_locs');
+
+
 // -------------------------------
 // Save custom fields
 // -------------------------------
-function save_custom_user_profile_fields($user_id)
-{
-    if (!current_user_can('edit_user', $user_id)) {
-        return false;
-    }
+function save_custom_user_profile_fields($user_id) {
+    if (!current_user_can('edit_user', $user_id)) return false;
 
     $fields = [
         'institution', 'home_system', 'phone', 'alt_email', 'address_loc_code',
         'delivery_address1', 'delivery_address2', 'delivery_city', 'delivery_state',
-        'delivery_zip', 'oclc_symbol'
+        'delivery_zip', 'oclc_symbol','seal_extra_locs'
     ];
     foreach ($fields as $field) {
         $value = isset($_POST[$field]) ? sanitize_text_field($_POST[$field]) : '';
-        if ($field === 'alt_email') {
-            $value = sanitize_email($value);
-        }
+        if ($field === 'alt_email') $value = sanitize_email($value);
+if ($field === 'seal_extra_locs') {
+    // normalize: uppercase, strip spaces, keep commas
+    $value = strtoupper($value);
+    $value = preg_replace('/\s+/', '', $value);      // remove all whitespace
+    $value = preg_replace('/,+/', ',', $value);      // collapse multiple commas
+    $value = trim($value, ',');                      // trim leading/trailing commas
+}
         update_user_meta($user_id, $field, $value);
     }
 }
@@ -134,8 +189,7 @@ add_action('user_register', 'save_custom_user_profile_fields');
 // -------------------------------
 // Add fields to registration form
 // -------------------------------
-function senylc_registration_form_fields()
-{
+function senylc_registration_form_fields() {
     $options = [
         'DU' => 'Dutchess BOCES',
         'MH' => 'Mid-Hudson Library System',
@@ -208,8 +262,7 @@ function senylc_registration_form_fields()
 add_action('register_form', 'senylc_registration_form_fields');
 
 // Validate required fields
-function senylc_validate_registration_fields($errors, $sanitized_user_login, $user_email)
-{
+function senylc_validate_registration_fields($errors, $sanitized_user_login, $user_email) {
     $required = ['institution', 'first_name', 'last_name', 'delivery_address1', 'delivery_city', 'delivery_state', 'delivery_zip'];
     foreach ($required as $field) {
         if (empty($_POST[$field])) {
@@ -222,8 +275,7 @@ function senylc_validate_registration_fields($errors, $sanitized_user_login, $us
 add_filter('registration_errors', 'senylc_validate_registration_fields', 10, 3);
 
 // Save registration fields
-function senylc_save_registration_fields($user_id)
-{
+function senylc_save_registration_fields($user_id) {
     $fields = [
         'institution','first_name','last_name','home_system','phone','alt_email','address_loc_code',
         'oclc_symbol','delivery_address1','delivery_address2','delivery_city','delivery_state','delivery_zip'
@@ -240,19 +292,18 @@ add_action('user_register', 'senylc_save_registration_fields');
 // -------------------------------
 // Fix registration page layout spacing
 // -------------------------------
-function senylc_register_form_spacing_fix()
-{
+function senylc_register_form_spacing_fix() {
     if (isset($_GET['action']) && $_GET['action'] === 'register') {
         echo '<style>
             body.login {
-                padding-top: 40px !important;
+                padding-top: 28% !important;
                 overflow-y: auto !important;
             }
             body.login #login {
                 margin-top: 40px !important;
             }
             body.login form {
-                padding-bottom: 50px !important;
+                padding-bottom: 40px !important;
             }
         </style>';
     }
@@ -260,69 +311,65 @@ function senylc_register_form_spacing_fix()
 add_action('login_head', 'senylc_register_form_spacing_fix');
 
 // -------------------------------
-// Custom Columns: Library Name + Home System between Role and Email (sortable)
+// Custom Columns: Library Name + Home System between Role and Email (sortable, no Status sort)
 // -------------------------------
-function senylc_add_user_columns($columns)
-{
-    unset($columns['posts']); // remove Posts column
+function senylc_add_user_columns($columns) {
+    // Remove the default Posts column
+    unset($columns['posts']);
 
+    // Insert Library Name and Home System between Role and Email
     $new_columns = [];
     foreach ($columns as $key => $label) {
         $new_columns[$key] = $label;
-
         if ($key === 'role') {
             $new_columns['institution'] = 'Library Name';
             $new_columns['home_system'] = 'Home Library System';
-            $new_columns['user_status'] = 'Status';
+            $new_columns['seal_extra_locs'] = 'Extra LOCs';
+            // You can comment out the next line if you no longer want to display Status at all:
+            // $new_columns['user_status'] = 'Status';
         }
     }
     return $new_columns;
 }
 add_filter('manage_users_columns', 'senylc_add_user_columns', 20);
 
-// Display column values
-function senylc_show_user_column_data($value, $column_name, $user_id)
-{
+// Display values for new columns
+function senylc_show_user_column_data($value, $column_name, $user_id) {
     switch ($column_name) {
         case 'institution':
             return esc_html(get_user_meta($user_id, 'institution', true));
         case 'home_system':
             return esc_html(get_user_meta($user_id, 'home_system', true));
+    case 'seal_extra_locs':
+    return esc_html(get_user_meta($user_id, 'seal_extra_locs', true));
+
         case 'user_status':
             $status = get_userdata($user_id)->user_status;
             return $status == 0 ? 'Active' : 'Inactive';
+        default:
+            return $value;
     }
-    return $value;
 }
 add_filter('manage_users_custom_column', 'senylc_show_user_column_data', 10, 3);
 
-// Make columns sortable
-function senylc_sortable_user_columns($columns)
-{
+// Make only Library Name and Home System sortable
+function senylc_sortable_user_columns($columns) {
     $columns['institution'] = 'institution';
     $columns['home_system'] = 'home_system';
-    $columns['user_status'] = 'user_status';
     return $columns;
 }
 add_filter('manage_users_sortable_columns', 'senylc_sortable_user_columns');
 
-// Sorting logic
-function senylc_sort_users_by_meta($query)
-{
+// Apply sorting logic for usermeta fields
+function senylc_sort_users_by_meta($query) {
     global $pagenow;
 
     if (is_admin() && 'users.php' === $pagenow) {
         $orderby = $query->get('orderby');
 
-        // Sort by meta fields
         if ($orderby === 'institution' || $orderby === 'home_system') {
             $query->set('meta_key', $orderby);
             $query->set('orderby', 'meta_value');
-        }
-
-        // Sort by built-in user_status
-        if ($orderby === 'user_status') {
-            $query->set('orderby', 'user_status');
         }
     }
 }
