@@ -592,7 +592,7 @@ return;
 
   <!-- Article Request Section -->
   <div class="full-row">
-    <b>Is this a request for an article?</b><br>
+      <legend>Is this a request for an article?</legend>
     <label>
       <input type="radio" name="yesno" id="yesCheck" onclick="yesnoCheck();"> Yes
     </label>
