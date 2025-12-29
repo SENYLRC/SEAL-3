@@ -125,10 +125,10 @@ if ($filter_numresults !== 'all') {
 $GETLIST = mysqli_query($db, $sql);
 ?>
 
-<link rel="stylesheet" href="https://sealbeta.senylrc.org/assets/jquery-ui.css">
+<link rel="stylesheet" href="https://seal.senylrc.org/assets/jquery-ui.css">
 <link rel="stylesheet" href="/wp-content/themes/neve/css/seal-admin.css">
-<script src="https://sealbeta.senylrc.org/assets/jquery.min.js"></script>
-<script src="https://sealbeta.senylrc.org/assets/jquery-ui.min.js"></script>
+<script src="https://seal.senylrc.org/assets/jquery.min.js"></script>
+<script src="https://seal.senylrc.org/assets/jquery-ui.min.js"></script>
 
 <script>
 jQuery(function($){

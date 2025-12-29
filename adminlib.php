@@ -1,6 +1,6 @@
-<link rel="stylesheet" href="https://sealbeta.senylrc.org/assets/jquery-ui.css">
-<script src="https://sealbeta.senylrc.org/assets/jquery.min.js"></script>
-<script src="https://sealbeta.senylrc.org/assets/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="https://seal.senylrc.org/assets/jquery-ui.css">
+<script src="https://seal.senylrc.org/assets/jquery.min.js"></script>
+<script src="https://seal.senylrc.org/assets/jquery-ui.min.js"></script>
 
 
 <script>
