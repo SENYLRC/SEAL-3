@@ -12,6 +12,14 @@ if (!$db) {
 $GETLISTCOUNTwhole = 0;
 $GETLIST = false;
 
+// small helpers (do NOT change visible display)
+function esc_out($s) {
+    return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+function esc_attr_out($s) {
+    return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
 // search params (GET method)
 $libname = $_GET['libname'] ?? '';
 $system  = $_GET['system'] ?? '';
@@ -52,14 +60,39 @@ echo "<!-- DEBUG: SQL=$GETLISTSQL -->";
 // ---------------------------------------------
 ?>
 
-<h3>Search the directory</h3>
-<form action="/illdir" method="get">
-  <b>Library Name:</b> 
-  <input type="text" size="60" maxlength="255" name="libname" 
-         value="<?php echo htmlspecialchars($libname); ?>"><br>
+<style>
+/* Screen-reader-only utility (no visible change) */
+.screen-reader-text{
+  position:absolute!important;
+  width:1px;height:1px;
+  padding:0;margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;border:0;
+}
+</style>
 
-  <b>Library System:</b> 
-  <select name="system">
+<h3 id="illdir-title">Search the directory</h3>
+
+<form action="/illdir" method="get" aria-labelledby="illdir-title">
+  <!-- Real label for ADA, visually hidden so display stays identical -->
+  <label class="screen-reader-text" for="libname">Library Name</label>
+
+  <b>Library Name:</b>
+  <input
+    id="libname"
+    type="text"
+    size="60"
+    maxlength="255"
+    name="libname"
+    value="<?php echo esc_attr_out($libname); ?>"
+  ><br>
+
+  <!-- Real label for ADA, visually hidden so display stays identical -->
+  <label class="screen-reader-text" for="system">Library System</label>
+
+  <b>Library System:</b>
+  <select id="system" name="system">
     <option value=""></option>
     <option value="DU" <?php if($system=="DU") echo "selected"; ?>>Dutchess BOCES</option>
     <option value="MH" <?php if($system=="MH") echo "selected"; ?>>Mid-Hudson Library System</option>
@@ -71,27 +104,32 @@ echo "<!-- DEBUG: SQL=$GETLISTSQL -->";
     <option value="UB" <?php if($system=="UB") echo "selected"; ?>>Ulster BOCES</option>
   </select>
   <br>
+
   <input type="submit" value="Submit">
   <a href="/illdir" class="clear-btn">Clear</a>
 </form>
 
+<p id="illdir-results" role="status" aria-live="polite" aria-atomic="true">
+  <strong><?php echo (int)$GETLISTCOUNTwhole; ?></strong> results
+</p>
+
 <?php
-echo "<p><strong>$GETLISTCOUNTwhole</strong> results</p>";
 echo "<!-- DEBUG: total_results=$GETLISTCOUNTwhole -->";
 
 if ($GETLIST && mysqli_num_rows($GETLIST) > 0) {
     echo "<div class='illDirGrid'>";
     $counter = 0;
+
     while ($row = mysqli_fetch_assoc($GETLIST)) {
-        $display_name = $row["Name"];
-        $libaddress2  = $row["address2"];
-        $libaddress3  = $row["address3"];
-        $libphone     = $row["phone"];
-        $illemail     = $row["ill_email"];
-        $system_code  = $row["system"];
-        $oclc         = $row["oclc"];
-        $loc          = $row["loc"];
-        $libsuspend   = ($row["suspend"] == "0") ? "Yes" : "No";
+        $display_name = $row["Name"] ?? '';
+        $libaddress2  = $row["address2"] ?? '';
+        $libaddress3  = $row["address3"] ?? '';
+        $libphone     = $row["phone"] ?? '';
+        $illemail     = $row["ill_email"] ?? '';
+        $system_code  = $row["system"] ?? '';
+        $oclc         = $row["oclc"] ?? '';
+        $loc          = $row["loc"] ?? '';
+        $libsuspend   = (($row["suspend"] ?? '') == "0") ? "Yes" : "No";
 
         $systems = [
             "MH" => "Mid-Hudson Library System",
@@ -105,43 +143,70 @@ if ($GETLIST && mysqli_num_rows($GETLIST) > 0) {
         ];
         $system_name = $systems[$system_code] ?? "Unknown";
 
-        $loan_id = "loaning-" . $counter;
+        // unique ids for aria-controls + aria-labelledby
+        $loan_id     = "loaning-" . $counter;
+        $btn_id      = "loanbtn-" . $counter;
+        $title_id    = "illdir-card-title-" . $counter;
 
         echo "<div class='illDirCard'>";
-        echo "<h4>$display_name</h4>";
-        echo "<p><strong>Address:</strong><br>$libaddress2<br>$libaddress3</p>";
-        echo "<p><strong>Phone:</strong> $libphone</p>";
-        echo "<p><strong>Library System:</strong> $system_name</p>";
 
-        if (!empty($illemail) && isset($user_id) && $user_id > 0) {
-            echo "<p><strong>ILL Email(s):</strong> <a href='mailto:$illemail'>$illemail</a></p>";
+        echo "<h4 id='".esc_attr_out($title_id)."'>".esc_out($display_name)."</h4>";
+        echo "<p><strong>Address:</strong><br>".esc_out($libaddress2)."<br>".esc_out($libaddress3)."</p>";
+        echo "<p><strong>Phone:</strong> ".esc_out($libphone)."</p>";
+        echo "<p><strong>Library System:</strong> ".esc_out($system_name)."</p>";
+
+        // keep existing behavior: only show ILL email if user is logged in (your code referenced $user_id)
+        // We'll preserve your conditional, but without relying on undefined $user_id.
+        $can_show_email = is_user_logged_in();
+        if (!empty($illemail) && $can_show_email) {
+            // Preserve semicolon list in display, but mailto should be comma-separated.
+            $mailto = str_replace(';', ',', $illemail);
+            $mailto = preg_replace('/\s+/', '', $mailto);
+            echo "<p><strong>ILL Email(s):</strong> <a href='mailto:".esc_attr_out($mailto)."'>".esc_out($illemail)."</a></p>";
         }
 
-        echo "<p><strong>OCLC Symbol:</strong> $oclc<br>";
-        echo "<strong>LOC Code:</strong> $loc<br>";
-        echo "<strong>Accepting Requests:</strong> $libsuspend</p>";
+        echo "<p><strong>OCLC Symbol:</strong> ".esc_out($oclc)."<br>";
+        echo "<strong>LOC Code:</strong> ".esc_out($loc)."<br>";
+        echo "<strong>Accepting Requests:</strong> ".esc_out($libsuspend)."</p>";
 
-        echo "<button class='loan-btn' data-target='$loan_id'>Show loaning options</button>";
-        echo "<div id='$loan_id' class='loaning-options'>";
-        echo "Loaning Print Book: <strong>{$row["book_loan"]}</strong><br>";
-        echo "Loaning Print Journal or Article: <strong>{$row["periodical_loan"]}</strong><br>";
-        echo "Loaning Audio Video Materials: <strong>{$row["av_loan"]}</strong><br>";
-        echo "Loaning Reference/Microfilm: <strong>{$row["theses_loan"]}</strong><br>";
-        echo "Loaning Electronic Book: <strong>{$row["ebook_request"]}</strong><br>";
-        echo "Loaning Electronic Journal: <strong>{$row["ejournal_request"]}</strong><br>";
+        // ADA: disclosure button that controls the panel
+        echo "<button
+                id='".esc_attr_out($btn_id)."'
+                class='loan-btn'
+                data-target='".esc_attr_out($loan_id)."'
+                aria-controls='".esc_attr_out($loan_id)."'
+                aria-expanded='false'
+                type='button'
+              >Show loaning options</button>";
+
+        // Panel: start hidden for SR + keyboard users, toggled by JS
+        echo "<div
+                id='".esc_attr_out($loan_id)."'
+                class='loaning-options'
+                role='region'
+                aria-labelledby='".esc_attr_out($btn_id)."'
+                hidden
+              >";
+        echo "Loaning Print Book: <strong>".esc_out($row["book_loan"] ?? '')."</strong><br>";
+        echo "Loaning Print Journal or Article: <strong>".esc_out($row["periodical_loan"] ?? '')."</strong><br>";
+        echo "Loaning Audio Video Materials: <strong>".esc_out($row["av_loan"] ?? '')."</strong><br>";
+        echo "Loaning Reference/Microfilm: <strong>".esc_out($row["theses_loan"] ?? '')."</strong><br>";
+        echo "Loaning Electronic Book: <strong>".esc_out($row["ebook_request"] ?? '')."</strong><br>";
+        echo "Loaning Electronic Journal: <strong>".esc_out($row["ejournal_request"] ?? '')."</strong><br>";
         echo "</div>";
 
         echo "</div>";
+
         $counter++;
     }
     echo "</div>";
 } else {
-    echo "<p>No results found.</p>";
+    echo "<p role='status' aria-live='polite'>No results found.</p>";
 }
 
 // pagination
 if ($GETLISTCOUNTwhole > $rec_limit) {
-    echo "<div class='pagination'>";
+    echo "<nav class='pagination' aria-label='Directory pages'>";
     $query_params = [];
     if (!empty($libname)) $query_params['libname'] = $libname;
     if (!empty($system))  $query_params['system']  = $system;
@@ -149,15 +214,17 @@ if ($GETLISTCOUNTwhole > $rec_limit) {
     if ($pagenum > 0) {
         $last = $pagenum - 1;
         $qs = http_build_query(array_merge($query_params, ['pagenum'=>$last]));
-        echo "<a href='/illdir?$qs'>&laquo; Previous</a>";
+        echo "<a href='/illdir?".esc_attr_out($qs)."' rel='prev' aria-label='Previous page'>&laquo; Previous</a>";
     }
     if (($offset + $rec_limit) < $GETLISTCOUNTwhole) {
         $next = $pagenum + 1;
         $qs = http_build_query(array_merge($query_params, ['pagenum'=>$next]));
-        echo "<a href='/illdir?$qs'>Next &raquo;</a>";
+        echo "<a href='/illdir?".esc_attr_out($qs)."' rel='next' aria-label='Next page'>Next &raquo;</a>";
     }
-    echo "</div>";
+    echo "</nav>";
 }
+
+mysqli_close($db);
 ?>
 
 <style>
@@ -247,13 +314,20 @@ document.addEventListener("DOMContentLoaded", function() {
     button.addEventListener("click", function() {
       const targetId = button.getAttribute("data-target");
       const target = document.getElementById(targetId);
+      if (!target) return;
 
-      if (target.classList.contains("open")) {
+      const isOpen = target.classList.contains("open");
+
+      if (isOpen) {
         target.classList.remove("open");
+        target.hidden = true;
         button.textContent = "Show loaning options";
+        button.setAttribute("aria-expanded", "false");
       } else {
         target.classList.add("open");
+        target.hidden = false;
         button.textContent = "Hide loaning options";
+        button.setAttribute("aria-expanded", "true");
       }
     });
   });

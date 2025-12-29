@@ -2,10 +2,45 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
 
+<style>
+/* Screen-reader-only utility (no visible change) */
+.screen-reader-text{
+  position:absolute!important;
+  width:1px;height:1px;
+  padding:0;margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;border:0;
+}
+</style>
+
+<div id="sr-status" class="screen-reader-text" aria-live="polite" aria-atomic="true"></div>
+
 <script>
 jQuery(function($) {
-  $("#datepicker").datepicker();
-  $("#datepicker2").datepicker();
+  $("#datepicker").attr({
+    "autocomplete":"off",
+    "inputmode":"numeric",
+    "aria-describedby":"startdate-help",
+    "aria-label":"Start date, format MM slash DD slash YYYY"
+  }).datepicker();
+
+  $("#datepicker2").attr({
+    "autocomplete":"off",
+    "inputmode":"numeric",
+    "aria-describedby":"enddate-help",
+    "aria-label":"End date, format MM slash DD slash YYYY"
+  }).datepicker();
+
+  function announce(msg){
+    var sr = document.getElementById('sr-status');
+    if(!sr) return;
+    sr.textContent = '';
+    setTimeout(function(){ sr.textContent = msg; }, 20);
+  }
+
+  $("#datepicker").on("change", function(){ announce("Start date set to " + this.value); });
+  $("#datepicker2").on("change", function(){ announce("End date set to " + this.value); });
 });
 </script>
 
@@ -16,7 +51,7 @@ jQuery(function($) {
 require_once('/var/www/wpSEAL/wp-load.php');
 
 if (!is_user_logged_in()) {
-    die("<div style='padding:20px;color:red;font-weight:bold;'>
+    die("<div style='padding:20px;color:red;font-weight:bold;' role='alert' aria-live='assertive'>
         Access Denied<br>You must be logged in to view this page.
     </div>");
 }
@@ -25,7 +60,7 @@ $current_user = wp_get_current_user();
 $user_roles   = (array)$current_user->roles;
 
 if (!array_intersect(['administrator', 'libstaff'], $user_roles)) {
-    die("<div style='padding:20px;color:red;font-weight:bold;'>
+    die("<div style='padding:20px;color:red;font-weight:bold;' role='alert' aria-live='assertive'>
         Access Denied<br>You must have the <b>Administrator</b> or <b>Library Staff</b> role to access this page.
     </div>");
 }
@@ -92,9 +127,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validate mm/dd/yyyy (or mm-dd-yyyy)
     $reg = '~(0[1-9]|1[0-2])[-/](0[1-9]|[12][0-9]|3[01])[-/](19|20)\d\d~';
     if ((!preg_match($reg, $startdated)) || (!preg_match($reg, $enddated))) {
-        echo "<h1 style='color:red;'>Date is not in the correct format of mm/dd/yyyy</h1>";
+        echo "<h1 style='color:red;' role='alert' aria-live='assertive'>Date is not in the correct format of mm/dd/yyyy</h1>";
     } elseif (empty($primary_loc)) {
-        echo "<h3 style='color:red;'>No library location code found for your account.</h3>";
+        echo "<h3 style='color:red;' role='alert' aria-live='assertive'>No library location code found for your account.</h3>";
     } else {
 
         // Build timestamps (full day)
@@ -138,7 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $row_cnt = (int)(mysqli_fetch_assoc($q_total)['cnt'] ?? 0);
 
         if ($row_cnt === 0) {
-            echo "<div style='color:red;font-weight:bold;'>No results found for the selected library and date range.</div>";
+            echo "<div style='color:red;font-weight:bold;' role='status' aria-live='polite'>No results found for the selected library and date range.</div>";
         } else {
 
             $row_fill    = $count_fill(1);
@@ -159,6 +194,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $libname  = ($row = mysqli_fetch_assoc($libnameq)) ? $row["Name"] : $loc_label;
             }
 
+            // Wrap summary in a status region so SR users hear updates (no visible change)
+            echo "<div role='status' aria-live='polite' aria-atomic='true'>";
+
             echo "<h3>From " . htmlspecialchars($startdated) . " to " . htmlspecialchars($enddated) . "</h3>";
             echo "<h4>Lender request statistics for <b>" . htmlspecialchars($libname) . "</b></h4>";
             echo "Total Requests received: " . number_format($row_cnt) . "<br>";
@@ -167,6 +205,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo "Number of Requests Expired: " . number_format($row_expire) . " (" . $safe_pct($row_expire) . ")<br>";
             echo "Number of Requests Canceled: " . number_format($row_cancel) . " (" . $safe_pct($row_cancel) . ")<br>";
             echo "Number of Requests Not Answered Yet: " . number_format($row_noansw) . " (" . $safe_pct($row_noansw) . ")<br><br>";
+
+            echo "</div>";
 
             echo "<hr><h3>Break down of requests</h3>";
 
@@ -270,17 +310,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 } else {
     // ==========================================================
-    // Show form
+    // Show form (NO visible changes)
     // ==========================================================
     ?>
     <h2>Lending Statistics</h2>
     <h3>Enter your desired date range:</h3>
 
-    <form action="/liblenderstat?<?php echo htmlspecialchars($_SERVER['QUERY_STRING'] ?? '', ENT_QUOTES); ?>" method="post">
+    <form action="/liblenderstat?<?php echo htmlspecialchars($_SERVER['QUERY_STRING'] ?? '', ENT_QUOTES); ?>" method="post" aria-labelledby="lenderstat-title">
+        <span id="lenderstat-title" class="screen-reader-text">Lending statistics date range form</span>
 
         <?php if ($has_multi): ?>
             Library:
-            <select name="filter_loc" style="min-width:240px;">
+            <!-- Add SR-only label + id; visible text remains "Library:" -->
+            <label class="screen-reader-text" for="filter_loc">Library</label>
+            <select id="filter_loc" name="filter_loc" style="min-width:240px;">
                 <option value="<?php echo esc_attr($primary_loc); ?>" <?php echo ($filter_loc === $primary_loc ? "selected" : ""); ?>>
                     Primary: <?php echo esc_html($primary_loc); ?>
                 </option>
@@ -300,10 +343,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <input type="hidden" name="filter_loc" value="<?php echo esc_attr($primary_loc); ?>">
         <?php endif; ?>
 
+        <!-- SR-only labels tied to inputs -->
+        <label class="screen-reader-text" for="datepicker">Start Date</label>
         Start Date:
-        <input id="datepicker" name="startdate" value="<?php echo date('m/d/Y', strtotime('-7 days')); ?>" required>
+        <input id="datepicker" name="startdate" value="<?php echo date('m/d/Y', strtotime('-7 days')); ?>" required aria-required="true">
+        <span id="startdate-help" class="screen-reader-text">
+          Enter a start date in MM slash DD slash YYYY format. A date picker is available.
+        </span>
+
+        <label class="screen-reader-text" for="datepicker2">End Date</label>
         End Date:
-        <input id="datepicker2" name="enddate" value="<?php echo date('m/d/Y'); ?>" required>
+        <input id="datepicker2" name="enddate" value="<?php echo date('m/d/Y'); ?>" required aria-required="true">
+        <span id="enddate-help" class="screen-reader-text">
+          Enter an end date in MM slash DD slash YYYY format. A date picker is available.
+        </span>
 
         <br><br>
         <input type="submit" value="Submit">
