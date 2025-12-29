@@ -60,11 +60,6 @@ $work_phone        = get_user_meta($user_id, 'work_phone', true);
 $alt_email         = get_user_meta($user_id, 'additional_email', true);
 $loc_code          = get_user_meta($user_id, 'address_loc_code', true);
 $oclc_symbol       = get_user_meta($user_id, 'oclc_symbol', true);
-$delivery_address1 = get_user_meta($user_id, 'delivery_address1', true);
-$delivery_address2 = get_user_meta($user_id, 'delivery_address2', true);
-$city              = get_user_meta($user_id, 'delivery_city', true);
-$state             = get_user_meta($user_id, 'delivery_state', true);
-$zip               = get_user_meta($user_id, 'delivery_zip', true);
 
 $notice = '';
 $notice_class = '';
@@ -90,11 +85,7 @@ if ('POST' === $_SERVER['REQUEST_METHOD'] && isset($_POST['wp_profile_nonce']) &
     $new_alt_email     = sanitize_email($_POST['additional_email'] ?? '');
     $new_loc_code      = sanitize_text_field($_POST['address_loc_code'] ?? '');
     $new_oclc          = sanitize_text_field($_POST['oclc_symbol'] ?? '');
-    $new_address1      = sanitize_text_field($_POST['delivery_address1'] ?? '');
-    $new_address2      = sanitize_text_field($_POST['delivery_address2'] ?? '');
-    $new_city          = sanitize_text_field($_POST['delivery_city'] ?? '');
-    $new_state         = sanitize_text_field($_POST['delivery_state'] ?? '');
-    $new_zip           = sanitize_text_field($_POST['delivery_zip'] ?? '');
+
 
     // Validate basics
     $errors = new WP_Error();
@@ -145,11 +136,7 @@ if ('POST' === $_SERVER['REQUEST_METHOD'] && isset($_POST['wp_profile_nonce']) &
             }
             update_user_meta($user_id, 'work_phone', $new_work_phone);
             update_user_meta($user_id, 'additional_email', $new_alt_email);
-            update_user_meta($user_id, 'delivery_address1', $new_address1);
-            update_user_meta($user_id, 'delivery_address2', $new_address2);
-            update_user_meta($user_id, 'delivery_city', $new_city);
-            update_user_meta($user_id, 'delivery_state', $new_state);
-            update_user_meta($user_id, 'delivery_zip', $new_zip);
+
 
             // Refresh local vars for re-render
             $first_name       = $new_first;
@@ -163,11 +150,7 @@ if ('POST' === $_SERVER['REQUEST_METHOD'] && isset($_POST['wp_profile_nonce']) &
             $alt_email        = $new_alt_email;
             $loc_code         = $new_loc_code;
             $oclc_symbol      = $new_oclc;
-            $delivery_address1 = $new_address1;
-            $delivery_address2 = $new_address2;
-            $city             = $new_city;
-            $state            = $new_state;
-            $zip              = $new_zip;
+
 
             $notice = 'Profile updated successfully.';
             $notice_class = 'success';
@@ -176,11 +159,6 @@ if ('POST' === $_SERVER['REQUEST_METHOD'] && isset($_POST['wp_profile_nonce']) &
             $home_system      = get_user_meta($user_id, 'home_system', true);
             $loc_code         = get_user_meta($user_id, 'address_loc_code', true);
             $oclc_symbol      = get_user_meta($user_id, 'oclc_symbol', true);
-            $delivery_address1 = get_user_meta($user_id, 'delivery_address1', true);
-            $delivery_address2 = get_user_meta($user_id, 'delivery_address2', true);
-            $city             = get_user_meta($user_id, 'delivery_city', true);
-            $state            = get_user_meta($user_id, 'delivery_state', true);
-            $zip              = get_user_meta($user_id, 'delivery_zip', true);
             $work_phone       = get_user_meta($user_id, 'work_phone', true);
             $alt_email        = get_user_meta($user_id, 'additional_email', true);
         }
@@ -270,36 +248,6 @@ if ('POST' === $_SERVER['REQUEST_METHOD'] && isset($_POST['wp_profile_nonce']) &
 </div>
 
 
-
-    <div class="section-card">
-      <h4>Delivery Address</h4>
-      <div class="form-section">
-        <div class="form-group">
-          <label for="delivery_address1">Delivery Street Address Line 1</label>
-          <input type="text" id="delivery_address1" name="delivery_address1" value="<?php echo h($delivery_address1); ?>">
-        </div>
-
-        <div class="form-group">
-          <label for="delivery_address2">Delivery Street Address Line 2</label>
-          <input type="text" id="delivery_address2" name="delivery_address2" value="<?php echo h($delivery_address2); ?>">
-        </div>
-
-        <div class="form-group">
-          <label for="delivery_city">City</label>
-          <input type="text" id="delivery_city" name="delivery_city" value="<?php echo h($city); ?>">
-        </div>
-
-        <div class="form-group">
-          <label for="delivery_state">State</label>
-          <input type="text" id="delivery_state" name="delivery_state" value="<?php echo h($state); ?>">
-        </div>
-
-        <div class="form-group">
-          <label for="delivery_zip">Zip Code</label>
-          <input type="text" id="delivery_zip" name="delivery_zip" value="<?php echo h($zip); ?>">
-        </div>
-      </div>
-    </div>
 
     <div class="actions">
       <input class="btn-primary" type="submit" value="Save Profile">
