@@ -58,6 +58,7 @@ function custom_user_profile_fields($user) {
             <td><input type="text" name="address_loc_code" id="address_loc_code"
                 value="<?php echo esc_attr(get_the_author_meta('address_loc_code', $user->ID)); ?>"
                 class="regular-text" /></td></tr>
+
 <tr><th><label for="seal_extra_locs">Additional Managed Library Codes</label></th>
   <td><input type="text" name="seal_extra_locs" id="seal_extra_locs"
       value="<?php echo esc_attr(get_the_author_meta('seal_extra_locs', $user->ID)); ?>"
@@ -66,12 +67,12 @@ function custom_user_profile_fields($user) {
   </td>
 </tr>
 
-
         <tr><th><label for="oclc_symbol">OCLC Symbol</label></th>
             <td><input type="text" name="oclc_symbol" id="oclc_symbol"
                 value="<?php echo esc_attr(get_the_author_meta('oclc_symbol', $user->ID)); ?>"
                 class="regular-text" /></td></tr>
 
+        <!-- Keep address fields in profile/admin screens (unchanged) -->
         <tr><th><label for="delivery_address1">Delivery Street Address Line 1</label></th>
             <td><input type="text" name="delivery_address1" id="delivery_address1"
                 value="<?php echo esc_attr(get_the_author_meta('delivery_address1', $user->ID)); ?>"
@@ -132,7 +133,6 @@ function senylrc_user_new_form_extra_locs() {
 add_action('user_new_form', 'senylrc_user_new_form_extra_locs');
 
 
-
 // ---------------------------------------------------------
 // Save Extra LOCs on user creation
 // ---------------------------------------------------------
@@ -172,13 +172,12 @@ function save_custom_user_profile_fields($user_id) {
     foreach ($fields as $field) {
         $value = isset($_POST[$field]) ? sanitize_text_field($_POST[$field]) : '';
         if ($field === 'alt_email') $value = sanitize_email($value);
-if ($field === 'seal_extra_locs') {
-    // normalize: uppercase, strip spaces, keep commas
-    $value = strtoupper($value);
-    $value = preg_replace('/\s+/', '', $value);      // remove all whitespace
-    $value = preg_replace('/,+/', ',', $value);      // collapse multiple commas
-    $value = trim($value, ',');                      // trim leading/trailing commas
-}
+        if ($field === 'seal_extra_locs') {
+            $value = strtoupper($value);
+            $value = preg_replace('/\s+/', '', $value);
+            $value = preg_replace('/,+/', ',', $value);
+            $value = trim($value, ',');
+        }
         update_user_meta($user_id, $field, $value);
     }
 }
@@ -186,8 +185,10 @@ add_action('personal_options_update', 'save_custom_user_profile_fields');
 add_action('edit_user_profile_update', 'save_custom_user_profile_fields');
 add_action('user_register', 'save_custom_user_profile_fields');
 
+
 // -------------------------------
 // Add fields to registration form
+// (ADA compliant + REMOVE address fields here)
 // -------------------------------
 function senylc_registration_form_fields() {
     $options = [
@@ -203,18 +204,18 @@ function senylc_registration_form_fields() {
     ?>
     <p><label for="institution">Library Name (required)<br/>
         <input type="text" name="institution" id="institution" class="input"
-            value="<?php echo esc_attr($_POST['institution'] ?? ''); ?>" required></label></p>
+            value="<?php echo esc_attr($_POST['institution'] ?? ''); ?>" required aria-required="true"></label></p>
 
     <p><label for="first_name">First Name (required)<br/>
         <input type="text" name="first_name" id="first_name" class="input"
-            value="<?php echo esc_attr($_POST['first_name'] ?? ''); ?>" required></label></p>
+            value="<?php echo esc_attr($_POST['first_name'] ?? ''); ?>" required aria-required="true"></label></p>
 
     <p><label for="last_name">Last Name (required)<br/>
         <input type="text" name="last_name" id="last_name" class="input"
-            value="<?php echo esc_attr($_POST['last_name'] ?? ''); ?>" required></label></p>
+            value="<?php echo esc_attr($_POST['last_name'] ?? ''); ?>" required aria-required="true"></label></p>
 
     <p><label for="home_system">Home Library System<br/>
-        <select name="home_system" id="home_system">
+        <select name="home_system" id="home_system" aria-label="Home Library System">
             <?php foreach ($options as $code => $label): ?>
                 <option value="<?php echo esc_attr($code); ?>" <?php selected($_POST['home_system'] ?? 'SE', $code); ?>>
                     <?php echo esc_html($label); ?>
@@ -238,35 +239,19 @@ function senylc_registration_form_fields() {
         <input type="text" name="oclc_symbol" id="oclc_symbol" class="input"
             value="<?php echo esc_attr($_POST['oclc_symbol'] ?? ''); ?>"></label></p>
 
-    <p><label for="delivery_address1">Delivery Street Address Line 1 (required)<br/>
-        <input type="text" name="delivery_address1" id="delivery_address1" class="input"
-            value="<?php echo esc_attr($_POST['delivery_address1'] ?? ''); ?>" required></label></p>
-
-    <p><label for="delivery_address2">Delivery Street Address Line 2<br/>
-        <input type="text" name="delivery_address2" id="delivery_address2" class="input"
-            value="<?php echo esc_attr($_POST['delivery_address2'] ?? ''); ?>"></label></p>
-
-    <p><label for="delivery_city">City (required)<br/>
-        <input type="text" name="delivery_city" id="delivery_city" class="input"
-            value="<?php echo esc_attr($_POST['delivery_city'] ?? ''); ?>" required></label></p>
-
-    <p><label for="delivery_state">State (required)<br/>
-        <input type="text" name="delivery_state" id="delivery_state" class="input"
-            value="<?php echo esc_attr($_POST['delivery_state'] ?? 'NY'); ?>" required></label></p>
-
-    <p><label for="delivery_zip">Zip Code (required)<br/>
-        <input type="text" name="delivery_zip" id="delivery_zip" class="input"
-            value="<?php echo esc_attr($_POST['delivery_zip'] ?? ''); ?>" required></label></p>
     <?php
 }
 add_action('register_form', 'senylc_registration_form_fields');
 
-// Validate required fields
+// Validate required fields (address fields removed)
 function senylc_validate_registration_fields($errors, $sanitized_user_login, $user_email) {
-    $required = ['institution', 'first_name', 'last_name', 'delivery_address1', 'delivery_city', 'delivery_state', 'delivery_zip'];
+    // Address fields REMOVED from required list
+    $required = ['institution', 'first_name', 'last_name'];
+
     foreach ($required as $field) {
         if (empty($_POST[$field])) {
-            $label = ucwords(str_replace('_', ' ', str_replace('delivery_', '', $field)));
+            $label = ucwords(str_replace('_', ' ', $field));
+            if ($field === 'institution') $label = 'Library Name';
             $errors->add($field . '_error', __("<strong>Error:</strong> {$label} is required."));
         }
     }
@@ -274,11 +259,12 @@ function senylc_validate_registration_fields($errors, $sanitized_user_login, $us
 }
 add_filter('registration_errors', 'senylc_validate_registration_fields', 10, 3);
 
-// Save registration fields
+// Save registration fields (address fields removed)
 function senylc_save_registration_fields($user_id) {
     $fields = [
         'institution','first_name','last_name','home_system','phone','alt_email','address_loc_code',
-        'oclc_symbol','delivery_address1','delivery_address2','delivery_city','delivery_state','delivery_zip'
+        'oclc_symbol'
+        // delivery_* fields intentionally not saved from registration
     ];
     foreach ($fields as $f) {
         if (isset($_POST[$f])) {
@@ -288,6 +274,7 @@ function senylc_save_registration_fields($user_id) {
     }
 }
 add_action('user_register', 'senylc_save_registration_fields');
+
 
 // -------------------------------
 // Fix registration page layout spacing
@@ -314,10 +301,8 @@ add_action('login_head', 'senylc_register_form_spacing_fix');
 // Custom Columns: Library Name + Home System between Role and Email (sortable, no Status sort)
 // -------------------------------
 function senylc_add_user_columns($columns) {
-    // Remove the default Posts column
     unset($columns['posts']);
 
-    // Insert Library Name and Home System between Role and Email
     $new_columns = [];
     foreach ($columns as $key => $label) {
         $new_columns[$key] = $label;
@@ -325,7 +310,6 @@ function senylc_add_user_columns($columns) {
             $new_columns['institution'] = 'Library Name';
             $new_columns['home_system'] = 'Home Library System';
             $new_columns['seal_extra_locs'] = 'Extra LOCs';
-            // You can comment out the next line if you no longer want to display Status at all:
             // $new_columns['user_status'] = 'Status';
         }
     }
@@ -333,16 +317,14 @@ function senylc_add_user_columns($columns) {
 }
 add_filter('manage_users_columns', 'senylc_add_user_columns', 20);
 
-// Display values for new columns
 function senylc_show_user_column_data($value, $column_name, $user_id) {
     switch ($column_name) {
         case 'institution':
             return esc_html(get_user_meta($user_id, 'institution', true));
         case 'home_system':
             return esc_html(get_user_meta($user_id, 'home_system', true));
-    case 'seal_extra_locs':
-    return esc_html(get_user_meta($user_id, 'seal_extra_locs', true));
-
+        case 'seal_extra_locs':
+            return esc_html(get_user_meta($user_id, 'seal_extra_locs', true));
         case 'user_status':
             $status = get_userdata($user_id)->user_status;
             return $status == 0 ? 'Active' : 'Inactive';
@@ -352,7 +334,6 @@ function senylc_show_user_column_data($value, $column_name, $user_id) {
 }
 add_filter('manage_users_custom_column', 'senylc_show_user_column_data', 10, 3);
 
-// Make only Library Name and Home System sortable
 function senylc_sortable_user_columns($columns) {
     $columns['institution'] = 'institution';
     $columns['home_system'] = 'home_system';
@@ -360,7 +341,6 @@ function senylc_sortable_user_columns($columns) {
 }
 add_filter('manage_users_sortable_columns', 'senylc_sortable_user_columns');
 
-// Apply sorting logic for usermeta fields
 function senylc_sort_users_by_meta($query) {
     global $pagenow;
 
@@ -374,3 +354,30 @@ function senylc_sort_users_by_meta($query) {
     }
 }
 add_action('pre_get_users', 'senylc_sort_users_by_meta');
+
+// ADA fix for NUA Invitation Code field
+add_action('login_footer', function () {
+  if (!isset($_GET['action']) || $_GET['action'] !== 'register') return;
+  ?>
+  <script>
+    (function(){
+      const input = document.querySelector('input.nua_invitation_code[name="nua_invitation_code"]');
+      if (!input) return;
+
+      if (!input.id) input.id = 'nua_invitation_code';
+
+      const p = input.closest('p');
+      if (!p) return;
+
+      const label = p.querySelector('label');
+      if (label) label.setAttribute('for', input.id);
+
+      const opt = label ? label.querySelector('span') : null;
+      if (opt) {
+        if (!opt.id) opt.id = 'nua_invitation_code_optional';
+        input.setAttribute('aria-describedby', opt.id);
+      }
+    })();
+  </script>
+  <?php
+});
