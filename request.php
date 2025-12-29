@@ -199,6 +199,7 @@ if (isset($db) && ($db instanceof mysqli)) {
 // Map profile to the fields for existing page uses
 $field_loc_location_code  = $selected_req_loc;
 $field_your_institution   = ($profile['ok'] ?? false) ? $profile['Name'] : $selected_req_loc;
+$field_req_system         = ($profile['ok'] ?? false) ? trim((string)($profile['system'] ?? '')) : '';
 
 // address lines for existing layout
 $field_street_address  = ($profile['ok'] ?? false) ? $profile['street1'] : '';
@@ -329,8 +330,7 @@ $illsystemhost = $_SERVER["SERVER_NAME"];
         $reqnote = trim(mysqli_real_escape_string($db, $_POST['reqnote']));
         $patronnote = trim(mysqli_real_escape_string($db, $_POST['patronnote']));
         $wphone = trim(mysqli_real_escape_string($db, $_POST['wphone']));
-        $reqsystem = '';
-
+      
         // -------------------------------
         // Article field handling (unchanged)
         // -------------------------------
@@ -385,7 +385,7 @@ $illsystemhost = $_SERVER["SERVER_NAME"];
           '$destsystem',
           '$inst',
           '$reqLOCcode',
-          '$reqsystem',
+          '$field_req_system ',
           '$fname $lname',
           '$email',
           '$today',
