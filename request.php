@@ -47,15 +47,16 @@ function seal_clean_loc_list($csv): array
 
 function seal_get_user_primary_loc($user_id): string
 {
-
-    $primary_loc_meta_keys = [
+    $keys = [
+        'address_loc_code',     // ✅ this is from lib profile
         'loc_location_code',
         'field_loc_location_code',
-        'seal_loc_location_code',
         'seal_primary_loc',
-        'seal_loc'
+        'seal_loc',
+        'loc'
     ];
-    foreach ($primary_loc_meta_keys as $k) {
+
+    foreach ($keys as $k) {
         $v = get_user_meta($user_id, $k, true);
         if (is_string($v) && trim($v) !== '') {
             return strtoupper(trim($v));
@@ -63,6 +64,7 @@ function seal_get_user_primary_loc($user_id): string
     }
     return '';
 }
+
 
 function seal_fetch_lib_profile(mysqli $db, string $table, string $loc): array
 {
@@ -279,6 +281,9 @@ $illsystemhost = $_SERVER["SERVER_NAME"];
     mysqli_select_db($db, $dbname);
     $today = date('Y-m-d H:i:s');
 
+
+    $borrower_confirm_html = '';
+    $borrower_confirm_text = '';
     // Loop through all selected libraries
     $destinationCount = count($_POST['libdestination']);
     $borrower_ills = [];
@@ -312,7 +317,7 @@ $illsystemhost = $_SERVER["SERVER_NAME"];
 
         // These now come from selected library profile
         $inst = trim(mysqli_real_escape_string($db, $_POST['inst']));
-        $reqLOCcode = trim(mysqli_real_escape_string($db, $_POST['reqLOCcode']));
+        $reqLOCcode = $selected_req_loc;
         $saddress  = trim(mysqli_real_escape_string($db, $_POST['address']));
         $saddress2 = trim(mysqli_real_escape_string($db, $_POST['address2']));
         $caddress  = trim(mysqli_real_escape_string($db, $_POST['caddress']));
@@ -679,16 +684,57 @@ Will you fill this request?<br>
 
 
 ?>
-
-
 <p class="alert success">✔️ Your request has been submitted successfully.</p>
+<p><strong>Your request number is <?php echo htmlspecialchars($illnum); ?></strong></p>
+
+<h3>Request Summary</h3>
+<ul>
+  <li><strong>Title:</strong> <?php echo htmlspecialchars($ititle); ?></li>
+  <li><strong>Author:</strong> <?php echo htmlspecialchars($iauthor); ?></li>
+  <li><strong>Publication Date:</strong> <?php echo htmlspecialchars($pubdate); ?></li>
+  <?php if (!empty($isbn)): ?>
+    <li><strong>ISBN:</strong> <?php echo htmlspecialchars($isbn); ?></li>
+  <?php endif; ?>
+  <?php if (!empty($issn)): ?>
+    <li><strong>ISSN:</strong> <?php echo htmlspecialchars($issn); ?></li>
+  <?php endif; ?>
+  <li><strong>Item Type:</strong> <?php echo htmlspecialchars($itype); ?></li>
+  <li><strong>Call Number:</strong> <?php echo htmlspecialchars($itemcall); ?></li>
+  <?php if ($destinationCount === 1): ?>
+    <li><strong>Requested From:</strong> <?php echo htmlspecialchars($library); ?></li>
+  <?php endif; ?>
+</ul>
+<?php if (!empty($arttile)) : ?>
+  <h4>Article Details</h4>
+  <ul>
+    <li><strong>Article Title:</strong> <?php echo htmlspecialchars($arttile); ?></li>
+    <li><strong>Article Author:</strong> <?php echo htmlspecialchars($artauthor); ?></li>
+    <li><strong>Volume:</strong> <?php echo htmlspecialchars($artvolume); ?></li>
+    <li><strong>Issue:</strong> <?php echo htmlspecialchars($artissue); ?></li>
+    <li><strong>Pages:</strong> <?php echo htmlspecialchars($artpage); ?></li>
+    <li><strong>Month:</strong> <?php echo htmlspecialchars($artmonth); ?></li>
+    <li><strong>Year:</strong> <?php echo htmlspecialchars($artyear); ?></li>
+    <li><strong>Copyright:</strong> <?php echo htmlspecialchars($artcopyright); ?></li>
+  </ul>
+<?php endif; ?>
+
+
+<?php if ($destinationCount > 1): ?>
+  <p><strong>This request was sent to <?php echo $destinationCount; ?> libraries.</strong></p>
+<?php endif; ?>
+
+<h4>Requester Info</h4>
+<ul>
+  <li><strong>Name:</strong> <?php echo htmlspecialchars($fname . ' ' . $lname); ?></li>
+  <li><strong>Email:</strong> <?php echo htmlspecialchars($email); ?></li>
+  <li><strong>Institution:</strong> <?php echo htmlspecialchars($field_your_institution); ?></li>
+</ul>
+
+<p><a href="/" style="display:inline-block; margin-top:15px; padding:10px 20px; background:#337ab7; color:#fff; text-decoration:none; border-radius:5px;">Submit another request</a></p>
 
 <?php
-// Allow WordPress to continue rendering if this is inside a template
-if (function_exists('get_footer')) {
-    echo "<p><a href='/' style='display:inline-block; margin-top:15px; padding:10px 20px; background:#337ab7; color:#fff; text-decoration:none; border-radius:5px;'>Submit another request</a></p>";
-    get_footer();
-}
+// ✅ Allow WordPress to continue rendering the sidebar and footer
+get_footer();
 return;
 ?>
 
