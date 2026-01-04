@@ -22,11 +22,17 @@ function getHolidaysAuto($country = 'US')
     $currentYear = (int)date('Y');
     $month = (int)date('n');
 
-    // If it's December, include next year as well
-    $years = [$currentYear];
+    // Always include previous + current year
+    $years = [$currentYear - 1, $currentYear];
+
+    // If December, include next year as well
     if ($month === 12) {
         $years[] = $currentYear + 1;
     }
+
+    $years = array_values(array_unique($years));
+    sort($years);
+
 
     $holidays = [];
     $logfile = '/var/log/seal_illiad_cron.log';

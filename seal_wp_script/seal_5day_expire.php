@@ -24,10 +24,17 @@ function getHolidaysAuto($country = 'US')
 {
     $currentYear = (int)date('Y');
     $month = (int)date('n');
-    $years = [$currentYear];
+
+    // Always include previous + current year (handles year rollover for Dec requests processed in Jan)
+    $years = [$currentYear - 1, $currentYear];
+
+    // If we're in December, include next year too (handles Dec -> Jan forward calculations)
     if ($month === 12) {
         $years[] = $currentYear + 1;
     }
+
+    $years = array_values(array_unique($years));
+    sort($years);
 
     $holidays = [];
     $logfile = '/var/log/seal_illiad_cron.log';
@@ -73,6 +80,7 @@ function getHolidaysAuto($country = 'US')
     sort($holidays);
     return $holidays;
 }
+
 // ----------------------------------------------------
 //  Helper: get library name by LOC code
 // ----------------------------------------------------
@@ -331,9 +339,9 @@ while ($row = mysqli_fetch_assoc($res)) {
     <p>
         <strong>ILL#:</strong> $illnum<br>
         <strong>Title:</strong> $title<br>
+        <strong>Requester:</strong> $requester &lt;$email&gt;<br>
         <strong>Lending Library:</strong> $lenderDisplay<br>
         <strong>Lending Library Email:</strong> $lender_email<br>
-        <strong>Lending Library:</strong> $requester<br>
         <strong>Expired Date:</strong> $today
     </p>
     <hr>
