@@ -82,9 +82,13 @@ if ($esc_lender !== '') {
     $sql .= " AND (lender.`Name` LIKE '%$esc_lender%' OR s.`Destination` LIKE '%$esc_lender%')";
 }
 if ($esc_status !== '') {
-    if ($esc_status === 'filled') $sql .= " AND s.`Fill`=1";
-    elseif ($esc_status === 'notfilled') $sql .= " AND s.`Fill`=0";
-    elseif ($esc_status === 'pending') $sql .= " AND (s.`Fill` IS NULL OR s.`Fill`=3)";
+    if ($esc_status === 'filled') {
+        $sql .= " AND s.`Fill`=1";
+    } elseif ($esc_status === 'notfilled') {
+        $sql .= " AND s.`Fill`=0";
+    } elseif ($esc_status === 'pending') {
+        $sql .= " AND (s.`Fill` IS NULL OR s.`Fill`=3)";
+    }
 }
 
 $sql .= " ORDER BY s.`Timestamp` DESC LIMIT 0, 500";
@@ -235,9 +239,15 @@ $shipping_methods = [
       <label>Status:
         <select name="filter_status">
           <option value="">Any</option>
-          <option value="filled" <?php if($filter_status==='filled') echo 'selected'; ?>>Filled</option>
-          <option value="notfilled" <?php if($filter_status==='notfilled') echo 'selected'; ?>>Not Filled</option>
-          <option value="pending" <?php if($filter_status==='pending') echo 'selected'; ?>>Pending</option>
+          <option value="filled" <?php if ($filter_status === 'filled') {
+              echo 'selected';
+          } ?>>Filled</option>
+          <option value="notfilled" <?php if ($filter_status === 'notfilled') {
+              echo 'selected';
+          } ?>>Not Filled</option>
+          <option value="pending" <?php if ($filter_status === 'pending') {
+              echo 'selected';
+          } ?>>Pending</option>
         </select>
       </label>
       <div class="filter-actions">
@@ -299,37 +309,115 @@ $shipping_methods = [
                     <td>$borrower</td>
                     <td>$due<br>$ship</td>
                     <td>";
-    echo "<div class='status-text'>$status</div>";
-    echo "<div class='shiptxt'>" . htmlspecialchars($ship) . "</div>";
+            echo "<div class='status-text'>$status</div>";
+            echo "<div class='shiptxt'>" . htmlspecialchars($ship) . "</div>";
 
-    $emailsent = (int)($r['emailsent'] ?? 0);
-    $note = strtolower($r['responderNOTE'] ?? '');
-    $fill = (int)($r['Fill'] ?? 0);
+            $emailsent = (int)($r['emailsent'] ?? 0);
+            $note = strtolower($r['responderNOTE'] ?? '');
+            $fill = (int)($r['Fill'] ?? 0);
 
-    // 🟢 Filled
-    if ($fill === 1) {
-        echo "<div class='status-badge filled' title='Request filled successfully'>✅ Filled</div>";
-    }elseif ($fill === 0) {
-    echo "<div class='status-badge notfilled' title='Request not filled'>❌ Not Filled</div>"; 
-    // 🟡 Reminder Sent
-    }elseif ($emailsent === 2 || str_contains($note, 'reminder')) {
-        echo "<div class='status-badge reminder' title='3-Day Reminder sent automatically'>⚠️ Reminder Sent</div>";
-    }
-    // 🔴 Expired
-    elseif ($emailsent === 3 || str_contains($note, 'expire')) {
-        echo "<div class='status-badge expired' title='5-Day Expired automatically'>⏰ Expired</div>";
-    }
-     // Display ILLiad Transaction ID
-    if (!empty($r['IlliadTransID'])) {
-        echo "<div class='illiad-id'><b>ILLiad ID:</b> "
-           . htmlspecialchars($r['IlliadTransID']) . "</div>";
-    }
-  
-echo "</td>
+            // 🟢 Filled
+            if ($fill === 1) {
+                echo "<div class='status-badge filled' title='Request filled successfully'>✅ Filled</div>";
+            } elseif ($fill === 0) {
+                echo "<div class='status-badge notfilled' title='Request not filled'>❌ Not Filled</div>";
+                // 🟡 Reminder Sent
+            } elseif ($emailsent === 2 || str_contains($note, 'reminder')) {
+                echo "<div class='status-badge reminder' title='3-Day Reminder sent automatically'>⚠️ Reminder Sent</div>";
+            }
+            // 🔴 Expired
+            elseif ($emailsent === 3 || str_contains($note, 'expire')) {
+                echo "<div class='status-badge expired' title='5-Day Expired automatically'>⏰ Expired</div>";
+            }
+            // Display ILLiad Transaction ID
+            if (!empty($r['IlliadTransID'])) {
+                echo "<div class='illiad-id'><b>ILLiad ID:</b> "
+                   . htmlspecialchars($r['IlliadTransID']) . "</div>";
+            }
+            // --------------------------
+            // Notes under the request row
+            // Exclude Patron Note
+            // Include Reason Not Filled (nofillreason -> text)
+            // --------------------------
+
+            // Map no-fill reason codes
+            $nofill_map = [
+                '20' => 'In Use',
+                '21' => 'Lost',
+                '22' => 'Non-Circulating',
+                '23' => 'Not on shelf',
+                '24' => 'Poor condition',
+                '25' => 'Too New',
+            ];
+
+            // Pull notes (trim)
+            $reqnote         = trim((string)($r["reqnote"] ?? ''));
+            $lendnote        = trim((string)($r["responderNOTE"] ?? ''));
+            $returnnote      = trim((string)($r["returnNote"] ?? ''));
+            $returnmethod    = trim((string)($r["returnmethod"] ?? ''));
+            $renewNote       = trim((string)($r["renewNote"] ?? ''));
+            $renewNoteLender = trim((string)($r["renewNoteLender"] ?? ''));
+
+            // No-fill reason from DB (code stored)
+            $nofillreason = trim((string)($r["nofillreason"] ?? ''));
+            $reasontxt    = $nofill_map[$nofillreason] ?? '';
+
+            // Build labeled list (NO patronnote)
+            $notes = [];
+            if ($reqnote !== '') {
+                $notes['Request Note'] = $reqnote;
+            }
+            if ($lendnote !== '') {
+                $notes['Lender Note'] = $lendnote;
+            }
+            if ($returnnote !== '') {
+                $notes['Return Note'] = $returnnote;
+            }
+            if ($returnmethod !== '') {
+                $notes['Return Method'] = $returnmethod;
+            }
+            if ($renewNote !== '') {
+                $notes['Renew Note (Borrower)'] = $renewNote;
+            }
+            if ($renewNoteLender !== '') {
+                $notes['Renew Note (Lender)'] = $renewNoteLender;
+            }
+
+            // Only show reason if it exists (optionally only for Fill=0)
+            if ($reasontxt !== '') {
+                $notes['Reason Not Filled'] = $reasontxt;
+            }
+
+            echo "</td>
+
                   </tr>";
+
+
+
+            // If notes exist, print a full-width sub-row underneath
+            if (!empty($notes)) {
+                $colspan = 7; // your table has 7 columns (ILL, Title, Need By, Lender, Borrower, Due/Ship, Status)
+
+                echo "<tr class='rh-subrow rh-notes-row'><td colspan='{$colspan}'>";
+                echo "<div class='rh-subwrap'>";
+                echo "<div class='rh-subtitle'>Notes <span class='rh-muted'>(" . count($notes) . ")</span></div>";
+                echo "<div class='rh-notes-grid'>";
+
+                foreach ($notes as $label => $val) {
+                    $extraClass = ($label === 'Reason Not Filled') ? ' rh-note-warning' : '';
+                    echo "<div class='rh-note-item{$extraClass}'>";
+                    echo "<div class='rh-note-label'>" . htmlspecialchars($label) . "</div>";
+                    echo "<div class='rh-note-text'>" . nl2br(htmlspecialchars($val)) . "</div>";
+                    echo "</div>";
+                }
+
+                echo "</div></div>";
+                echo "</td></tr>";
+            }
+
         }
         echo "</tbody></table>";
     }
-    ?>
+?>
   </div>
 </main>

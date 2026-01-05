@@ -44,9 +44,14 @@ $filter_numresults = $_GET['filter_numresults'] ?? 25;
 // pagination param (avoid WP's 'page' var)
 $pg = isset($_GET['pg']) ? max(1, (int)$_GET['pg']) : 1;
 
-// normalize numresults
-if (!in_array($filter_numresults, ['all', 25, 50, 100], true)) {
-    $filter_numresults = 25;
+$filter_numresults = $_GET['filter_numresults'] ?? '25';
+
+// normalize numresults (string-safe, strict)
+$allowed_numresults = ['25', '50', '100', 'all'];
+$filter_numresults = (string)$filter_numresults;
+
+if (!in_array($filter_numresults, $allowed_numresults, true)) {
+    $filter_numresults = '25';
 }
 
 // ---------------------------------
@@ -103,7 +108,7 @@ if ($filter_numresults === 'all') {
     $pg = 1;
     $offset = 0;
 } else {
-    $limit = (int)$filter_numresults;
+    $limit = (int)$filter_numresults; // 25/50/100
     if ($limit <= 0) {
         $limit = 25;
     }
@@ -279,32 +284,105 @@ if (!$GETLIST || $totalResults == 0) {
       <td>".htmlspecialchars($r['DueDate'])."</td>
       <td>".htmlspecialchars($r['ts_fmt'])."</td>
       <td>";
-  
-     echo "<div class='status-text'>$status</div>";
-    echo "<div class='shiptxt'>" . htmlspecialchars($shiptxt) . "</div>";
-    // Show reminder / expire status from emailsent or responderNOTE
-    $emailsent = (int)($r['emailsent'] ?? 0);
-    $note = strtolower($r['responderNOTE'] ?? '');
-    $fill = (int)($r['Fill'] ?? 0);
 
-    // Display color-coded badges
-    if ($fill === 1) {
-        echo "<div class='status-badge filled' title='Request filled successfully'>✅ Filled</div>";
-    }elseif ($fill === 0) {
-    echo "<div class='status-badge notfilled' title='Request not filled'>❌ Not Filled</div>"; 
-    }elseif ($emailsent === 2 || str_contains($note, 'reminder')) {
-        echo "<div class='status-badge reminder' title='3-Day Reminder sent automatically'>⚠️ Reminder Sent</div>";
-    } elseif ($emailsent === 3 || str_contains($note, 'expire')) {
-        echo "<div class='status-badge expired' title='5-Day Expired automatically'>⏰ Expired</div>";
-    }
+        echo "<div class='status-text'>$status</div>";
+        echo "<div class='shiptxt'>" . htmlspecialchars($shiptxt) . "</div>";
+        // Show reminder / expire status from emailsent or responderNOTE
+        $emailsent = (int)($r['emailsent'] ?? 0);
+        $note = strtolower($r['responderNOTE'] ?? '');
+        $fill = (int)($r['Fill'] ?? 0);
 
-    if (!empty($r['IlliadTransID'])) {
-        echo "<br><span style='font-size:0.9em;color:#555;'><b>ILLiad ID:</b> "
-           . htmlspecialchars($r['IlliadTransID']) . "</span>";
-    }
-  echo "</td>
+        // Display color-coded badges
+        if ($fill === 1) {
+            echo "<div class='status-badge filled' title='Request filled successfully'>✅ Filled</div>";
+        } elseif ($fill === 0) {
+            echo "<div class='status-badge notfilled' title='Request not filled'>❌ Not Filled</div>";
+        } elseif ($emailsent === 2 || str_contains($note, 'reminder')) {
+            echo "<div class='status-badge reminder' title='3-Day Reminder sent automatically'>⚠️ Reminder Sent</div>";
+        } elseif ($emailsent === 3 || str_contains($note, 'expire')) {
+            echo "<div class='status-badge expired' title='5-Day Expired automatically'>⏰ Expired</div>";
+        }
+
+        if (!empty($r['IlliadTransID'])) {
+            echo "<br><span style='font-size:0.9em;color:#555;'><b>ILLiad ID:</b> "
+               . htmlspecialchars($r['IlliadTransID']) . "</span>";
+        }
+        echo "</td>
 
     </tr>";
+        // Map no-fill reason codes
+        $nofill_map = [
+          '20' => 'In Use',
+          '21' => 'Lost',
+          '22' => 'Non-Circulating',
+          '23' => 'Not on shelf',
+          '24' => 'Poor condition',
+          '25' => 'Too New',
+        ];
+
+        // Pull notes
+        $reqnote         = trim((string)($r["reqnote"] ?? ''));
+        $lendnote        = trim((string)($r["responderNOTE"] ?? ''));
+        $returnnote      = trim((string)($r["returnNote"] ?? ''));
+        $returnmethod    = trim((string)($r["returnmethod"] ?? ''));
+        $renewNote       = trim((string)($r["renewNote"] ?? ''));
+        $renewNoteLender = trim((string)($r["renewNoteLender"] ?? ''));
+
+        // No-fill reason
+        $nofillreason = trim((string)($r['reasonNotFilled'] ?? ''));
+        $reasontxt    = $nofill_map[$nofillreason] ?? '';
+
+        // Build notes
+        $notes = [];
+        if ($reqnote !== '') {
+            $notes['Request Note'] = $reqnote;
+        }
+
+        if ($lendnote !== '') {
+            $notes['Lender Note'] = $lendnote;
+        }
+        if ($returnnote !== '') {
+            $notes['Return Note'] = $returnnote;
+        }
+        if ($returnmethod !== '') {
+            $notes['Return Method'] = $returnmethod;
+        }
+        if ($renewNote !== '') {
+            $notes['Renew Note (Borrower)'] = $renewNote;
+        }
+        if ($renewNoteLender !== '') {
+            $notes['Renew Note (Lender)'] = $renewNoteLender;
+        }
+        if ($reasontxt !== '') {
+            $notes['Reason Not Filled'] = $reasontxt;
+        }
+
+
+        if (!empty($notes)) {
+
+            // IMPORTANT: set this to the number of columns in your main table row
+            $colspan = 8; // <-- change to match your table
+
+            echo "<tr class='rh-subrow rh-notes-row'>";
+            echo "  <td colspan='{$colspan}' class='rh-subcell'>";
+
+            echo "    <div class='rh-subwrap'>";
+            echo "      <div class='rh-subtitle'><strong>Notes</strong> <span class='rh-muted'>(" . count($notes) . ")</span></div>";
+            echo "      <div class='rh-notes-grid'>";
+
+            foreach ($notes as $label => $val) {
+                echo "        <div class='rh-note-item'>";
+                echo "          <div class='rh-note-label'>" . htmlspecialchars($label) . "</div>";
+                echo "          <div class='rh-note-text'>" . nl2br(htmlspecialchars($val)) . "</div>";
+                echo "        </div>";
+            }
+
+            echo "      </div>";
+            echo "    </div>";
+
+            echo "  </td>";
+            echo "</tr>";
+        }
     }
     echo "</tbody></table>";
 
