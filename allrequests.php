@@ -64,37 +64,56 @@ if (!$db) {
 }
 mysqli_set_charset($db, 'utf8mb4');
 
-$SQLBASE = "SELECT *, DATE_FORMAT(`Timestamp`, '%Y/%m/%d') AS ts_fmt FROM `$sealSTAT` WHERE 1=1";
+$SQLBASE = "SELECT s.*, DATE_FORMAT(s.`Timestamp`, '%Y/%m/%d') AS ts_fmt,
+                   l.`Name` AS lender_name, l.`ill_email` AS lender_email
+            FROM `$sealSTAT` s
+            LEFT JOIN `$sealLIB` l ON l.`loc` = s.`Destination`
+            WHERE 1=1";
+
 $conds   = [];
 
 // filters
 if ($filter_startdate && $filter_enddate) {
     $sd = mysqli_real_escape_string($db, $filter_startdate);
     $ed = mysqli_real_escape_string($db, $filter_enddate);
-    $conds[] = "`Timestamp` BETWEEN '$sd 00:00:00' AND '$ed 23:59:59'";
+    $conds[] = "s.`Timestamp` BETWEEN '$sd 00:00:00' AND '$ed 23:59:59'";
 }
+
 if ($filter_title) {
-    $conds[] = "`Title` LIKE '%" . mysqli_real_escape_string($db, $filter_title) . "%'";
+    $ft = mysqli_real_escape_string($db, $filter_title);
+    $conds[] = "s.`Title` LIKE '%$ft%'";
 }
+
 if ($filter_illnum) {
-    $conds[] = "`illNUB` = '" . mysqli_real_escape_string($db, $filter_illnum) . "'";
+    $fi = mysqli_real_escape_string($db, $filter_illnum);
+    $conds[] = "s.`illNUB` = '$fi'";
 }
+
 if ($filter_system) {
     $fs = mysqli_real_escape_string($db, $filter_system);
-    $conds[] = "(`ReqSystem` = '$fs' OR `DestSystem` = '$fs')";
+    $conds[] = "(s.`ReqSystem` = '$fs' OR s.`DestSystem` = '$fs')";
 }
-if ($filter_lender) {
-    $conds[] = "`Destination` LIKE '%" . mysqli_real_escape_string($db, $filter_lender) . "%'";
-}
+
 if ($filter_borrower) {
     $fb = mysqli_real_escape_string($db, $filter_borrower);
-    $conds[] = "(`Requester person` LIKE '%$fb%' OR `Requester lib` LIKE '%$fb%')";
+    $conds[] = "(s.`Requester person` LIKE '%$fb%' OR s.`Requester lib` LIKE '%$fb%')";
 }
+
+if ($filter_lender) {
+    $fl = mysqli_real_escape_string($db, $filter_lender);
+    $conds[] = "(s.`Destination` LIKE '%$fl%' OR l.`Name` LIKE '%$fl%' OR l.`ill_email` LIKE '%$fl%')";
+}
+
+
 
 $where = $conds ? " AND " . implode(" AND ", $conds) : "";
 
 // total count
-$count_sql = "SELECT COUNT(*) AS total FROM `$sealSTAT` WHERE 1=1 $where";
+$count_sql = "SELECT COUNT(*) AS total
+              FROM `$sealSTAT` s
+              LEFT JOIN `$sealLIB` l ON l.`loc` = s.`Destination`
+              WHERE 1=1 $where";
+
 $count_res = mysqli_query($db, $count_sql);
 $count_row = $count_res ? mysqli_fetch_assoc($count_res) : null;
 $totalResults = $count_row ? (int)$count_row['total'] : 0;
@@ -123,11 +142,17 @@ if ($filter_numresults === 'all') {
 }
 
 // final query
-$sql = "$SQLBASE $where ORDER BY `Timestamp` DESC";
+$sql = "$SQLBASE $where ORDER BY s.`Timestamp` DESC";
 if ($filter_numresults !== 'all') {
     $sql .= " LIMIT $offset, $limit";
 }
+
 $GETLIST = mysqli_query($db, $sql);
+if (!$GETLIST) {
+    die("<pre>SQL ERROR: " . htmlspecialchars(mysqli_error($db)) . "\n\n" . htmlspecialchars($sql) . "</pre>");
+}
+
+
 ?>
 
 <link rel="stylesheet" href="https://seal.senylrc.org/assets/jquery-ui.css">
@@ -156,11 +181,12 @@ jQuery(function($){
     <div class="adminlib-header">
       <h3>All Requests (Borrowing & Lending)</h3>
       <div class="actions">
-        <a href="/var/www/seal_wp_script/export.php" class="export-btn">Export CSV</a>
+        <a href="/export.php" class="export-btn">Export CSV</a>
       </div>
     </div>
 
-    <form method="get" class="filter-bar">
+    
+      <form method="get" class="filter-bar" action="<?php echo htmlspecialchars(strtok($_SERVER['REQUEST_URI'], '?')); ?>">
       <input type="hidden" name="firstpass" value="no">
       <input type="hidden" name="pg" value="1"><!-- reset to page 1 on submit -->
 
@@ -220,7 +246,7 @@ foreach ($results_per_page_options as $opt) {
 
       <div class="filter-actions">
         <button type="submit" class="btn-primary">Update Results</button>
-        <a href="allrequests.php" class="btn-secondary">Reset</a>
+        <a href="<?php echo htmlspecialchars(strtok($_SERVER['REQUEST_URI'], '?')); ?>" class="btn-secondary">Reset</a>
       </div>
     </form>
 
@@ -361,7 +387,7 @@ if (!$GETLIST || $totalResults == 0) {
         if (!empty($notes)) {
 
             // IMPORTANT: set this to the number of columns in your main table row
-            $colspan = 8; // <-- change to match your table
+            $colspan = 9; // <-- change to match your table
 
             echo "<tr class='rh-subrow rh-notes-row'>";
             echo "  <td colspan='{$colspan}' class='rh-subcell'>";
