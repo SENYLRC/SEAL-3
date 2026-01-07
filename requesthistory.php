@@ -379,12 +379,37 @@ if (!$GETLIST) {
         $returnmethod = trim($row["returnmethod"] ?? '');
         $renewNote    = trim($row["renewNote"] ?? '');
         $renewNoteLender = trim($row["renewNoteLender"] ?? '');
+        $nofillreason = trim((string)($row["reasonNotFilled"] ?? ''));
+
+        $nofill_map = [
+  '20' => 'In Use',
+  '21' => 'Lost',
+  '22' => 'Non-Circulating',
+  '23' => 'Not on shelf',
+  '24' => 'Poor condition',
+  '25' => 'Too New',
+];
+
+$reasontxt = '';
+if ($nofillreason !== '') {
+  $key = preg_replace('/\D+/', '', $nofillreason); // keep digits only
+  if (isset($nofill_map[$key])) {
+    $reasontxt = $nofill_map[$key];
+  } elseif ($key !== '') {
+    $reasontxt = 'Other (' . $key . ')';
+  }
+}
+
 
         // combine and format
         $displaynotes = '';
         if (strlen($reqnote) > 2)    $displaynotes .= "<b>Requester Note:</b> " . esc_html($reqnote) . "<br>";
         if (strlen($patronnote) > 2) $displaynotes .= "<b>Patron Note:</b> " . esc_html($patronnote) . "<br>";
         if (strlen($lendnote) > 2)   $displaynotes .= "<b>Lender Note:</b> " . esc_html($lendnote) . "<br>";
+        if ($reasontxt !== '' && (int)$row['Fill'] !== 1) {
+  $displaynotes .= "<b>Reason Not Filled:</b> " . esc_html($reasontxt) . "<br>";
+}
+
 
         // IMPORTANT ADA FIX: your colspans were "9" even though table has 8 columns.
         // Keep the visible layout the same but use correct colspan="6" after the first two empty cells.
