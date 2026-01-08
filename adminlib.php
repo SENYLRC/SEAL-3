@@ -895,7 +895,7 @@ while ($row = mysqli_fetch_assoc($GETLIST)) {
 
     echo "<tr>
             <td>" . h($libname_r) . "</td>
-            <td>" . h($libalias_r) . "</td>
+            <td class='col-alias'>" . h($libalias_r) . "</td>
             <td>" . h($libparticipant_r) . "</td>
             <td>" . h($libsuspend_r) . "</td>
             <td>" . h($system_r) . "</td>
