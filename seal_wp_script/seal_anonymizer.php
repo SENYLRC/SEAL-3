@@ -177,6 +177,10 @@ $sqlupdate = "
         `needbydate`   = '',
         `patronnote`   = '',
         `DueDate`      = '',
+        `returnNote`    = '',
+        `renewNote`    = '',
+        `responderNOTE`    = '',
+        `renewNoteLender`  = '',
         `reqNOTE`      = ''
     WHERE `Timestamp` < '$ydate60'
 ";
