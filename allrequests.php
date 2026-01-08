@@ -42,7 +42,8 @@ $filter_borrower   = $_GET['filter_borrower']   ?? "";
 $filter_numresults = $_GET['filter_numresults'] ?? 25;
 $filter_status = $_GET['filter_status'] ?? ''; // '', 'filled', 'notfilled', 'cancel'
 $filter_status = strtolower(trim((string)$filter_status));
-$allowed_status = ['', 'filled', 'notfilled', 'cancel'];
+$allowed_status = ['', 'filled', 'notfilled', 'cancel', 'expired'];
+
 if (!in_array($filter_status, $allowed_status, true)) {
     $filter_status = '';
 }
@@ -116,11 +117,11 @@ if ($filter_status === 'filled') {
 } elseif ($filter_status === 'notfilled') {
     $conds[] = "s.`Fill` = 0";
 } elseif ($filter_status === 'cancel') {
-    // Best-effort "Cancelled" without knowing exact schema:
-    // - common: Fill=2
-    // - fallback: responderNOTE mentions cancel/cancelled
     $conds[] = "(s.`Fill` = 2 OR LOWER(COALESCE(s.`responderNOTE`, '')) LIKE '%cancel%')";
+} elseif ($filter_status === 'expired') {
+    $conds[] = "((s.`emailsent` = 3) OR (LOWER(COALESCE(s.`responderNOTE`, '')) LIKE '%expire%'))";
 }
+
 
 
 
@@ -251,12 +252,14 @@ foreach ($systems as $code => $name) {
         </div>
         <div class="form-group">
   <label for="filter_status">Status</label>
-  <select name="filter_status" id="filter_status">
-    <option value="" <?php echo ($filter_status === '' ? 'selected' : ''); ?>>All</option>
-    <option value="filled" <?php echo ($filter_status === 'filled' ? 'selected' : ''); ?>>Filled</option>
-    <option value="notfilled" <?php echo ($filter_status === 'notfilled' ? 'selected' : ''); ?>>Not Filled</option>
-    <option value="cancel" <?php echo ($filter_status === 'cancel' ? 'selected' : ''); ?>>Cancelled</option>
-  </select>
+<select name="filter_status" id="filter_status">
+  <option value="" <?php echo ($filter_status === '' ? 'selected' : ''); ?>>All</option>
+  <option value="filled" <?php echo ($filter_status === 'filled' ? 'selected' : ''); ?>>Filled</option>
+  <option value="notfilled" <?php echo ($filter_status === 'notfilled' ? 'selected' : ''); ?>>Not Filled</option>
+  <option value="cancel" <?php echo ($filter_status === 'cancel' ? 'selected' : ''); ?>>Cancelled</option>
+  <option value="expired" <?php echo ($filter_status === 'expired' ? 'selected' : ''); ?>>Expired</option>
+</select>
+
 </div>
 
         <div class="form-group">

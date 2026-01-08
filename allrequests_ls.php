@@ -88,8 +88,11 @@ if ($esc_status !== '') {
         $sql .= " AND s.`Fill`=0";
     } elseif ($esc_status === 'pending') {
         $sql .= " AND (s.`Fill` IS NULL OR s.`Fill`=3)";
+    } elseif ($esc_status === 'expired') {
+        $sql .= " AND (s.`emailsent` = 3 OR LOWER(COALESCE(s.`responderNOTE`, '')) LIKE '%expire%')";
     }
 }
+
 
 $sql .= " ORDER BY s.`Timestamp` DESC LIMIT 0, 500";
 
@@ -237,18 +240,14 @@ $shipping_methods = [
       <label>Title:<input type="text" name="filter_title" value="<?php echo htmlspecialchars($filter_title); ?>"></label>
       <label>Lender:<input type="text" name="filter_lender" value="<?php echo htmlspecialchars($filter_lender); ?>"></label>
       <label>Status:
-        <select name="filter_status">
-          <option value="">Any</option>
-          <option value="filled" <?php if ($filter_status === 'filled') {
-              echo 'selected';
-          } ?>>Filled</option>
-          <option value="notfilled" <?php if ($filter_status === 'notfilled') {
-              echo 'selected';
-          } ?>>Not Filled</option>
-          <option value="pending" <?php if ($filter_status === 'pending') {
-              echo 'selected';
-          } ?>>Pending</option>
-        </select>
+     <select name="filter_status">
+  <option value="">Any</option>
+  <option value="filled" <?php if ($filter_status === 'filled') { echo 'selected'; } ?>>Filled</option>
+  <option value="notfilled" <?php if ($filter_status === 'notfilled') { echo 'selected'; } ?>>Not Filled</option>
+  <option value="pending" <?php if ($filter_status === 'pending') { echo 'selected'; } ?>>Pending</option>
+  <option value="expired" <?php if ($filter_status === 'expired') { echo 'selected'; } ?>>Expired</option>
+</select>
+
       </label>
       <div class="filter-actions">
         <button type="submit" class="seal-btn">Search</button>
