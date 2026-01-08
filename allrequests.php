@@ -40,6 +40,13 @@ $filter_illnum     = $_GET['filter_illnum']     ?? "";
 $filter_lender     = $_GET['filter_lender']     ?? "";
 $filter_borrower   = $_GET['filter_borrower']   ?? "";
 $filter_numresults = $_GET['filter_numresults'] ?? 25;
+$filter_status = $_GET['filter_status'] ?? ''; // '', 'filled', 'notfilled', 'cancel'
+$filter_status = strtolower(trim((string)$filter_status));
+$allowed_status = ['', 'filled', 'notfilled', 'cancel'];
+if (!in_array($filter_status, $allowed_status, true)) {
+    $filter_status = '';
+}
+
 
 // pagination param (avoid WP's 'page' var)
 $pg = isset($_GET['pg']) ? max(1, (int)$_GET['pg']) : 1;
@@ -102,6 +109,17 @@ if ($filter_borrower) {
 if ($filter_lender) {
     $fl = mysqli_real_escape_string($db, $filter_lender);
     $conds[] = "(s.`Destination` LIKE '%$fl%' OR l.`Name` LIKE '%$fl%' OR l.`ill_email` LIKE '%$fl%')";
+}
+
+if ($filter_status === 'filled') {
+    $conds[] = "s.`Fill` = 1";
+} elseif ($filter_status === 'notfilled') {
+    $conds[] = "s.`Fill` = 0";
+} elseif ($filter_status === 'cancel') {
+    // Best-effort "Cancelled" without knowing exact schema:
+    // - common: Fill=2
+    // - fallback: responderNOTE mentions cancel/cancelled
+    $conds[] = "(s.`Fill` = 2 OR LOWER(COALESCE(s.`responderNOTE`, '')) LIKE '%cancel%')";
 }
 
 
@@ -231,6 +249,16 @@ foreach ($systems as $code => $name) {
           <label for="filter_borrower">Borrower</label>
           <input id="filter_borrower" name="filter_borrower" value="<?php echo htmlspecialchars($filter_borrower); ?>">
         </div>
+        <div class="form-group">
+  <label for="filter_status">Status</label>
+  <select name="filter_status" id="filter_status">
+    <option value="" <?php echo ($filter_status === '' ? 'selected' : ''); ?>>All</option>
+    <option value="filled" <?php echo ($filter_status === 'filled' ? 'selected' : ''); ?>>Filled</option>
+    <option value="notfilled" <?php echo ($filter_status === 'notfilled' ? 'selected' : ''); ?>>Not Filled</option>
+    <option value="cancel" <?php echo ($filter_status === 'cancel' ? 'selected' : ''); ?>>Cancelled</option>
+  </select>
+</div>
+
         <div class="form-group">
           <label for="filter_numresults">Results per page</label>
           <select id="filter_numresults" name="filter_numresults">
