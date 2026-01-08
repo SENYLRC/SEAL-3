@@ -23,7 +23,7 @@ $staff_debug = (bool)array_intersect(['administrator','libstaff'], $user_roles);
 
 require '/var/www/seal_wp_script/seal_function.php';
 require '/var/www/seal_wp_script/seal_db.inc';
-
+mysqli_set_charset($db, 'utf8mb4');
 
 
 // ==========================================================
@@ -758,8 +758,12 @@ return;
         <select id="requester_loc_select" name="requester_loc_select" onchange="this.form.submit()">
           <?php foreach ($all_locs as $lc): ?>
             <option value="<?php echo esc_attr($lc); ?>" <?php echo selected($lc, $selected_req_loc, false); ?>>
-              <?php echo esc_html($lc); ?>
-            </option>
+  <?php echo ($lc === $selected_req_loc)
+      ? esc_html($field_your_institution . " ($lc)")
+      : esc_html($lc);
+  ?>
+</option>
+
           <?php endforeach; ?>
         </select>
         <div class="grayout">Default is your primary library. Changing this updates Institution and Mailing Address.</div>
@@ -1017,21 +1021,6 @@ foreach ($records->location as $location) {
 
         $itemlocallocation = $itemlocation;
 
-        echo "<!-- \n";
-        echo "catalogtype: $catalogtype \n";
-        echo "itemavail: $itemavail (1) \n";
-        echo "itemavailtext: $itemavailtext \n";
-        echo "itemlocallocation: $itemlocallocation \n";
-        echo "itemlocation: $itemlocation \n";
-        echo "destill: $destill \n";
-        echo "destpart: $destpart (1)\n";
-        echo "destemail: $destemail \n";
-        echo "destsuspend: $destsuspend (0)\n";
-        echo "destlibsystem: $destlibsystem \n";
-        echo "destlibname: $destlibname \n";
-        echo "desttypeloan: $desttypeloan (1)\n";
-        echo "failmessage: $failmessage\n";
-        echo "--> \n\n";
 
         $destfail = 0;
         if ($itemavail == 0) {
@@ -1061,6 +1050,27 @@ foreach ($records->location as $location) {
             $destlibsystem = "Unknown";
             $failmessage = "No alias match in SEAL directory";
         }
+                // -------------------------------
+        // DEBUG (only for staff) — emit when a holding fails OR always if you prefer
+        // -------------------------------
+        if ($staff_debug && $destfail != 0) {
+            echo "<!-- \n";
+            echo "catalogtype: $catalogtype \n";
+            echo "itemavail: $itemavail \n";
+            echo "itemavailtext: $itemavailtext \n";
+            echo "itemlocallocation: $itemlocallocation \n";
+            echo "itemlocation: $itemlocation \n";
+            echo "destill: $destill \n";
+            echo "destpart: $destpart \n";
+            echo "destemail: $destemail \n";
+            echo "destsuspend: $destsuspend \n";
+            echo "destlibsystem: $destlibsystem \n";
+            echo "destlibname: $destlibname \n";
+            echo "desttypeloan: $desttypeloan \n";
+            echo "failmessage: $failmessage\n";
+            echo "--> \n\n";
+        }
+
 
         if ($destfail == 0) {
             $itemcallnum = preg_replace('/[:]/', ' ', $itemcallnum);
@@ -1174,20 +1184,6 @@ foreach ($records->location as $location) {
                 $destlibsystemtxt = "SENYLRC Group";
             }
 
-            echo "<!-- \n";
-            echo "catalogtype: $catalogtype \n";
-            echo "itemavail: $itemavail (1) \n";
-            echo "itemavailtext: $itemavailtext \n";
-            echo "itemlocallocation: $itemlocallocation \n";
-            echo "itemlocation: $itemlocation \n";
-            echo "destill: $destill \n";
-            echo "destpart: $destpart (1)\n";
-            echo "destemail: $destemail \n";
-            echo "destsuspend: $destsuspend (0)\n";
-            echo "destlibsystem: $destlibsystem \n";
-            echo "destlibname: $destlibname \n";
-            echo "desttypeloan: $desttypeloan (1)\n";
-            echo "--> \n\n";
 
             $destfail = 0;
             if ($destpart == 0) {
@@ -1217,10 +1213,28 @@ foreach ($records->location as $location) {
                 $failmessage = "No alias match in SEAL directory";
             }
 
-            echo "<!-- \n";
-            echo "destfail: $destfail\n";
-            echo "--> \n\n";
+            // -------------------------------
+            // DEBUG (only for staff)
+            // -------------------------------
+            if ($staff_debug && $destfail != 0) {
+                echo "<!-- \n";
+                echo "catalogtype: $catalogtype \n";
+                echo "itemavail: $itemavail \n";
+                echo "itemavailtext: $itemavailtext \n";
+                echo "itemlocallocation: $itemlocallocation \n";
+                echo "itemlocation: $itemlocation \n";
+                echo "destill: $destill \n";
+                echo "destpart: $destpart \n";
+                echo "destemail: $destemail \n";
+                echo "destsuspend: $destsuspend \n";
+                echo "destlibsystem: $destlibsystem \n";
+                echo "destlibname: $destlibname \n";
+                echo "desttypeloan: $desttypeloan \n";
+                echo "failmessage: $failmessage\n";
+                echo "--> \n\n";
+            }
 
+            
             if ($destfail == 0) {
                 $itemcallnum = preg_replace('/[:]/', ' ', $itemcallnum);
                 $itemlocation = preg_replace('/[:]/', ' ', $itemlocation);
@@ -1269,7 +1283,9 @@ foreach ($records->location as $location) {
                 echo "<!-- Holding location failed checks. --> \n";
             }
         }
+        
     }
+    
 }
 
 foreach ($deadlibraries as $line) {

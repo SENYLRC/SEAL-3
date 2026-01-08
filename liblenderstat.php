@@ -100,6 +100,36 @@ if ($extra_locs_raw !== '') {
 $all_locs  = array_values(array_unique(array_filter(array_merge([$primary_loc], $extra_locs))));
 $has_multi = (count($all_locs) > 1);
 
+// ==========================================================
+// Build LOC => Library Name map (for dropdown display labels)
+// ==========================================================
+$loc_name_map = [];
+
+if (!empty($all_locs)) {
+    $in = [];
+    foreach ($all_locs as $c) {
+        $c = strtoupper(trim((string)$c));
+        if ($c !== '') {
+            $in[] = "'" . mysqli_real_escape_string($db, $c) . "'";
+        }
+    }
+
+    if (!empty($in)) {
+        $sql_names = "SELECT `loc`, `Name` FROM `$sealLIB` WHERE `loc` IN (" . implode(',', $in) . ")";
+        $res_names = mysqli_query($db, $sql_names);
+        if ($res_names) {
+            while ($rr = mysqli_fetch_assoc($res_names)) {
+                $k = strtoupper(trim((string)($rr['loc'] ?? '')));
+                $v = trim((string)($rr['Name'] ?? ''));
+                if ($k !== '' && $v !== '') {
+                    $loc_name_map[$k] = $v;
+                }
+            }
+        }
+    }
+}
+
+
 // Selection (POST sticky)
 $filter_loc = $_REQUEST['filter_loc'] ?? '';
 if (!$has_multi) {
@@ -324,15 +354,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <!-- Add SR-only label + id; visible text remains "Library:" -->
             <label class="screen-reader-text" for="filter_loc">Library</label>
             <select id="filter_loc" name="filter_loc" style="min-width:240px;">
-                <option value="<?php echo esc_attr($primary_loc); ?>" <?php echo ($filter_loc === $primary_loc ? "selected" : ""); ?>>
-                    Primary: <?php echo esc_html($primary_loc); ?>
-                </option>
+                <?php
+$pl_name  = $loc_name_map[$primary_loc] ?? $primary_loc;
+$pl_label = $pl_name . " (" . $primary_loc . ")";
+?>
+<option value="<?php echo esc_attr($primary_loc); ?>" <?php echo ($filter_loc === $primary_loc ? "selected" : ""); ?>>
+    Primary: <?php echo esc_html($pl_label); ?>
+</option>
 
-                <?php foreach ($extra_locs as $code): ?>
-                    <option value="<?php echo esc_attr($code); ?>" <?php echo ($filter_loc === $code ? "selected" : ""); ?>>
-                        <?php echo esc_html($code); ?>
-                    </option>
-                <?php endforeach; ?>
+<?php foreach ($extra_locs as $code): ?>
+    <?php
+      $code_u = strtoupper(trim((string)$code));
+      $nm     = $loc_name_map[$code_u] ?? $code_u;
+      $label  = $nm . " (" . $code_u . ")";
+    ?>
+    <option value="<?php echo esc_attr($code_u); ?>" <?php echo ($filter_loc === $code_u ? "selected" : ""); ?>>
+        <?php echo esc_html($label); ?>
+    </option>
+<?php endforeach; ?>
+
 
                 <option value="ALL" <?php echo ($filter_loc === 'ALL' ? "selected" : ""); ?>>
                     All My Libraries

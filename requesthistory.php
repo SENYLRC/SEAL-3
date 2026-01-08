@@ -132,6 +132,13 @@ if (!$has_multi) {
 <div id="sr-status" class="screen-reader-text" aria-live="polite" aria-atomic="true"></div>
 
 <?php
+
+// -------------------------------
+// DB Query
+// -------------------------------
+require '/var/www/seal_wp_script/seal_db.inc';
+$db = mysqli_connect($dbhost, $dbuser, $dbpass, $dbname);
+mysqli_set_charset($db, 'utf8mb4');
 // -------------------------------
 // Filter Form (keep visible layout the same)
 // -------------------------------
@@ -144,6 +151,30 @@ echo "<input type='hidden' id='rh_loc' name='loc' value='".esc_attr($loc)."'>";
 echo "<h3 id='rh_title'>Borrowing Requests Submitted By Your Library</h3>";
 echo "<h3>Limit Results</h3>";
 
+$loc_name_map = [];
+
+if (!empty($all_locs) && $db) {
+    $esc = [];
+    foreach ($all_locs as $c) {
+        $esc[] = "'" . mysqli_real_escape_string($db, $c) . "'";
+    }
+
+    $sql_names = "SELECT `loc`, `Name` FROM `$sealLIB` WHERE `loc` IN (" . implode(',', $esc) . ")";
+    $res_names = mysqli_query($db, $sql_names);
+
+    if ($res_names) {
+        while ($rr = mysqli_fetch_assoc($res_names)) {
+            $k = strtoupper(trim((string)$rr['loc']));
+            $v = trim((string)$rr['Name']);
+            if ($k !== '' && $v !== '') {
+                $loc_name_map[$k] = $v;
+            }
+        }
+    }
+}
+
+
+
 // Show library selector only if user has more than one LOC
 if ($has_multi) {
     echo "<p><b>Library:</b></p>";
@@ -153,7 +184,11 @@ if ($has_multi) {
     echo "<select id='filter_loc' name='filter_loc' style='min-width:240px;'>";
     echo "<option value='all' " . selected('all', $filter_loc, false) . ">All My Libraries</option>";
     foreach ($all_locs as $code) {
-        echo "<option value='" . esc_attr($code) . "' " . selected($code, strtoupper($filter_loc), false) . ">" . esc_html($code) . "</option>";
+      $code_u = strtoupper($code);
+$label  = $loc_name_map[$code_u] ?? $code_u; // fallback if name missing
+echo "<option value='" . esc_attr($code_u) . "' " . selected($code_u, strtoupper($filter_loc), false) . ">" .
+     esc_html($label . " (" . $code_u . ")") .
+     "</option>";
     }
     echo "</select></label>";
     echo "</div>";
@@ -208,11 +243,7 @@ echo "<a class='btn-primary' style='display:inline-block;background:#6c757d;colo
 echo "<input type='submit' value='Update Results'>";
 echo "</form>";
 
-// -------------------------------
-// DB Query
-// -------------------------------
-require '/var/www/seal_wp_script/seal_db.inc';
-$db = mysqli_connect($dbhost, $dbuser, $dbpass, $dbname);
+
 
 // Build WHERE clause for Requester LOC based on filter_loc
 if ($has_multi && $filter_loc === 'all') {
