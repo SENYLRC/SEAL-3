@@ -39,7 +39,7 @@ function getHolidaysAuto($country = 'US')
     $holidays = [];
     $logfile = '/var/log/seal_illiad_cron.log';
 
-    foreach ($years as $year) {
+  foreach ($years as $year) {
         $cacheFile = "/var/www/seal_wp_script/holidays_{$year}.json";
         $url = "https://date.nager.at/api/v3/PublicHolidays/{$year}/{$country}";
         $data = [];
@@ -155,6 +155,47 @@ if (!$db) {
     die("DB connection failed\n");
 }
 $db->set_charset("utf8mb4");
+
+// ----------------------------------------------------
+//  Cleanup: if something got FILLED after being marked EXPIRED,
+//  remove expired flags (responderNOTE) and set emailsent=1
+// ----------------------------------------------------
+$cleanup_sql = "
+    UPDATE `$sealSTAT`
+    SET
+        `emailsent` = '1',
+        `responderNOTE` = TRIM(
+            REPLACE(
+              REPLACE(
+                REPLACE(
+                  REPLACE(
+                    COALESCE(`responderNOTE`, ''),
+                    'EXPIRE MSG Sent', ''
+                  ),
+                  'Expire Msg Sent', ''
+                ),
+                'expire msg sent', ''
+              ),
+              'EXPIRED', ''
+            )
+        )
+    WHERE `Fill` = '1'
+      AND (
+            `emailsent` = '3'
+            OR LOWER(COALESCE(`responderNOTE`, '')) LIKE '%expire%'
+          )
+";
+
+if (mysqli_query($db, $cleanup_sql)) {
+    $fixed = mysqli_affected_rows($db);
+    if ($fixed > 0) {
+        error_log(date('c') . " - Cleanup: cleared expired flags on $fixed filled requests (emailsent->1, responderNOTE cleaned)\n", 3, $logfile);
+    }
+} else {
+    error_log(date('c') . " - Cleanup WARNING: failed to clear expired flags: " . mysqli_error($db) . "\n", 3, $logfile);
+}
+
+
 
 // ----------------------------------------------------
 //  Load holidays
