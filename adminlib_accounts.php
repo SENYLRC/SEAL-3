@@ -22,13 +22,25 @@ require '/var/www/seal_wp_script/seal_db.inc';
 // ------------------
 // Helpers
 // ------------------
-function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
-function post($k,$d=''){ return isset($_POST[$k]) ? $_POST[$k] : $d; }
-function req($k,$d=''){ return isset($_REQUEST[$k]) ? $_REQUEST[$k] : $d; }
+function h($s)
+{
+    return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
+}
+function post($k, $d = '')
+{
+    return isset($_POST[$k]) ? $_POST[$k] : $d;
+}
+function req($k, $d = '')
+{
+    return isset($_REQUEST[$k]) ? $_REQUEST[$k] : $d;
+}
 
 if (!function_exists('self_url')) {
-    function self_url() {
-        if (function_exists('get_permalink')) return get_permalink();
+    function self_url()
+    {
+        if (function_exists('get_permalink')) {
+            return get_permalink();
+        }
         return $_SERVER['REQUEST_URI'];
     }
 }
@@ -38,7 +50,7 @@ if (!function_exists('self_url')) {
 // ------------------
 $current_user = wp_get_current_user();
 $allowed_roles = ['administrator', 'libsys'];
-if ( ! array_intersect( $allowed_roles, (array) $current_user->roles ) ) {
+if (! array_intersect($allowed_roles, (array) $current_user->roles)) {
     echo '<div style="padding:30px;text-align:center;color:#a00;font-family:sans-serif;">
             <h2>🚫 Access Denied</h2>
             <p>You must have the <strong>Lib Systems Staff</strong> or <strong>Administrator</strong> role to access this page.</p>
@@ -47,8 +59,8 @@ if ( ! array_intersect( $allowed_roles, (array) $current_user->roles ) ) {
 }
 
 $SYSTEM = $SYSTEM ?? '';
-$action = req('action','list');
-$recnum = (int)req('recnum',0);
+$action = req('action', 'list');
+$recnum = (int)req('recnum', 0);
 ?>
 
 <style>
@@ -87,28 +99,41 @@ if ($action === 'delete' && $recnum) {
 // --------------------------------------------------
 // ADD NEW ACCOUNT (POST)
 // --------------------------------------------------
-if ($action === 'add' && $_SERVER['REQUEST_METHOD']==='POST') {
+if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!isset($_POST['csrf']) || $_POST['csrf'] !== $_SESSION['csrf']) {
         echo '<div class="seal-card"><div class="seal-title">Security Error</div><div class="seal-sub">Invalid token.</div></div>';
     } else {
-        $username = sanitize_user(post('user_login',''));
-        $email    = sanitize_email(post('user_email',''));
-        $password = (string)post('user_pass','');
-        $institution = sanitize_text_field(post('institution',''));
-        $address_loc_code = sanitize_text_field(post('address_loc_code',''));
-
-        if ( empty($username) || empty($email) || empty($password) || empty($institution) ) {
+        $username = sanitize_user(post('user_login', ''));
+        $email    = sanitize_email(post('user_email', ''));
+        $first_name  = sanitize_text_field(post('first_name', ''));
+        $last_name   = sanitize_text_field(post('last_name', ''));
+        $phone       = sanitize_text_field(post('phone', ''));
+        $password = (string)post('user_pass', '');
+        $institution = sanitize_text_field(post('institution', ''));
+        $address_loc_code = sanitize_text_field(post('address_loc_code', ''));
+        if (empty($username) || empty($email) || empty($password) || empty($institution) || empty($first_name) || empty($last_name)) {
             echo '<div class="seal-card"><div class="seal-title">❌ Missing Required Fields</div><div class="seal-sub">Please fill out all required fields.</div></div>';
-        } elseif ( username_exists($username) || email_exists($email) ) {
+        } elseif (username_exists($username) || email_exists($email)) {
             echo '<div class="seal-card"><div class="seal-title">⚠️ Account Exists</div><div class="seal-sub">A user with that username or email already exists.</div></div>';
         } else {
             $uid = wp_create_user($username, $password, $email);
             if (is_wp_error($uid)) {
                 echo '<div class="seal-card"><div class="seal-title">❌ Error Creating Account</div><div class="seal-sub">'.h($uid->get_error_message()).'</div></div>';
             } else {
-                $user = new WP_User($uid);
-                $user->set_role('library_staff');
 
+
+                $user = new WP_User($uid);
+                $user->set_role('libstaff');
+                // New User Approve: mark as approved (skip pending)
+                update_user_meta($uid, 'pw_user_status', 'approved');
+
+                wp_update_user([
+    'ID'           => $uid,
+    'first_name'   => $first_name,
+    'last_name'    => $last_name,
+    'display_name' => trim($first_name . ' ' . $last_name),
+]);
+                update_user_meta($uid, 'phone', $phone);
                 update_user_meta($uid, 'institution', $institution);
                 update_user_meta($uid, 'home_system', $SYSTEM);
                 update_user_meta($uid, 'address_loc_code', $address_loc_code);
@@ -125,7 +150,7 @@ if ($action === 'add' && $_SERVER['REQUEST_METHOD']==='POST') {
 // SHOW ADD FORM
 // --------------------------------------------------
 if ($action === 'new') {
-?>
+    ?>
 <div class="seal-card">
     <div class="seal-title">Add New Library Staff Account</div>
     <form method="post" action="<?php echo h(self_url()); ?>?action=add">
@@ -134,6 +159,14 @@ if ($action === 'new') {
             <label><b>Username*</b><br><input class="input" type="text" name="user_login" required></label>
             <label><b>Email*</b><br><input class="input" type="email" name="user_email" required></label>
         </div>
+        <div class="seal-row">
+    <label><b>First Name*</b><br><input class="input" type="text" name="first_name" required></label>
+    <label><b>Last Name*</b><br><input class="input" type="text" name="last_name" required></label>
+</div>
+<div class="seal-row">
+    <label><b>Phone</b><br><input class="input" type="text" name="phone"></label>
+</div>
+
         <div class="seal-row">
             <label><b>Password*</b><br><input class="input" type="password" name="user_pass" required></label>
             <label><b>Institution*</b><br><input class="input" type="text" name="institution" required></label>
@@ -161,17 +194,32 @@ if ($action === 'save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $email    = sanitize_email(post('user_email', ''));
         $password = (string)post('user_pass', '');
         $fields = [
-            'institution','home_system','phone','alt_email','address_loc_code','oclc_symbol',
-            'delivery_address1','delivery_address2','delivery_city','delivery_state','delivery_zip'
-        ];
-        $meta = [];
-        foreach ($fields as $f) $meta[$f] = sanitize_text_field(post($f,''));
+    'institution','phone','alt_email','address_loc_code','oclc_symbol'
+    ];
 
-        $userdata = ['ID'=>$uid, 'user_email'=>$email];
-        if (!empty($password)) $userdata['user_pass']=$password;
+        $meta = [];
+        foreach ($fields as $f) {
+            $meta[$f] = sanitize_text_field(post($f, ''));
+        }
+
+        $first_name = sanitize_text_field(post('first_name', ''));
+        $last_name  = sanitize_text_field(post('last_name', ''));
+
+        $userdata = [
+            'ID'           => $uid,
+            'user_email'   => $email,
+            'first_name'   => $first_name,
+            'last_name'    => $last_name,
+            'display_name' => trim($first_name . ' ' . $last_name),
+        ];
+        if (!empty($password)) {
+            $userdata['user_pass'] = $password;
+        }
         wp_update_user($userdata);
 
-        foreach ($meta as $k=>$v) update_user_meta($uid,$k,$v);
+        foreach ($meta as $k => $v) {
+            update_user_meta($uid, $k, $v);
+        }
 
         echo '<div class="seal-card"><div class="seal-title">✅ Account Updated</div>
               <a class="seal-btn" href="'.h(self_url()).'">Back to List</a></div>';
@@ -187,13 +235,16 @@ if ($action === 'edit' && $recnum) {
         echo '<div class="seal-card"><div class="seal-title">❌ User not found</div></div>';
     } else {
         $fields = [
-            'institution','home_system','phone','alt_email','address_loc_code','oclc_symbol',
-            'delivery_address1','delivery_address2','delivery_city','delivery_state','delivery_zip'
-        ];
+    'institution','home_system','phone','alt_email','address_loc_code','oclc_symbol'
+];
         $meta = [];
-        foreach ($fields as $key) $meta[$key] = get_user_meta($recnum, $key, true) ?: '';
+        foreach ($fields as $key) {
+            $meta[$key] = get_user_meta($recnum, $key, true) ?: '';
+        }
         $display_name = $user->display_name ?: $user->user_login;
-?>
+        $first_name = $user->first_name ?? '';
+        $last_name  = $user->last_name ?? '';
+        ?>
 <div class="seal-card">
     <div class="seal-title">Edit Account: <?php echo h($display_name); ?> (<?php echo h($user->user_login); ?>)</div>
     <div class="seal-sub">Home System: <b><?php echo h($meta['home_system']); ?></b> • User ID: <?php echo (int)$recnum; ?></div>
@@ -206,29 +257,29 @@ if ($action === 'edit' && $recnum) {
             <label><b>Email</b><br><input class="input" type="email" name="user_email" value="<?php echo h($user->user_email); ?>"></label>
             <label><b>New Password</b><br><input class="input" type="password" name="user_pass" placeholder="Leave blank to keep existing"></label>
         </div>
-        <div class="seal-row">
-            <label><b>Institution</b><br><input class="input" type="text" name="institution" value="<?php echo h($meta['institution']); ?>"></label>
-            <label><b>Home System</b><br><input class="input" type="text" name="home_system" value="<?php echo h($meta['home_system']); ?>"></label>
-        </div>
-        <div class="seal-row">
-            <label><b>Phone</b><br><input class="input" type="text" name="phone" value="<?php echo h($meta['phone']); ?>"></label>
-            <label><b>Alt Email</b><br><input class="input" type="email" name="alt_email" value="<?php echo h($meta['alt_email']); ?>"></label>
-        </div>
+      <div class="seal-row">
+    <label><b>First Name</b><br>
+        <input class="input" type="text" name="first_name" value="<?php echo h($first_name); ?>">
+    </label>
+    <label><b>Last Name</b><br>
+        <input class="input" type="text" name="last_name" value="<?php echo h($last_name); ?>">
+    </label>
+</div>
+
+<div class="seal-row">
+    <label><b>Phone</b><br>
+        <input class="input" type="text" name="phone" value="<?php echo h($meta['phone']); ?>">
+         <label><b>Institution</b><br><input class="input" type="text" name="institution" value="<?php echo h($meta['institution']); ?>"></label>
+    </label>
+</div>
+<div class="seal-row">
+    <label><b>Alt Email</b><br>
+        <input class="input" type="email" name="alt_email" value="<?php echo h($meta['alt_email']); ?>">
+    </label>
+</div>
         <div class="seal-row">
             <label><b>LOC Code</b><br><input class="input" type="text" name="address_loc_code" value="<?php echo h($meta['address_loc_code']); ?>"></label>
             <label><b>OCLC Symbol</b><br><input class="input" type="text" name="oclc_symbol" value="<?php echo h($meta['oclc_symbol']); ?>"></label>
-        </div>
-
-        <hr style="border-top:1px solid #ddd;margin:12px 0;">
-        <div class="seal-title" style="font-size:18px;">Delivery Address</div>
-        <div class="seal-row">
-            <label><b>Address 1</b><br><input class="input" type="text" name="delivery_address1" value="<?php echo h($meta['delivery_address1']); ?>"></label>
-            <label><b>Address 2</b><br><input class="input" type="text" name="delivery_address2" value="<?php echo h($meta['delivery_address2']); ?>"></label>
-        </div>
-        <div class="seal-row">
-            <label><b>City</b><br><input class="input" type="text" name="delivery_city" value="<?php echo h($meta['delivery_city']); ?>"></label>
-            <label><b>State</b><br><input class="input" type="text" name="delivery_state" value="<?php echo h($meta['delivery_state']); ?>"></label>
-            <label><b>ZIP</b><br><input class="input" type="text" name="delivery_zip" value="<?php echo h($meta['delivery_zip']); ?>"></label>
         </div>
 
         <div style="margin-top:12px;">
@@ -249,7 +300,7 @@ if ($action === 'edit' && $recnum) {
 // --------------------------------------------------
 if ($action === 'list') {
     global $wpdb;
-    $search = trim(req('search',''));
+    $search = trim(req('search', ''));
     $where = "WHERE 1=1";
     if (!empty($search)) {
         $like = '%' . $wpdb->esc_like($search) . '%';
