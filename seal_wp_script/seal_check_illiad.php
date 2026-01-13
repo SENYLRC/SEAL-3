@@ -193,13 +193,12 @@ while ($row = mysqli_fetch_assoc($retval)) {
         } elseif (stripos($reasonCancel, 'Archive/special collections') !== false) {
             $reasontxt = 'Archive/special collections';
             $nofillreason = "22";
-        }
-                } elseif (stripos($reasonCancel, 'Checked Out') !== false) {
+        } elseif (stripos($reasonCancel, 'Checked Out') !== false) {
             $reasontxt = 'Checked Out';
             $nofillreason = "20";
-                }
+        }
 
-        
+
         $sqlupdate2 = "
             UPDATE `$sealSTAT`
             SET `reasonNotFilled` = '$nofillreason',
