@@ -376,6 +376,7 @@ if (!$GETLIST || $totalResults == 0) {
           '24' => 'Poor condition',
           '25' => 'Too New',
           '26' => 'Not owned',
+          '27' => 'Not found as cited',
         ];
 
         // Pull notes

@@ -197,7 +197,13 @@ while ($row = mysqli_fetch_assoc($retval)) {
             $reasontxt = 'Checked Out';
             $nofillreason = "20";
         }
+           } elseif (stripos($reasonCancel, 'Not found as cited') !== false) {
+            $reasontxt = 'Not found as cited';
+            $nofillreason = "27";
+        }
 
+
+        
 
         $sqlupdate2 = "
             UPDATE `$sealSTAT`
