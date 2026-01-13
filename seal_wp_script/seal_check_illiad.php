@@ -1,4 +1,5 @@
 <?php
+
 /**
  * SEAL / ILLiad Auto-Status Updater with Status Change Logging
  * Location: /var/www/seal_wp_script/seal_check_illiad.php
@@ -76,7 +77,7 @@ while ($row = mysqli_fetch_assoc($retval)) {
     $cmd = "curl -s -H 'ApiKey: $apikey' '$url'";
     $output = shell_exec($cmd);
 
-     // --- Decode response ---
+    // --- Decode response ---
     $output_decoded = json_decode($output, true);
     if (!is_array($output_decoded)) {
         error_log(date('c') . " - Invalid JSON from ILLiad for $Illiadid\n", 3, '/var/log/seal_illiad_cron.log');
@@ -89,7 +90,9 @@ while ($row = mysqli_fetch_assoc($retval)) {
     $articlePASS   = $output_decoded['ArticleExchangePassword'] ?? '';
     $reasonCancel  = $output_decoded['ReasonForCancellation'] ?? '';
     $dueDate       = $output_decoded['DueDate'] ?? '';
-    if ($dueDate) $dueDate = strstr($dueDate, 'T', true);
+    if ($dueDate) {
+        $dueDate = strstr($dueDate, 'T', true);
+    }
 
     echo "Processing ILL# $reqnumb | Status: $status | Dest: $destlibname\n";
 
@@ -97,7 +100,11 @@ while ($row = mysqli_fetch_assoc($retval)) {
     if ($status !== $oldStatus && $status !== '') {
         $logMsg = sprintf(
             "%s - ILL# %s | Status changed: '%s' → '%s' | Dest: %s\n",
-            date('c'), $reqnumb, $oldStatus, $status, $destlibname
+            date('c'),
+            $reqnumb,
+            $oldStatus,
+            $status,
+            $destlibname
         );
         error_log($logMsg, 3, '/var/log/seal_illiad_cron.log');
 
@@ -162,12 +169,37 @@ while ($row = mysqli_fetch_assoc($retval)) {
         $reasontxt = 'Not specified';
         $nofillreason = "0";
 
-        if (stripos($reasonCancel, 'In use') !== false) { $reasontxt = 'In Use'; $nofillreason = "20"; }
-        elseif (stripos($reasonCancel, 'Lost') !== false) { $reasontxt = 'Lost'; $nofillreason = "21"; }
-        elseif (stripos($reasonCancel, 'non') !== false) { $reasontxt = 'Non-Circulating'; $nofillreason = "22"; }
-        elseif (stripos($reasonCancel, 'Not on shelf') !== false) { $reasontxt = 'Not on shelf'; $nofillreason = "23"; }
-        elseif (stripos($reasonCancel, 'Poor condition') !== false) { $reasontxt = 'Poor condition'; $nofillreason = "24"; }
+        if (stripos($reasonCancel, 'In use') !== false) {
+            $reasontxt = 'In Use';
+            $nofillreason = "20";
+        } elseif (stripos($reasonCancel, 'Lost') !== false) {
+            $reasontxt = 'Lost';
+            $nofillreason = "21";
+        } elseif (stripos($reasonCancel, 'non') !== false) {
+            $reasontxt = 'Non-Circulating';
+            $nofillreason = "22";
+        } elseif (stripos($reasonCancel, 'Not on shelf') !== false) {
+            $reasontxt = 'Not on shelf';
+            $nofillreason = "23";
+        } elseif (stripos($reasonCancel, 'Poor condition') !== false) {
+            $reasontxt = 'Poor condition';
+            $nofillreason = "24";
+        } elseif (stripos($reasonCancel, 'Too New') !== false) {
+            $reasontxt = 'Too New';
+            $nofillreason = "25";
+        } elseif (stripos($reasonCancel, 'Not owned') !== false) {
+            $reasontxt = 'Not owned';
+            $nofillreason = "26";
+        } elseif (stripos($reasonCancel, 'Archive/special collections') !== false) {
+            $reasontxt = 'Archive/special collections';
+            $nofillreason = "22";
+        }
+                } elseif (stripos($reasonCancel, 'Checked Out') !== false) {
+            $reasontxt = 'Checked Out';
+            $nofillreason = "20";
+                }
 
+        
         $sqlupdate2 = "
             UPDATE `$sealSTAT`
             SET `reasonNotFilled` = '$nofillreason',
@@ -186,7 +218,7 @@ while ($row = mysqli_fetch_assoc($retval)) {
 
         }
 
-         // === CASE 4: Still pending ===
+        // === CASE 4: Still pending ===
     } else {
         echo "ILL# $reqnumb not yet filled or cancelled.\n";
     }
@@ -194,4 +226,3 @@ while ($row = mysqli_fetch_assoc($retval)) {
 
 mysqli_close($db);
 echo "Processing complete.\n";
-?>

@@ -242,10 +242,18 @@ $shipping_methods = [
       <label>Status:
      <select name="filter_status">
   <option value="">Any</option>
-  <option value="filled" <?php if ($filter_status === 'filled') { echo 'selected'; } ?>>Filled</option>
-  <option value="notfilled" <?php if ($filter_status === 'notfilled') { echo 'selected'; } ?>>Not Filled</option>
-  <option value="pending" <?php if ($filter_status === 'pending') { echo 'selected'; } ?>>Pending</option>
-  <option value="expired" <?php if ($filter_status === 'expired') { echo 'selected'; } ?>>Expired</option>
+  <option value="filled" <?php if ($filter_status === 'filled') {
+      echo 'selected';
+  } ?>>Filled</option>
+  <option value="notfilled" <?php if ($filter_status === 'notfilled') {
+      echo 'selected';
+  } ?>>Not Filled</option>
+  <option value="pending" <?php if ($filter_status === 'pending') {
+      echo 'selected';
+  } ?>>Pending</option>
+  <option value="expired" <?php if ($filter_status === 'expired') {
+      echo 'selected';
+  } ?>>Expired</option>
 </select>
 
       </label>
@@ -347,6 +355,7 @@ $shipping_methods = [
                 '23' => 'Not on shelf',
                 '24' => 'Poor condition',
                 '25' => 'Too New',
+'26' => 'Not owned',
             ];
 
             // Pull notes (trim)

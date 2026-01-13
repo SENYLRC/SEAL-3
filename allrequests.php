@@ -253,11 +253,11 @@ foreach ($systems as $code => $name) {
         <div class="form-group">
   <label for="filter_status">Status</label>
 <select name="filter_status" id="filter_status">
-  <option value="" <?php echo ($filter_status === '' ? 'selected' : ''); ?>>All</option>
-  <option value="filled" <?php echo ($filter_status === 'filled' ? 'selected' : ''); ?>>Filled</option>
-  <option value="notfilled" <?php echo ($filter_status === 'notfilled' ? 'selected' : ''); ?>>Not Filled</option>
-  <option value="cancel" <?php echo ($filter_status === 'cancel' ? 'selected' : ''); ?>>Cancelled</option>
-  <option value="expired" <?php echo ($filter_status === 'expired' ? 'selected' : ''); ?>>Expired</option>
+  <option value="" <?php echo($filter_status === '' ? 'selected' : ''); ?>>All</option>
+  <option value="filled" <?php echo($filter_status === 'filled' ? 'selected' : ''); ?>>Filled</option>
+  <option value="notfilled" <?php echo($filter_status === 'notfilled' ? 'selected' : ''); ?>>Not Filled</option>
+  <option value="cancel" <?php echo($filter_status === 'cancel' ? 'selected' : ''); ?>>Cancelled</option>
+  <option value="expired" <?php echo($filter_status === 'expired' ? 'selected' : ''); ?>>Expired</option>
 </select>
 
 </div>
@@ -375,6 +375,7 @@ if (!$GETLIST || $totalResults == 0) {
           '23' => 'Not on shelf',
           '24' => 'Poor condition',
           '25' => 'Too New',
+          '26' => 'Not owned',
         ];
 
         // Pull notes
