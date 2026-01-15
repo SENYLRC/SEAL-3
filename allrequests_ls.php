@@ -283,6 +283,7 @@ $shipping_methods = [
                 <th>Lender</th>
                 <th>Borrower</th>
                 <th>Due / Ship</th>
+                <th>Timestamp</th>
                 <th>Status</th>
               </tr></thead><tbody>";
 
@@ -294,6 +295,7 @@ $shipping_methods = [
             $lender   = htmlspecialchars($r['lender_name'] ?: $r['Destination']);
             $borrower = htmlspecialchars($r['borrower_name'] ?: $r['Requester lib']);
             $due      = htmlspecialchars($r['DueDate']);
+            $timestamp = htmlspecialchars($r['ts_fmt']);
             $ship     = htmlspecialchars($r['shipMethod']);
             $fill     = $r['Fill'];
 
@@ -315,6 +317,7 @@ $shipping_methods = [
                     <td>$lender</td>
                     <td>$borrower</td>
                     <td>$due<br>$ship</td>
+                    <td>$timestamp</td>
                     <td>";
             echo "<div class='status-text'>$status</div>";
             echo "<div class='shiptxt'>" . htmlspecialchars($ship) . "</div>";
