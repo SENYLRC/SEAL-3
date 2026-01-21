@@ -90,9 +90,7 @@ $extra_locs = [];
 if ($extra_locs_raw !== '') {
     foreach (explode(',', $extra_locs_raw) as $c) {
         $c = strtoupper(trim($c));
-        if ($c !== '') {
-            $extra_locs[] = $c;
-        }
+        if ($c !== '') $extra_locs[] = $c;
     }
 }
 
@@ -107,9 +105,7 @@ if (!$has_multi) {
     // only one LOC available
     $filter_loc = $all_locs[0] ?? strtoupper($primary_loc);
 } else {
-    if ($filter_loc === '') {
-        $filter_loc = 'all';
-    }
+    if ($filter_loc === '') $filter_loc = 'all';
     // validate
     if ($filter_loc !== 'all' && !in_array(strtoupper($filter_loc), $all_locs, true)) {
         $filter_loc = 'all';
@@ -188,11 +184,11 @@ if ($has_multi) {
     echo "<select id='filter_loc' name='filter_loc' style='min-width:240px;'>";
     echo "<option value='all' " . selected('all', $filter_loc, false) . ">All My Libraries</option>";
     foreach ($all_locs as $code) {
-        $code_u = strtoupper($code);
-        $label  = $loc_name_map[$code_u] ?? $code_u; // fallback if name missing
-        echo "<option value='" . esc_attr($code_u) . "' " . selected($code_u, strtoupper($filter_loc), false) . ">" .
-             esc_html($label . " (" . $code_u . ")") .
-             "</option>";
+      $code_u = strtoupper($code);
+$label  = $loc_name_map[$code_u] ?? $code_u; // fallback if name missing
+echo "<option value='" . esc_attr($code_u) . "' " . selected($code_u, strtoupper($filter_loc), false) . ">" .
+     esc_html($label . " (" . $code_u . ")") .
+     "</option>";
     }
     echo "</select></label>";
     echo "</div>";
@@ -268,30 +264,14 @@ $SQL_DAYS = ($filter_days == "all") ? "" : " AND (DATE(`Timestamp`) BETWEEN NOW(
 $SQLILL  = (strlen($filter_illnum) > 2) ? " AND `illNUB` LIKE '%".mysqli_real_escape_string($db, $filter_illnum)."%' " : "";
 
 $conds = [];
-if ($filter_yes == "yes") {
-    $conds[] = "`fill`=1";
-}
-if ($filter_no == "yes") {
-    $conds[] = "`fill`=0";
-}
-if ($filter_noans == "yes") {
-    $conds[] = "`fill`=3";
-}
-if ($filter_expire == "yes") {
-    $conds[] = "`fill`=4";
-}
-if ($filter_cancel == "yes") {
-    $conds[] = "`fill`=6";
-}
-if ($filter_checkin == "yes") {
-    $conds[] = "`checkinAccount` IS NOT NULL";
-}
-if ($filter_recevied == "yes") {
-    $conds[] = "`receiveAccount` IS NOT NULL AND `returnAccount` IS NULL";
-}
-if ($filter_return == "yes") {
-    $conds[] = "`returnAccount` IS NOT NULL AND `checkinAccount` IS NULL";
-}
+if ($filter_yes == "yes")     $conds[] = "`fill`=1";
+if ($filter_no == "yes")      $conds[] = "`fill`=0";
+if ($filter_noans == "yes")   $conds[] = "`fill`=3";
+if ($filter_expire == "yes")  $conds[] = "`fill`=4";
+if ($filter_cancel == "yes")  $conds[] = "`fill`=6";
+if ($filter_checkin == "yes") $conds[] = "`checkinAccount` IS NOT NULL";
+if ($filter_recevied == "yes")$conds[] = "`receiveAccount` IS NOT NULL AND `returnAccount` IS NULL";
+if ($filter_return == "yes")  $conds[] = "`returnAccount` IS NOT NULL AND `checkinAccount` IS NULL";
 
 $SQLMIDDLE = count($conds) ? implode(" OR ", $conds) : "`fill`=''";
 $GETLISTSQL = $SQLBASE.$SQL_DAYS.$SQLILL." AND (".$SQLMIDDLE.") ".$SQLEND;
@@ -433,6 +413,7 @@ if (!$GETLIST) {
         $nofillreason = trim((string)($row["reasonNotFilled"] ?? ''));
 
         $nofill_map = [
+'0' => 'Not Specified',
   '20' => 'In Use',
   '21' => 'Lost',
   '22' => 'Non-Circulating',
@@ -443,31 +424,25 @@ if (!$GETLIST) {
 '27' => 'Not found as cited',
 ];
 
-        $reasontxt = '';
-        if ($nofillreason !== '') {
-            $key = preg_replace('/\D+/', '', $nofillreason); // keep digits only
-            if (isset($nofill_map[$key])) {
-                $reasontxt = $nofill_map[$key];
-            } elseif ($key !== '') {
-                $reasontxt = 'Other (' . $key . ')';
-            }
-        }
+$reasontxt = '';
+if ($nofillreason !== '') {
+  $key = preg_replace('/\D+/', '', $nofillreason); // keep digits only
+  if (isset($nofill_map[$key])) {
+    $reasontxt = $nofill_map[$key];
+  } elseif ($key !== '') {
+    $reasontxt = 'Other (' . $key . ')';
+  }
+}
 
 
         // combine and format
         $displaynotes = '';
-        if (strlen($reqnote) > 2) {
-            $displaynotes .= "<b>Requester Note:</b> " . esc_html($reqnote) . "<br>";
-        }
-        if (strlen($patronnote) > 2) {
-            $displaynotes .= "<b>Patron Note:</b> " . esc_html($patronnote) . "<br>";
-        }
-        if (strlen($lendnote) > 2) {
-            $displaynotes .= "<b>Lender Note:</b> " . esc_html($lendnote) . "<br>";
-        }
+        if (strlen($reqnote) > 2)    $displaynotes .= "<b>Requester Note:</b> " . esc_html($reqnote) . "<br>";
+        if (strlen($patronnote) > 2) $displaynotes .= "<b>Patron Note:</b> " . esc_html($patronnote) . "<br>";
+        if (strlen($lendnote) > 2)   $displaynotes .= "<b>Lender Note:</b> " . esc_html($lendnote) . "<br>";
         if ($reasontxt !== '' && (int)$row['Fill'] !== 1) {
-            $displaynotes .= "<b>Reason Not Filled:</b> " . esc_html($reasontxt) . "<br>";
-        }
+  $displaynotes .= "<b>Reason Not Filled:</b> " . esc_html($reasontxt) . "<br>";
+}
 
 
         // IMPORTANT ADA FIX: your colspans were "9" even though table has 8 columns.
@@ -483,12 +458,8 @@ if (!$GETLIST) {
         // Return Notes
         if ((strlen($returnnote) > 2) || (strlen($returnmethod) > 2)) {
             $displayreturnnotes = '';
-            if (strlen($returnnote) > 2) {
-                $displayreturnnotes .= "<b>Return Note:</b> " . esc_html($returnnote) . "<br>";
-            }
-            if (strlen($returnmethod) > 2) {
-                $displayreturnnotes .= "<b>Return Method:</b> " . esc_html($returnmethod);
-            }
+            if (strlen($returnnote) > 2)   $displayreturnnotes .= "<b>Return Note:</b> " . esc_html($returnnote) . "<br>";
+            if (strlen($returnmethod) > 2) $displayreturnnotes .= "<b>Return Method:</b> " . esc_html($returnmethod);
             echo "<tr class='".esc_attr($rowclass)."'>
                     <td></td><td></td>
                     <td colspan='6' style='background:#eef8ff;padding:6px;border-left:3px solid #6ba4d9;'>$displayreturnnotes</td>
@@ -498,12 +469,8 @@ if (!$GETLIST) {
         // Renewal Notes
         if ((strlen($renewNote) > 2) || (strlen($renewNoteLender) > 2)) {
             $displayrenewnotes = '';
-            if (strlen($renewNote) > 2) {
-                $displayrenewnotes .= "<b>Renewal Note (Borrower):</b> " . esc_html($renewNote) . "<br>";
-            }
-            if (strlen($renewNoteLender) > 2) {
-                $displayrenewnotes .= "<b>Renewal Note (Lender):</b> " . esc_html($renewNoteLender);
-            }
+            if (strlen($renewNote) > 2)       $displayrenewnotes .= "<b>Renewal Note (Borrower):</b> " . esc_html($renewNote) . "<br>";
+            if (strlen($renewNoteLender) > 2) $displayrenewnotes .= "<b>Renewal Note (Lender):</b> " . esc_html($renewNoteLender);
             echo "<tr class='".esc_attr($rowclass)."'>
                     <td></td><td></td>
                     <td colspan='6' style='background:#f3fff1;padding:6px;border-left:3px solid #76c67a;'>$displayrenewnotes</td>

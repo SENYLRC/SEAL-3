@@ -352,6 +352,7 @@ $shipping_methods = [
 
             // Map no-fill reason codes
             $nofill_map = [
+                '0' => 'Not Specified',
                 '20' => 'In Use',
                 '21' => 'Lost',
                 '22' => 'Non-Circulating',
@@ -371,7 +372,7 @@ $shipping_methods = [
             $renewNoteLender = trim((string)($r["renewNoteLender"] ?? ''));
 
             // No-fill reason from DB (code stored)
-            $nofillreason = trim((string)($r["nofillreason"] ?? ''));
+            $nofillreason = trim((string)($r["reasonNotFilled"] ?? ''));
             $reasontxt    = $nofill_map[$nofillreason] ?? '';
 
             // Build labeled list (NO patronnote)
