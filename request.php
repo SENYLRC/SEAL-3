@@ -522,21 +522,39 @@ $illsystemhost = $_SERVER["SERVER_NAME"];
             // print the results of the call to the screen
             echo "<!--API output-->";
             echo "<!--".$output."-->";
+            // Decode response (may be JSON, may be HTML/text)
             $output_decoded = json_decode($output, true);
             $illiadtxnub = $output_decoded['TransactionNumber'];
             $illstatus = $output_decoded['TransactionStatus'];
 
-            if (strlen($illiadtxnub) < 4) {
-                $headers = "From: Southeastern SEAL <dontreply@senylrc.org>\r\n" ;
-                $headers .= "MIME-Version: 1.0\r\n";
-                $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
-                $messagereq = "Request did not go to ILLiad Ill ".$illnum." ".$output." ";
-                $headers = preg_replace('/(?<!\r)\n/', "\r\n", $headers);
-                mail("spalding@senylrc.org", "ILLiad Failure", $messagereq, $headers, "-f donotreply@senylrc.org");
-            } //end check if ILLad transaction did not happen
+            // If response does not have a TransactionNumber, send email
+            // (treat as failure if missing OR not numeric OR too short)
+if ($illiadtxnub === '' || !ctype_digit($illiadtxnub) || strlen($illiadtxnub) < 4) {
 
-            //save API output to the request
-            $sqlupdate2 = "UPDATE `$sealSTAT` SET `IlliadStatus` = '$illstatus', `IlliadTransID` = '$illiadtxnub' WHERE `index` = $sqlidnumb";
+    $headers  = "From: Southeastern SEAL <donotreply@senylrc.org>\r\n";
+    $headers .= "MIME-Version: 1.0\r\n";
+    $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
+    $headers  = preg_replace('/(?<!\r)\n/', "\r\n", $headers);
+
+    $messagereq = ""
+      . "<p><b>ILLiad API Failure</b></p>"
+      . "<p><b>SEAL ILL:</b> " . htmlspecialchars($illnum) . "</p>"
+      . "<p><b>Destination LOC:</b> " . htmlspecialchars($destloc) . "</p>"
+      . "<p><b>Requester LOC:</b> " . htmlspecialchars($reqLOCcode) . "</p>"
+      . "<p><b>ILLiad URL:</b> " . htmlspecialchars($libilliadurl) . "</p>"
+      . "<p><b>Returned TransactionNumber:</b> " . htmlspecialchars($illiadtxnub) . "</p>"
+      . "<p><b>Returned TransactionStatus:</b> " . htmlspecialchars($illstatus) . "</p>"
+      . "<p><b>Payload Sent (JSON):</b><br><pre>" . htmlspecialchars($json_enc) . "</pre></p>"
+      . "<p><b>Raw Response:</b><br><pre>" . htmlspecialchars($output) . "</pre></p>";
+
+    mail("noc@senylrc.org, spalding@senylrc.org", "ILLiad Failure (no TransactionNumber)", $messagereq, $headers, "-f donotreply@senylrc.org");
+}
+
+            // save API output to the request (even if blank, but we at least won't throw notices)
+            $illiadtxnub_esc = mysqli_real_escape_string($db, $illiadtxnub);
+            $illstatus_esc   = mysqli_real_escape_string($db, $illstatus);
+            $sqlupdate2 = "UPDATE `$sealSTAT` SET `IlliadStatus` = '$illstatus_esc', `IlliadTransID` = '$illiadtxnub_esc' WHERE `index` = $sqlidnumb";
+            
             //echo $sqlupdate2;
 
             if (mysqli_query($db, $sqlupdate2)) {
