@@ -361,6 +361,7 @@ $shipping_methods = [
                 '25' => 'Too New',
 '26' => 'Not owned',
 '27' => 'Not found as cited',
+'28' => 'Lack volume/issue',
             ];
 
             // Pull notes (trim)
@@ -397,9 +398,9 @@ $shipping_methods = [
             }
 
             // Only show reason if it exists (optionally only for Fill=0)
-            if ($reasontxt !== '') {
-                $notes['Reason Not Filled'] = $reasontxt;
-            }
+          if ($fill === 0 && $reasontxt !== '') {
+    $notes['Reason Not Filled'] = $reasontxt;
+}
 
             echo "</td>
 
@@ -409,7 +410,7 @@ $shipping_methods = [
 
             // If notes exist, print a full-width sub-row underneath
             if (!empty($notes)) {
-                $colspan = 7; // your table has 7 columns (ILL, Title, Need By, Lender, Borrower, Due/Ship, Status)
+                $colspan = 8; // your table has 8 columns (ILL, Title, Need By, Lender, Borrower, Due/Ship, Status)
 
                 echo "<tr class='rh-subrow rh-notes-row'><td colspan='{$colspan}'>";
                 echo "<div class='rh-subwrap'>";

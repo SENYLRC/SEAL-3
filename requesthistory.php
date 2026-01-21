@@ -422,6 +422,7 @@ if (!$GETLIST) {
   '25' => 'Too New',
 '26' => 'Not owned',
 '27' => 'Not found as cited',
+'28' => 'Lack volume/issue',
 ];
 
 $reasontxt = '';
@@ -440,7 +441,7 @@ if ($nofillreason !== '') {
         if (strlen($reqnote) > 2)    $displaynotes .= "<b>Requester Note:</b> " . esc_html($reqnote) . "<br>";
         if (strlen($patronnote) > 2) $displaynotes .= "<b>Patron Note:</b> " . esc_html($patronnote) . "<br>";
         if (strlen($lendnote) > 2)   $displaynotes .= "<b>Lender Note:</b> " . esc_html($lendnote) . "<br>";
-        if ($reasontxt !== '' && (int)$row['Fill'] !== 1) {
+          if ($reasontxt !== '' && $key !== '0' && (int)$row['Fill'] !== 1) {
   $displaynotes .= "<b>Reason Not Filled:</b> " . esc_html($reasontxt) . "<br>";
 }
 

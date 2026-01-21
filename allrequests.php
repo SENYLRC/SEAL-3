@@ -378,6 +378,7 @@ if (!$GETLIST || $totalResults == 0) {
           '25' => 'Too New',
 '26' => 'Not owned',
 '27' => 'Not found as cited',
+'28' => 'Lack volume/issue',
         ];
 
         // Pull notes
@@ -413,9 +414,18 @@ if (!$GETLIST || $totalResults == 0) {
         if ($renewNoteLender !== '') {
             $notes['Renew Note (Lender)'] = $renewNoteLender;
         }
-        if ($reasontxt !== '') {
-            $notes['Reason Not Filled'] = $reasontxt;
-        }
+    // Only show "Not specified" (0) if the request is actually Not Filled
+if ($fill === 0) {
+    // show any valid reason, including "0"
+    if ($nofillreason !== '' && array_key_exists($nofillreason, $nofill_map)) {
+        $notes['Reason Not Filled'] = $reasontxt;
+    }
+} else {
+    // if it's not marked Not Filled, do NOT show the "0" reason
+    if ($nofillreason !== '' && $nofillreason !== '0' && $reasontxt !== '') {
+        $notes['Reason Not Filled'] = $reasontxt;
+    }
+}
 
 
         if (!empty($notes)) {
