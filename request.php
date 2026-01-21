@@ -835,8 +835,9 @@ return;
         <input type="text" id="reqnote" name="reqnote" style="width:100%;">
       </div>
       <div class="full-row" style="grid-column:1/-1;">
-        <p><em>Patron information is optional; please follow your local policies regarding patron privacy.</em></p>
+        
         <label for="patronnote">Patron Name or Barcode</label><br>
+        <em>Patron information is optional; please follow your local policies regarding patron privacy.</em>
         <input type="text" id="patronnote" name="patronnote" style="width:100%;">
       </div>
 
