@@ -52,6 +52,63 @@ while ($row = mysqli_fetch_assoc($retval)) {
     $eformFILL        = $row['Fill'];
     $requesterEMAIL   = trim($row['requesterEMAIL']);
     $oldStatus        = trim($row['IlliadStatus']);
+root@MainWeb2025:/var/www/seal_wp_script# ls -l /var/www/seal_wp_script/seal_check_illiad.php
+-rw-r--r--. 1 root root 9498 Jan 13 16:18 /var/www/seal_wp_script/seal_check_illiad.php
+root@MainWeb2025:/var/www/seal_wp_script# more /var/www/seal_wp_script/seal_check_illiad.php
+<?php
+
+/**
+ * SEAL / ILLiad Auto-Status Updater with Status Change Logging
+ * Location: /var/www/seal_wp_script/seal_check_illiad.php
+ * Purpose: Poll ILLiad API for recent SEAL requests, update statuses, and log when they change.
+ */
+
+set_time_limit(1800); // 30-minute max runtime
+
+// === DB connect ===
+require '/var/www/seal_wp_script/seal_db.inc';
+$db = mysqli_connect($dbhost, $dbuser, $dbpass, $dbname);
+if (!$db) {
+    error_log(date('c') . " - DB connection failed: " . mysqli_connect_error() . "\n", 3, '/var/log/seal_illiad_cron.log');
+    die("DB connection failed\n");
+}
+
+// ensure full UTF-8 support for SEAL and ILLiad data
+$db->set_charset("utf8mb4");
+
+// === Fetch requests awaiting status ===
+$sqlselect = "
+SELECT * 
+FROM `$sealSTAT`
+WHERE (
+        (`IlliadStatus` LIKE '%Awaiting%' 
+        OR `IlliadStatus` LIKE '%Review%' 
+        OR `IlliadStatus` LIKE '%Switch%')
+        AND `IlliadStatus` NOT LIKE '%Cancelled by ILL Staff%'
+        AND `Title` != ''
+    )
+AND `TimeStamp` >= DATE_SUB(CURDATE(), INTERVAL 10 MONTH);
+";
+
+echo $sqlselect . "\n";
+$retval = mysqli_query($db, $sqlselect);
+if (!$retval) {
+    error_log(date('c') . " - Query failed: " . mysqli_error($db) . "\n", 3, '/var/log/seal_illiad_cron.log');
+    exit;
+}
+$GETLISTCOUNT = mysqli_num_rows($retval);
+echo "Found $GETLISTCOUNT requests to process\n";
+
+while ($row = mysqli_fetch_assoc($retval)) {
+    // --- Extract data ---
+    $Illiadid         = $row["IlliadTransID"];
+    $sqlidnumb        = (int)$row["index"];
+    $reqnumb          = $row['illNUB'];
+    $destlib          = $row['Destination'];
+    $title            = $row['Title'];
+    $eformFILL        = $row['Fill'];
+    $requesterEMAIL   = trim($row['requesterEMAIL']);
+    $oldStatus        = trim($row['IlliadStatus']);
 
     // --- Look up destination library info ---
     $destlib_safe = mysqli_real_escape_string($db, $destlib);
@@ -196,8 +253,7 @@ while ($row = mysqli_fetch_assoc($retval)) {
         } elseif (stripos($reasonCancel, 'Checked Out') !== false) {
             $reasontxt = 'Checked Out';
             $nofillreason = "20";
-        }
-           } elseif (stripos($reasonCancel, 'Not found as cited') !== false) {
+          } elseif (stripos($reasonCancel, 'Not found as cited') !== false) {
             $reasontxt = 'Not found as cited';
             $nofillreason = "27";
         }
