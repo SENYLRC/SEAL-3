@@ -50,9 +50,19 @@ $db = mysqli_connect($dbhost, $dbuser, $dbpass);
 mysqli_select_db($db, $dbname);
 
 // Helper to safely echo attribute values
-function h($v) { return htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8'); }
+function h($v)
+{
+    return htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');
+}
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $post_loc = isset($_POST['loc']) ? strtoupper(trim((string)$_POST['loc'])) : $primary_loc;
+    if ($post_loc === '' || !in_array($post_loc, $allowed_locs, true)) {
+        die("<div class='LibProfile_Form'><div class='section-card notice-error'><strong>Access denied.</strong></div></div>");
+    }
+    $loc = $post_loc; // use validated loc for the UPDATE
+
+
     $timestamp    = date("Y-m-d H:i:s");
     $libname      = $_REQUEST["libname"] ?? '';
     $libemail     = $_REQUEST["libemail"] ?? '';
@@ -72,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $lbsyscourier = $_REQUEST["lbsyscourier"] ?? 'No';
     $lbUSPS       = $_REQUEST["lbUSPS"] ?? 'No';
     $lbEmpire     = $_REQUEST["lbEmpire"] ?? 'No';
-    $lbCommCourier= $_REQUEST["lbCommCourier"] ?? 'No';
+    $lbCommCourier = $_REQUEST["lbCommCourier"] ?? 'No';
     $lastmodemail = $email; // from seal_function.php context
 
     // Sanitize for DB
@@ -133,6 +143,62 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     echo "<a href='/libprofile'>Return to Library Profile</a></div>";
 
 } else {
+
+    // -------------------------------
+    // Library scope (primary + extra LOCs)
+    // -------------------------------
+    $primary_loc = strtoupper(trim((string)($field_loc_location_code ?? '')));
+
+    // extra LOCs from user meta: "NHIGS,NWATTJ"
+    $extra_locs_raw = get_user_meta($current_user->ID, 'seal_extra_locs', true);
+    $extra_locs_raw = is_string($extra_locs_raw) ? trim($extra_locs_raw) : '';
+
+    $extra_locs = [];
+    if ($extra_locs_raw !== '') {
+        foreach (explode(',', $extra_locs_raw) as $c) {
+            $c = strtoupper(trim($c));
+            if ($c !== '') {
+                $extra_locs[] = $c;
+            }
+        }
+    }
+
+    // allowed locs (unique, non-empty)
+    $allowed_locs = array_values(array_unique(array_filter(array_merge([$primary_loc], $extra_locs))));
+
+    // -------------------------------
+    // Resolve LOC codes to Library Names
+    // -------------------------------
+    $loc_name_map = [];
+
+    if (!empty($allowed_locs)) {
+        $in = "'" . implode("','", array_map(
+            fn ($l) => mysqli_real_escape_string($db, $l),
+            $allowed_locs
+        )) . "'";
+
+        $sql = "SELECT loc, Name FROM `$sealLIB` WHERE loc IN ($in)";
+        $res = mysqli_query($db, $sql);
+
+        if ($res) {
+            while ($r = mysqli_fetch_assoc($res)) {
+                $loc_name_map[strtoupper($r['loc'])] = $r['Name'];
+            }
+        }
+    }
+
+
+    // Active LOC: from ?loc=XXXX (GET), else primary
+    $active_loc = isset($_GET['loc']) ? strtoupper(trim((string)$_GET['loc'])) : $primary_loc;
+
+    // Prevent tampering
+    if ($active_loc === '' || !in_array($active_loc, $allowed_locs, true)) {
+        $active_loc = $primary_loc; // or die("Access denied");
+    }
+
+    // Use this everywhere below
+    $loc = $active_loc;
+
     // Load current values
     $GETLISTSQL = "SELECT * FROM `$sealLIB` WHERE `loc` = '".mysqli_real_escape_string($db, $loc)."' LIMIT 1";
     $GETLIST    = mysqli_query($db, $GETLISTSQL);
@@ -163,9 +229,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $ejournal       = $row["ejournal_request"];
         $journal        = $row["periodical_loan"];
         $enddate = $row["SuspendDateEnd"];
-if (empty($enddate) || $enddate == '0000-00-00' || $enddate == '1970-01-01') {
-    $enddate = date('Y-m-d', strtotime('+7 days'));
-}
+        if (empty($enddate) || $enddate == '0000-00-00' || $enddate == '1970-01-01') {
+            $enddate = date('Y-m-d', strtotime('+7 days'));
+        }
 
         $timestamp      = $row["ModifyDate"];
         $lastmodemail   = $row["ModEmail"];
@@ -179,10 +245,37 @@ if (empty($enddate) || $enddate == '0000-00-00' || $enddate == '1970-01-01') {
     }
 
     if ($loc != 'null') {
-?>
+        ?>
 <div class="LibProfile_Form">
+  
+<?php if (count($allowed_locs) > 1): ?>
+  <div class="section-card">
+    <h4>Switch Library Profile</h4>
+    <div class="form-section">
+      <div class="form-group">
+        <label for="locSwitch">Active Library Profile</label>
+        <select id="locSwitch" onchange="if(this.value){ window.location.href=this.value; }">
+          <?php foreach ($allowed_locs as $l):
+              $display_name = $loc_name_map[$l] ?? $l; // fallback to LOC if missing
+              ?>
+  <option
+    value="<?php echo h(add_query_arg('loc', $l, '/libprofile')); ?>"
+    <?php if ($l === $loc) {
+        echo 'selected';
+    } ?>
+  >
+    <?php echo h($display_name . ' (' . $l . ')'); ?>
+  </option>
+<?php endforeach; ?>
 
-  <form action="/libprofile?<?php echo h($_SERVER['QUERY_STRING'] ?? ''); ?>" method="post">
+        </select>
+        <div class="helper">Choose which library profile you want to view/edit.</div>
+      </div>
+    </div>
+  </div>
+<?php endif; ?>
+
+  <form action="<?php echo h(add_query_arg('loc', $loc, '/libprofile')); ?>" method="post">
     <input type="hidden" name="loc" value="<?php echo h($loc); ?>">
 
     <!-- Library Details -->
@@ -237,10 +330,10 @@ if (empty($enddate) || $enddate == '0000-00-00' || $enddate == '1970-01-01') {
 
         <div class="form-group">
           <label>Lib Email Alert</label>
-          <div class="pill"><?php echo ($libemailalert=='1' ? 'Yes' : 'No'); ?></div>
+          <div class="pill"><?php echo($libemailalert == '1' ? 'Yes' : 'No'); ?></div>
         </div>
 
- <?php if ($libilliad=='1') { ?>
+ <?php if ($libilliad == '1') { ?>
   <div class="form-group">
     <label>Lib ILLiad API</label>
     <div class="pill">Yes</div>
@@ -256,12 +349,12 @@ if (empty($enddate) || $enddate == '0000-00-00' || $enddate == '1970-01-01') {
           <label>Library System</label>
           <div class="pill">
             <?php
-              $systemMap = [
-                'DU'=>'Dutchess BOCES','MH'=>'Mid-Hudson Library System','OU'=>'Orange Ulster BOCES',
-                'RC'=>'Ramapo Catskill Library System','RB'=>'Rockland BOCES','SE'=>'SENYLRC','SB'=>'Sullivan BOCES'
-              ];
-              echo h($systemMap[$system] ?? $system);
-            ?>
+                      $systemMap = [
+                        'DU' => 'Dutchess BOCES','MH' => 'Mid-Hudson Library System','OU' => 'Orange Ulster BOCES',
+                        'RC' => 'Ramapo Catskill Library System','RB' => 'Rockland BOCES','SE' => 'SENYLRC','SB' => 'Sullivan BOCES'
+                      ];
+        echo h($systemMap[$system] ?? $system);
+        ?>
           </div>
         </div>
 
@@ -276,8 +369,12 @@ if (empty($enddate) || $enddate == '0000-00-00' || $enddate == '1970-01-01') {
         <div class="form-group">
           <label for="suspend">Suspend Your Library’s lending status?</label>
           <select id="suspend" name="suspend">
-            <option value="0" <?php if ($libsuspend=="0") echo "selected='selected'"; ?>>No</option>
-            <option value="1" <?php if ($libsuspend=="1") echo "selected='selected'"; ?>>Yes</option>
+            <option value="0" <?php if ($libsuspend == "0") {
+                echo "selected='selected'";
+            } ?>>No</option>
+            <option value="1" <?php if ($libsuspend == "1") {
+                echo "selected='selected'";
+            } ?>>Yes</option>
           </select>
           <div class="helper">
             Setting this to <strong>YES</strong> will <strong>prevent</strong> your library from getting ILL requests.<br>
@@ -292,7 +389,7 @@ if (empty($enddate) || $enddate == '0000-00-00' || $enddate == '1970-01-01') {
         </div>
 
         <div class="form-group">
-          <?php if ($libsuspend=="1") { ?>
+          <?php if ($libsuspend == "1") { ?>
             <div class="pill"><?php echo h($libname); ?> will not receive requests until <strong><?php echo h($enddate); ?></strong></div>
           <?php } else { ?>
             <div class="pill"><?php echo h($libname); ?> is currently receiving requests.</div>
@@ -310,32 +407,48 @@ if (empty($enddate) || $enddate == '0000-00-00' || $enddate == '1970-01-01') {
         <div class="form-group">
           <label>Empire Library Delivery</label>
           <div class="inline-options">
-            <label class="choice"><input type="radio" name="lbEmpire" value="Yes" <?php if ($lbEmpire=="Yes") echo "checked"; ?>> Yes</label>
-            <label class="choice"><input type="radio" name="lbEmpire" value="No"  <?php if ($lbEmpire=="No")  echo "checked"; ?>> No</label>
+            <label class="choice"><input type="radio" name="lbEmpire" value="Yes" <?php if ($lbEmpire == "Yes") {
+                echo "checked";
+            } ?>> Yes</label>
+            <label class="choice"><input type="radio" name="lbEmpire" value="No"  <?php if ($lbEmpire == "No") {
+                echo "checked";
+            } ?>> No</label>
           </div>
         </div>
 
         <div class="form-group">
           <label>Public Library System Courier (MHLS or RCLS)</label>
           <div class="inline-options">
-            <label class="choice"><input type="radio" name="lbsyscourier" value="Yes" <?php if ($lbsyscourier=="Yes") echo "checked"; ?>> Yes</label>
-            <label class="choice"><input type="radio" name="lbsyscourier" value="No"  <?php if ($lbsyscourier=="No")  echo "checked"; ?>> No</label>
+            <label class="choice"><input type="radio" name="lbsyscourier" value="Yes" <?php if ($lbsyscourier == "Yes") {
+                echo "checked";
+            } ?>> Yes</label>
+            <label class="choice"><input type="radio" name="lbsyscourier" value="No"  <?php if ($lbsyscourier == "No") {
+                echo "checked";
+            } ?>> No</label>
           </div>
         </div>
 
         <div class="form-group">
           <label>US Mail</label>
           <div class="inline-options">
-            <label class="choice"><input type="radio" name="lbUSPS" value="Yes" <?php if ($lbUSPS=="Yes") echo "checked"; ?>> Yes</label>
-            <label class="choice"><input type="radio" name="lbUSPS" value="No"  <?php if ($lbUSPS=="No")  echo "checked"; ?>> No</label>
+            <label class="choice"><input type="radio" name="lbUSPS" value="Yes" <?php if ($lbUSPS == "Yes") {
+                echo "checked";
+            } ?>> Yes</label>
+            <label class="choice"><input type="radio" name="lbUSPS" value="No"  <?php if ($lbUSPS == "No") {
+                echo "checked";
+            } ?>> No</label>
           </div>
         </div>
 
         <div class="form-group">
           <label>Commercial Courier (UPS or FedEx)</label>
           <div class="inline-options">
-            <label class="choice"><input type="radio" name="lbCommCourier" value="Yes" <?php if ($lbCommCourier=="Yes") echo "checked"; ?>> Yes</label>
-            <label class="choice"><input type="radio" name="lbCommCourier" value="No"  <?php if ($lbCommCourier=="No")  echo "checked"; ?>> No</label>
+            <label class="choice"><input type="radio" name="lbCommCourier" value="Yes" <?php if ($lbCommCourier == "Yes") {
+                echo "checked";
+            } ?>> Yes</label>
+            <label class="choice"><input type="radio" name="lbCommCourier" value="No"  <?php if ($lbCommCourier == "No") {
+                echo "checked";
+            } ?>> No</label>
           </div>
         </div>
 
@@ -350,48 +463,72 @@ if (empty($enddate) || $enddate == '0000-00-00' || $enddate == '1970-01-01') {
         <div class="form-group">
           <label>Print Book</label>
           <div class="inline-options">
-            <label class="choice"><input type="radio" name="book" value="Yes" <?php if ($book=="Yes") echo "checked"; ?>> Yes</label>
-            <label class="choice"><input type="radio" name="book" value="No"  <?php if ($book=="No")  echo "checked"; ?>> No</label>
+            <label class="choice"><input type="radio" name="book" value="Yes" <?php if ($book == "Yes") {
+                echo "checked";
+            } ?>> Yes</label>
+            <label class="choice"><input type="radio" name="book" value="No"  <?php if ($book == "No") {
+                echo "checked";
+            } ?>> No</label>
           </div>
         </div>
 
         <div class="form-group">
           <label>Print Journal or Article</label>
           <div class="inline-options">
-            <label class="choice"><input type="radio" name="journal" value="Yes" <?php if ($journal=="Yes") echo "checked"; ?>> Yes</label>
-            <label class="choice"><input type="radio" name="journal" value="No"  <?php if ($journal=="No")  echo "checked"; ?>> No</label>
+            <label class="choice"><input type="radio" name="journal" value="Yes" <?php if ($journal == "Yes") {
+                echo "checked";
+            } ?>> Yes</label>
+            <label class="choice"><input type="radio" name="journal" value="No"  <?php if ($journal == "No") {
+                echo "checked";
+            } ?>> No</label>
           </div>
         </div>
 
         <div class="form-group">
           <label>Audio Video Materials</label>
           <div class="inline-options">
-            <label class="choice"><input type="radio" name="av" value="Yes" <?php if ($av=="Yes") echo "checked"; ?>> Yes</label>
-            <label class="choice"><input type="radio" name="av" value="No"  <?php if ($av=="No")  echo "checked"; ?>> No</label>
+            <label class="choice"><input type="radio" name="av" value="Yes" <?php if ($av == "Yes") {
+                echo "checked";
+            } ?>> Yes</label>
+            <label class="choice"><input type="radio" name="av" value="No"  <?php if ($av == "No") {
+                echo "checked";
+            } ?>> No</label>
           </div>
         </div>
 
         <div class="form-group">
           <label>Reference/Microfilm</label>
           <div class="inline-options">
-            <label class="choice"><input type="radio" name="reference" value="Yes" <?php if ($reference=="Yes") echo "checked"; ?>> Yes</label>
-            <label class="choice"><input type="radio" name="reference" value="No"  <?php if ($reference=="No")  echo "checked"; ?>> No</label>
+            <label class="choice"><input type="radio" name="reference" value="Yes" <?php if ($reference == "Yes") {
+                echo "checked";
+            } ?>> Yes</label>
+            <label class="choice"><input type="radio" name="reference" value="No"  <?php if ($reference == "No") {
+                echo "checked";
+            } ?>> No</label>
           </div>
         </div>
 
         <div class="form-group">
           <label>Electronic Book</label>
           <div class="inline-options">
-            <label class="choice"><input type="radio" name="ebook" value="Yes" <?php if ($ebook=="Yes") echo "checked"; ?>> Yes</label>
-            <label class="choice"><input type="radio" name="ebook" value="No"  <?php if ($ebook=="No")  echo "checked"; ?>> No</label>
+            <label class="choice"><input type="radio" name="ebook" value="Yes" <?php if ($ebook == "Yes") {
+                echo "checked";
+            } ?>> Yes</label>
+            <label class="choice"><input type="radio" name="ebook" value="No"  <?php if ($ebook == "No") {
+                echo "checked";
+            } ?>> No</label>
           </div>
         </div>
 
         <div class="form-group">
           <label>Electronic Journal</label>
           <div class="inline-options">
-            <label class="choice"><input type="radio" name="ejournal" value="Yes" <?php if ($ejournal=="Yes") echo "checked"; ?>> Yes</label>
-            <label class="choice"><input type="radio" name="ejournal" value="No"  <?php if ($ejournal=="No")  echo "checked"; ?>> No</label>
+            <label class="choice"><input type="radio" name="ejournal" value="Yes" <?php if ($ejournal == "Yes") {
+                echo "checked";
+            } ?>> Yes</label>
+            <label class="choice"><input type="radio" name="ejournal" value="No"  <?php if ($ejournal == "No") {
+                echo "checked";
+            } ?>> No</label>
           </div>
         </div>
 
