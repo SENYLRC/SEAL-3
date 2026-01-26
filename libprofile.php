@@ -41,13 +41,51 @@ if (!array_intersect(['administrator', 'libstaff'], $user_roles)) {
 }
 // libprofile.php###
 require '/var/www/seal_wp_script/seal_function.php';
-// Get loc from user profile
-$loc = $field_loc_location_code;
+// -------------------------------
+// Library scope (primary + extra LOCs) — must run for BOTH GET and POST
+// -------------------------------
+$primary_loc = strtoupper(trim((string)($field_loc_location_code ?? '')));
+
+$extra_locs_raw = get_user_meta($current_user->ID, 'seal_extra_locs', true);
+$extra_locs_raw = is_string($extra_locs_raw) ? trim($extra_locs_raw) : '';
+
+$extra_locs = [];
+if ($extra_locs_raw !== '') {
+    foreach (explode(',', $extra_locs_raw) as $c) {
+        $c = strtoupper(trim($c));
+        if ($c !== '') {
+            $extra_locs[] = $c;
+        }
+    }
+}
+
+$allowed_locs = array_values(array_unique(array_filter(array_merge([$primary_loc], $extra_locs))));
 
 // Connect to database
 require '/var/www/seal_wp_script/seal_db.inc';
 $db = mysqli_connect($dbhost, $dbuser, $dbpass);
 mysqli_select_db($db, $dbname);
+
+// -------------------------------
+// Resolve LOC codes to Library Names
+// -------------------------------
+$loc_name_map = [];
+
+if (!empty($allowed_locs)) {
+    $in = "'" . implode("','", array_map(
+        fn ($l) => mysqli_real_escape_string($db, $l),
+        $allowed_locs
+    )) . "'";
+
+    $sql = "SELECT loc, Name FROM `$sealLIB` WHERE loc IN ($in)";
+    $res = mysqli_query($db, $sql);
+
+    if ($res) {
+        while ($r = mysqli_fetch_assoc($res)) {
+            $loc_name_map[strtoupper($r['loc'])] = $r['Name'];
+        }
+    }
+}
 
 // Helper to safely echo attribute values
 function h($v)
@@ -105,12 +143,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $lbEmpire      = mysqli_real_escape_string($db, $lbEmpire);
     $lbCommCourier = mysqli_real_escape_string($db, $lbCommCourier);
 
-    // Suspension date default: +7 days if suspending with no date
-    if (($suspend == '1') && (strlen($enddated) < 2)) {
-        $enddated = date('Y-m-d', strtotime("+7 day"));
+    // -------------------------------
+    // Suspension End Date rules
+    // - If suspending and date is blank/invalid/past -> today + 7 days
+    // - If not suspending -> keep as blank (or keep DB value if you prefer)
+    // -------------------------------
+    $today = ymd_today();
+
+    if ($suspend === '1') {
+        $dt = parse_ymd_date($enddated);
+
+        if (!$dt || $dt < $today) {
+            $dt = (clone $today)->modify('+7 days');
+        }
+
+        $enddated = $dt->format('Y-m-d');
     } else {
-        $enddated = date('Y-m-d', strtotime(str_replace('-', '/', $enddated)));
+        // Not suspended: do not force a date
+        $enddated = ''; // (or keep existing value if you want)
     }
+
 
     $sqlupdate = "
         UPDATE `$sealLIB`
@@ -140,53 +192,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $result = mysqli_query($db, $sqlupdate);
 
     echo "<div class='LibProfile_Form'><div class='section-card notice-success'><strong>Library has been edited.</strong></div>";
-    echo "<a href='/libprofile'>Return to Library Profile</a></div>";
+    echo "<a href='" . h(add_query_arg('loc', $loc, '/libprofile')) . "'>Return to Library Profile</a></div>";
+
 
 } else {
-
-    // -------------------------------
-    // Library scope (primary + extra LOCs)
-    // -------------------------------
-    $primary_loc = strtoupper(trim((string)($field_loc_location_code ?? '')));
-
-    // extra LOCs from user meta: "NHIGS,NWATTJ"
-    $extra_locs_raw = get_user_meta($current_user->ID, 'seal_extra_locs', true);
-    $extra_locs_raw = is_string($extra_locs_raw) ? trim($extra_locs_raw) : '';
-
-    $extra_locs = [];
-    if ($extra_locs_raw !== '') {
-        foreach (explode(',', $extra_locs_raw) as $c) {
-            $c = strtoupper(trim($c));
-            if ($c !== '') {
-                $extra_locs[] = $c;
-            }
-        }
-    }
-
-    // allowed locs (unique, non-empty)
-    $allowed_locs = array_values(array_unique(array_filter(array_merge([$primary_loc], $extra_locs))));
-
-    // -------------------------------
-    // Resolve LOC codes to Library Names
-    // -------------------------------
-    $loc_name_map = [];
-
-    if (!empty($allowed_locs)) {
-        $in = "'" . implode("','", array_map(
-            fn ($l) => mysqli_real_escape_string($db, $l),
-            $allowed_locs
-        )) . "'";
-
-        $sql = "SELECT loc, Name FROM `$sealLIB` WHERE loc IN ($in)";
-        $res = mysqli_query($db, $sql);
-
-        if ($res) {
-            while ($r = mysqli_fetch_assoc($res)) {
-                $loc_name_map[strtoupper($r['loc'])] = $r['Name'];
-            }
-        }
-    }
-
 
     // Active LOC: from ?loc=XXXX (GET), else primary
     $active_loc = isset($_GET['loc']) ? strtoupper(trim((string)$_GET['loc'])) : $primary_loc;
@@ -229,9 +238,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $ejournal       = $row["ejournal_request"];
         $journal        = $row["periodical_loan"];
         $enddate = $row["SuspendDateEnd"];
-        if (empty($enddate) || $enddate == '0000-00-00' || $enddate == '1970-01-01') {
-            $enddate = date('Y-m-d', strtotime('+7 days'));
+        $today = ymd_today();
+        $dt = parse_ymd_date($enddate);
+
+        // Only auto-default when suspended
+        if ($libsuspend === "1") {
+            if (!$dt || $dt < $today) {
+                $dt = (clone $today)->modify('+7 days');
+            }
+            $enddate = $dt->format('Y-m-d');
+        } else {
+            // Not suspended: show blank (or keep stored date if you prefer)
+            $enddate = $dt ? $dt->format('Y-m-d') : '';
         }
+
 
         $timestamp      = $row["ModifyDate"];
         $lastmodemail   = $row["ModEmail"];
