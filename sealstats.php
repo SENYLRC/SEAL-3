@@ -1,642 +1,890 @@
-<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
-
-  <script>
-  $(document).ready(function() {
-     $("#datepicker").datepicker();
-     $("#datepicker2").datepicker();
-     $("#datepickerl").datepicker();
-     $("#datepickerl2").datepicker();
-     $("#expdatepicker").datepicker();
-     $("#expdatepicker2").datepicker();
-     $("#top10datepicker").datepicker();
-     $("#top10datepicker2").datepicker();
-     $("#top10fdatepicker").datepicker();
-     $("#top10fdatepicker2").datepicker();
-  });
-  </script>
 <?php
+/**
+ * SEAL Admin Stats Console (admins only)
+ * - Borrowing stats by system
+ * - Lending stats by system
+ * - Borrowing stats by specific library (LOC)
+ * - Lending stats by specific library (LOC)
+ * - Expired list
+ * - Top 10 requesters
+ * - Top 10 fillers
+ */
 
-// ==========================================================
-// WordPress Role Enforcement — Restrict to Administrator
-// ==========================================================
 require_once('/var/www/wpSEAL/wp-load.php');
-$current_user = wp_get_current_user();
-$user_roles = (array)$current_user->roles;
 
-if (!in_array('administrator', $user_roles, true)) {
-    die("<div style='padding:20px;color:red;font-weight:bold;'>
-        Access Denied<br>You must have the <b>Administrator</b> role to access this page.
-    </div>");
+// ---- CSRF (WordPress nonce; no PHP sessions) ----
+$csrf = wp_create_nonce('seal_stats_console');
+
+// ---- Admin gate ----
+if (!is_user_logged_in() || !current_user_can('administrator')) {
+    http_response_code(403);
+    die("<div style='padding:20px;color:red;font-weight:bold;'>Access Denied<br>Admins only.</div>");
 }
 
-//sealstats.php
-// Connect to database
+// ---- DB ----
 require '/var/www/seal_wp_script/seal_function.php';
 require '/var/www/seal_wp_script/seal_db.inc';
 
-$db = mysqli_connect($dbhost, $dbuser, $dbpass);
-mysqli_select_db($db, $dbname);
-
-if (($_SERVER['REQUEST_METHOD'] == 'POST')   || (isset($_GET{'page'}))) {
-    if ($_REQUEST['stattype'] == 'wholesystem') {
-        // A request to generate stats has been posted
-        $startdate = date('Y-m-d', strtotime('-7 days'));
-        $enddated = $_REQUEST["enddate"];
-        $startdated =   $_REQUEST["startdate"];
-        $libsystem = $_REQUEST["system"];
-        $startdate = date('Y-m-d H:i:s', strtotime(str_replace('-', '/', $startdated)));
-        $enddate = date('Y-m-d H:i:s', strtotime(str_replace('-', '/', $enddated)));
-
-        // Get total requests
-        $GETREQUESTCOUNTSQLL= "SELECT * FROM `$sealSTAT` WHERE  `ReqSystem` LIKE '%$libsystem%'  and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00' ";   
-        $retval = mysqli_query($db, $GETREQUESTCOUNTSQLL);
-        if (!$retval) {
-            // There was an error in the query
-            die('Error: ' . mysqli_error($db));
-        } else {
-            if (mysqli_num_rows($retval) == 0) {
-                // No results were found, display an error message
-                echo "No results found.";
-            } else {
-                $row_cnt = mysqli_num_rows($retval);
-                // Get total filled requests
-                $FINDFILL= "SELECT * FROM `$sealSTAT` WHERE  `ReqSystem` LIKE '%$libsystem%'  and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'  and  Fill =1 ";
-                $retfilled =   mysqli_query($db, $FINDFILL);
-                $row_fill = mysqli_num_rows($retfilled);
-                // Get percentage fill
-                $percentfill = $row_fill/$row_cnt;
-                $percent_friendly_fill = number_format($percentfill * 100, 2) . '%';
-
-                // Get total not filled requests
-                $FINDNOTFILL= "SELECT * FROM `$sealSTAT` WHERE  `ReqSystem` LIKE '%$libsystem%'  and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'  and  Fill =0 ";
-                $retnotfilled =   mysqli_query($db, $FINDNOTFILL);
-                $row_notfill = mysqli_num_rows($retnotfilled);
-                // Get percentage fill
-                $percentnotfill = $row_notfill/$row_cnt;
-                $percent_friendly_notfill = number_format($percentnotfill * 100, 2) . '%';
-
-                // Get total requests expired
-                $FINDEXPIRE= "SELECT * FROM `$sealSTAT` WHERE  `ReqSystem` LIKE '%$libsystem%'  and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'  and  Fill =4  ";
-                $retexpire =   mysqli_query($db, $FINDEXPIRE);
-                $row_expire = mysqli_num_rows($retexpire);
-                // Get percentage fill
-                $percentexpire = $row_expire/$row_cnt;
-                $percent_friendly_expire = number_format($percentexpire * 100, 2) . '%';
-
-                // Get total requests not answered
-                $FINDNOANSW= "SELECT * FROM `$sealSTAT` WHERE  `ReqSystem` LIKE '%$libsystem%'  and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'  and  Fill =3 ";
-                $retnoansw =   mysqli_query($db, $FINDNOANSW);
-                $row_noansw = mysqli_num_rows($retnoansw);
-                // Get percentage fill
-                $percentnoansw = $row_noansw/$row_cnt;
-                $percent_friendly_noansw = number_format($percentnoansw * 100, 2) . '%';
-
-                // Get total requests canceled
-                $CANANSW= "SELECT * FROM `$sealSTAT` WHERE  `ReqSystem` LIKE '%$libsystem%'  and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'  and  Fill =6 ";
-                $canansw =   mysqli_query($db, $CANANSW);
-                $row_cancel = mysqli_num_rows($canansw);
-                // Get percentage fill
-                $percentcancel = $row_cancel/$row_cnt;
-                $percent_friendly_cancel = number_format($percentcancel * 100, 2) . '%';
-
-                // translate system code to text name
-                if (strcmp($dessysvar, 'MH')==0) {
-                    $dessysvartxt = "Mid Hudson Library System";
-                }else if (strcmp($dessysvar, 'RC')==0) {
-                    $dessysvartxt = "Ramapo Catskill Library System";
-                }else if (strcmp($dessysvar, 'DU')==0) {
-                    $dessysvartxt = "Dutchess BOCES";
-                }else if (strcmp($dessysvar, 'OU')==0) {
-                    $dessysvartxt = "Orange Ulster BOCES";
-                }else if (strcmp($dessysvar, 'RB')==0) {
-                    $dessysvartxt = "Rockland BOCES";
-                }else if (strcmp($dessysvar, 'SB')==0) {
-                    $dessysvartxt = "Sullivan BOCES";
-                }else if (strcmp($dessysvar, 'UB')==0) {
-                    $dessysvartxt = "Ulster BOCES";
-                }else{
-                    $dessysvartxt = "SENYLRC Group";
-                }
-
-
-                // Stats overall in the time frame chosen
-                echo "<h1><center>SEAL Borrowing Stats from $startdated to $enddated </h1></center>";
-                echo "<h1>Library System ".$libsystemtxt." </h1>";
-                echo "Total Request ".$row_cnt." <br>";
-                echo "Number of Request Filled: ".$row_fill." (".$percent_friendly_fill.")<br>";
-                echo "Number of Request Not Filled: ".$row_notfill." (".$percent_friendly_notfill.")<br>";
-                echo "Number of Request Expired: ".$row_expire." (".$percent_friendly_expire.")<br>";
-                echo "Number of Request Canceled: ".$row_cancel." (".$percent_friendly_cancel.")<br>";
-                echo "Number of Not Answered Yet: ".$row_noansw." (".$percent_friendly_noansw.")<br><br>";
-
-                // Calulcate fill from other systems
-                if (strlen($libsystem)>1) {
-                    echo "<h1>Break down of requests</h1>";
-                    // Find which systems they sent request to
-                    $destsystem=" SELECT distinct (`DestSystem` )  FROM `$sealSTAT` WHERE `ReqSystem`='$libsystem' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'  ";
-                    $destsystemq = mysqli_query($db, $destsystem);
-                    // loop through the results of destion systems
-                    while ($row = mysqli_fetch_assoc($destsystemq)) {
-                        $dessysvar= $row['DestSystem'];
-                        $destsystemcount=" SELECT `itype`  FROM `$sealSTAT` WHERE `ReqSystem`='$libsystem'  and `DestSystem`='$dessysvar' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'  ";
-                        $destsystemcountq = mysqli_query($db, $destsystemcount);
-                        // Count the number of requests to that system
-                        $destnum_rows = mysqli_num_rows($destsystemcountq);
-
-                        // Get percentage
-                        $percentdestnum_rows = $destnum_rows/$row_cnt;
-                        $percent_friendly_destnum = number_format($percentdestnum_rows * 100, 2) . '%';
-                        // translate system code to text name
-                        if (strcmp($dessysvar, 'MH')==0) {
-                            $dessysvartxt = "Mid Hudson Library System";
-                        }else if (strcmp($dessysvar, 'RC')==0) {
-                            $dessysvartxt = "Ramapo Catskill Library System";
-                        }else if (strcmp($dessysvar, 'DU')==0) {
-                            $dessysvartxt = "Dutchess BOCES";
-                        }else if (strcmp($dessysvar, 'OU')==0) {
-                            $dessysvartxt = "Orange Ulster BOCES";
-                        }else if (strcmp($dessysvar, 'RB')==0) {
-                            $dessysvartxt = "Rockland BOCES";
-                        }else if (strcmp($dessysvar, 'SB')==0) {
-                            $dessysvartxt = "Sullivan BOCES";
-                        }else if (strcmp($dessysvar, 'UB')==0) {
-                            $dessysvartxt = "Ulster BOCES";
-                        }else{
-                            $dessysvartxt = "SENYLRC Group";
-                        }
-    
-                        echo " ".$destnum_rows." (".$percent_friendly_destnum.") overall requests were made  to <strong> ".$dessysvartxt."</strong><br>";
-                        // Find which item types were requests
-                        $destitype=" SELECT distinct (`itype` )  FROM `$sealSTAT`  WHERE `ReqSystem`='$libsystem'  and `DestSystem`='$dessysvar' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00' ";
-                        $destitypeq = mysqli_query($db, $destitype);
-                        // loop through the results of items from that destination
-                        while ($row2 = mysqli_fetch_assoc($destitypeq)) {
-                            $dessysitype= $row2['itype'];
-                            // Remove any white space
-                            $destitemcount=" SELECT `fill`  FROM `$sealSTAT` WHERE `Itype`='$dessysitype' and `ReqSystem`='$libsystem'  and `DestSystem`='$dessysvar' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'";
-                            $destitemcountq = mysqli_query($db, $destitemcount);
-                            // Count the number of reuqests to that system
-                            $destnumitype_rows = mysqli_num_rows($destitemcountq);
-                            // Get percentage
-                            $percenttypesys_rows = $destnumitype_rows/$row_cnt;
-                            $percent_friendly_typesys = number_format($percenttypesys_rows * 100, 2) . '%';
-                            echo "&nbsp&nbsp&nbsp".$destnumitype_rows." (".$percent_friendly_typesys.") of the request to ".$dessysvartxt." were <strong>".$dessysitype."</strong><br>";
-                            // Find what the fill rate is
-                            $destitemcountfill=" SELECT `fill`  FROM `$sealSTAT` WHERE Fill='1' and `Itype`='$dessysitype' and `ReqSystem`='$libsystem'  and `DestSystem`='$dessysvar' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'";
-                            $destitemcountfillq = mysqli_query($db, $destitemcountfill);
-                            // Count the number of fills
-                            $destnumfilled_rows = mysqli_num_rows($destitemcountfillq);
-                            // Get percentage
-                            $percent1_rows =$destnumfilled_rows/ $destnumitype_rows;
-                            $percent_friendly_1 = number_format($percent1_rows * 100, 2) . '%';
-                            echo " &nbsp&nbsp&nbsp&nbsp&nbsp      $destnumfilled_rows (".$percent_friendly_1.") were filled<br>";
-                            // Find what the unfill rate is
-                            $destitemcountunfill=" SELECT `fill`  FROM `$sealSTAT` WHERE Fill='0' and `Itype`='$dessysitype' and `ReqSystem`='$libsystem'  and `DestSystem`='$dessysvar' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'";
-                            $destitemcountunfillq = mysqli_query($db, $destitemcountunfill);
-                            // Count the number of unfilled
-                            $destnumunfilled_rows = mysqli_num_rows($destitemcountunfillq);
-                            // Get percentage
-                            $percent2_rows =$destnumunfilled_rows/ $destnumitype_rows;
-                            $percent_friendly_2 = number_format($percent2_rows * 100, 2) . '%';
-                            echo "&nbsp&nbsp&nbsp&nbsp&nbsp   $destnumunfilled_rows (". $percent_friendly_2.") were not filled<br>";
-                            // Find what the expire rate is
-                            $destitemcountexfill=" SELECT `fill`  FROM `$sealSTAT` WHERE Fill='4' and `Itype`='$dessysitype' and `ReqSystem`='$libsystem'  and `DestSystem`='$dessysvar' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'";
-                            $destitemcountexfillq = mysqli_query($db, $destitemcountexfill);
-                            // Count the number of expired requests
-                            $destnumexfilled_rows = mysqli_num_rows($destitemcountexfillq);
-                            // Get percentage
-                            $percent3_rows = $destnumexfilled_rows/$destnumitype_rows;
-                            ;
-                            $percent_friendly_3 = number_format($percent3_rows * 100, 2) . '%';
-                            echo "&nbsp&nbsp&nbsp&nbsp&nbsp   $destnumexfilled_rows (". $percent_friendly_3.") were expired<br>";
-                            // Find what the cancel rate is
-                            $destitemcountcanfill=" SELECT `fill`  FROM `$sealSTAT` WHERE Fill='6' and `Itype`='$dessysitype' and `ReqSystem`='$libsystem'  and `DestSystem`='$dessysvar' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'";
-                            $destitemcountcanfillq = mysqli_query($db, $destitemcountcanfill);
-                            // Count the number of canceled requests
-                            $destnumcanfilled_rows = mysqli_num_rows($destitemcountcanfillq);
-                            // Get percentage
-                            $percent4_rows =$destnumcanfilled_rows/$destnumitype_rows;
-                            $percent_friendly_4 = number_format($percent4_rows * 100, 2) . '%';
-                            echo "&nbsp&nbsp&nbsp&nbsp&nbsp   $destnumcanfilled_rows  (". $percent_friendly_4.") were canceled<br>";
-                            // Find the numbered not answer yet
-                            $destitemcountnoanswfill=" SELECT `fill`  FROM `$sealSTAT` WHERE Fill='3' and `Itype`='$dessysitype' and `ReqSystem`='$libsystem'  and `DestSystem`='$dessysvar' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'";
-                            $destitemcountnoanswfillq = mysqli_query($db, $destitemcountnoanswfill);
-                            // Count the number of requests not answered yet
-                            $destnumnoanswfilled_rows = mysqli_num_rows($destitemcountnoanswfillq);
-                            // Get percentage
-                            $percent5_rows =$destnumnoanswfilled_rows/ $destnumitype_rows;
-                            $percent_friendly_5 = number_format($percent5_rows * 100, 2) . '%';
-                            echo "&nbsp&nbsp&nbsp&nbsp&nbsp   $destnumnoanswfilled_rows  (". $percent_friendly_5.") of requests not answered yet<br>";
-                            echo "<br>";
-                        }
-                        echo "<hr>";
-                    }
-                }// end check if 0 results
-            }// end   if (!$retval) 
-        }    // End of whole system borrowing stats
-    } elseif ($_REQUEST['stattype'] == 'wholesystemlending') {
-
-
-        // A request to generate stats has been posted
-        $startdate = date('Y-m-d', strtotime('-7 days'));
-        $enddated = $_REQUEST["enddate"];
-        $startdated =   $_REQUEST["startdate"];
-        $libsystem = $_REQUEST["system"];
-
-
-        $startdate = date('Y-m-d H:i:s', strtotime(str_replace('-', '/', $startdated)));
-        $enddate = date('Y-m-d H:i:s', strtotime(str_replace('-', '/', $enddated)));
-
-
-        // Get total requests received
-
-
-        $GETREQUESTCOUNTSQLL= "SELECT * FROM `$sealSTAT` WHERE `DestSystem` LIKE '%$libsystem%'  and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00' ";
-        //  echo $GETREQUESTCOUNTSQLL;
-        $retval = mysqli_query($db, $GETREQUESTCOUNTSQLL);
-        if (!$retval) {
-            // There was an error in the query
-            die('Error: ' . mysqli_error($db));
-        } else {
-            if (mysqli_num_rows($retval) == 0) {
-                // No results were found, display an error message
-                echo "No results found.";
-            } else {
-                $row_cnt = mysqli_num_rows($retval);
-                // Get total filled requests
-                $FINDFILL= "SELECT * FROM `$sealSTAT` WHERE `DestSystem` LIKE '%$libsystem%' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'  and  Fill =1 ";
-                $retfilled =   mysqli_query($db, $FINDFILL);
-                $row_fill = mysqli_num_rows($retfilled);
-                // Get percentage fill
-                $percentfill = $row_fill/$row_cnt;
-                $percent_friendly_fill = number_format($percentfill * 100, 2) . '%';
-
-                // Get total not filled requests
-                $FINDNOTFILL= "SELECT * FROM `$sealSTAT` WHERE `DestSystem` LIKE '%$libsystem%' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'  and  Fill =0 ";
-                $retnotfilled =   mysqli_query($db, $FINDNOTFILL);
-                $row_notfill = mysqli_num_rows($retnotfilled);
-
-                // Get percentage fill
-                $percentnotfill = $row_notfill/$row_cnt;
-                $percent_friendly_notfill = number_format($percentnotfill * 100, 2) . '%';
-
-                // Get total requests expired
-                $FINDEXPIRE= "SELECT * FROM `$sealSTAT` WHERE `DestSystem` LIKE '%$libsystem%' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'  and  Fill =4 ";
-                $retexpire =   mysqli_query($db, $FINDEXPIRE);
-                $row_expire = mysqli_num_rows($retexpire);
-                // Get percentage fill
-                $percentexpire = $row_expire/$row_cnt;
-                $percent_friendly_expire = number_format($percentexpire * 100, 2) . '%';
-
-                // Get total requests not answered
-                $FINDNOANSW= "SELECT * FROM `$sealSTAT` WHERE `DestSystem` LIKE '%$libsystem%' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'  and  Fill =3 ";
-                $retnoansw =   mysqli_query($db, $FINDNOANSW);
-                $row_noansw = mysqli_num_rows($retnoansw);
-                // Get percentage fill
-                $percentnoansw = $row_noansw/$row_cnt;
-                $percent_friendly_noansw = number_format($percentnoansw * 100, 2) . '%';
-
-                // Get total requests canceled
-                $CANANSW= "SELECT * FROM `$sealSTAT` WHERE `DestSystem` LIKE '%$libsystem%' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'  and  Fill =6 ";
-                $canansw =   mysqli_query($db, $CANANSW);
-                $row_cancel = mysqli_num_rows($canansw);
-                // Get percentage fill
-                $percentcancel = $row_cancel/$row_cnt;
-                $percent_friendly_cancel = number_format($percentcancel * 100, 2) . '%';
-
-                // translate system code to text name
-                if (strcmp($libsystem, 'MH')==0) {
-                    $libsystemtxt = "Mid Hudson Library System";
-                }else if (strcmp($libsystem, 'RC')==0) {
-                    $libsystemtxt = "Ramapo Catskill Library System";
-                }else if (strcmp($libsystem, 'DU')==0) {
-                    $libsystemtxt = "Dutchess BOCES";
-                }else if (strcmp($libsystem, 'OU')==0) {
-                    $libsystemtxt = "Orange Ulster BOCES";
-                }else if (strcmp($libsystem, 'RB')==0) {
-                    $libsystemtxt = "Rockland BOCES";
-                }else if (strcmp($libsystem, 'SB')==0) {
-                    $libsystemtxt = "Sullivan BOCES";
-                }else if (strcmp($libsystem, 'UB')==0) {
-                    $libsystemtxt = "Ulster BOCES";
-                }else if (strlen($libsystem) <1) {
-                    $libsystemtxt = "All";
-                }else{
-                    $libsystemtxt = "SENYLRC Group";
-                }
-
-
-                // Stats overall in the time frame chosen
-                echo "<h1><center>SEAL Lending Stats from $startdated to $enddated </h1></center>";
-                echo "<h1>Lender request statistics for ".$libsystemtxt."  </h1>";
-                echo "Total Requests received ".$row_cnt." <br>";
-                echo "Number of Requests Filled: ".$row_fill." (".$percent_friendly_fill.")<br>";
-                echo "Number of Requests Not Filled: ".$row_notfill." (".$percent_friendly_notfill.")<br>";
-                echo "Number of Requests Expired: ".$row_expire." (".$percent_friendly_expire.")<br>";
-                echo "Number of Requests Canceled: ".$row_cancel." (".$percent_friendly_cancel.")<br>";
-                echo "Number of Requests Not Answered Yet: ".$row_noansw." (".$percent_friendly_noansw.")<br><br>";
-
-                // Calulcate fill to other systems
-                if (strlen($libsystem)>1) {
-                    echo "<h1>Break down of lending requests</h1>";
-                    // Find which systems they sent request to
-                    $destsystem=" SELECT distinct (`ReqSystem` )  FROM `$sealSTAT` WHERE `DestSystem`='$libsystem' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'";
-
-                    $destsystemq = mysqli_query($db, $destsystem);
-                    // loop through the results of destion systems
-                    while ($row = mysqli_fetch_assoc($destsystemq)) {
-                        $dessysvar= $row['ReqSystem'];
-                        $destsystemcount="SELECT `itype` FROM `$sealSTAT` WHERE `DestSystem`='$libsystem' and `ReqSystem`='$dessysvar' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'  ";
-
-                        $destsystemcountq = mysqli_query($db, $destsystemcount);
-                        // Count the number of requests to that system
-                        $destnum_rows = mysqli_num_rows($destsystemcountq);
-
-                        // Get percentage
-                        $percentdestnum_rows = $destnum_rows/$row_cnt;
-                        $percent_friendly_destnum = number_format($percentdestnum_rows * 100, 2) . '%';
-                        // translate system code to text name
-                        if (strcmp($dessysvar, 'MH')==0) {
-                            $dessysvartxt = "Mid Hudson Library System";
-                        }else if (strcmp($dessysvar, 'RC')==0) {
-                            $dessysvartxt = "Ramapo Catskill Library System";
-                        }else if (strcmp($dessysvar, 'DU')==0) {
-                            $dessysvartxt = "Dutchess BOCES";
-                        }else if (strcmp($dessysvar, 'OU')==0) {
-                            $dessysvartxt = "Orange Ulster BOCES";
-                        }else if (strcmp($dessysvar, 'RB')==0) {
-                            $dessysvartxt = "Rockland BOCES";
-                        }else if (strcmp($dessysvar, 'SB')==0) {
-                            $dessysvartxt = "Sullivan BOCES";
-                        }else if (strcmp($dessysvar, 'UB')==0) {
-                            $dessysvartxt = "Ulster BOCES";
-                        }else{
-                            $dessysvartxt = "SENYLRC Group";
-                        }
-    
-                        echo " ".$destnum_rows." (".$percent_friendly_destnum.") overall lendinng requests were made  from <strong> ".$dessysvartxt."</strong><br>";
-                        // Find which item types were requests
-                        $destitype=" SELECT distinct (`itype` )  FROM `$sealSTAT`  WHERE `DestSystem`='$libsystem'  and `ReqSystem`='$dessysvar' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00' ";
-                        $destitypeq = mysqli_query($db, $destitype);
-                        // loop through the results of items from that destination
-                        while ($row2 = mysqli_fetch_assoc($destitypeq)) {
-                            $dessysitype= $row2['itype'];
-                            // Remove any white space
-                            $destitemcount=" SELECT `fill`  FROM `$sealSTAT` WHERE `Itype`='$dessysitype' and `DestSystem`='$libsystem'  and `ReqSystem`='$dessysvar' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'";
-                            $destitemcountq = mysqli_query($db, $destitemcount);
-                            // Count the number of reuqests from that system
-                            $destnumitype_rows = mysqli_num_rows($destitemcountq);
-                            // Get percentage
-                            $percenttypesys_rows = $destnumitype_rows/$row_cnt;
-                            $percent_friendly_typesys = number_format($percenttypesys_rows * 100, 2) . '%';
-                            echo "&nbsp&nbsp&nbsp".$destnumitype_rows." (".$percent_friendly_typesys.") of the request from ".$dessysvartxt." were <strong>".$dessysitype."</strong><br>";
-                            // Find what the fill rate is
-                            $destitemcountfill=" SELECT `fill`  FROM `$sealSTAT` WHERE Fill='1' and `Itype`='$dessysitype' and `DestSystem`='$libsystem'  and `ReqSystem`='$dessysvar' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'";
-                            $destitemcountfillq = mysqli_query($db, $destitemcountfill);
-                            // Count the number of fills
-                            $destnumfilled_rows = mysqli_num_rows($destitemcountfillq);
-                            // Get percentage
-                            $percent1_rows =$destnumfilled_rows/ $destnumitype_rows;
-                            $percent_friendly_1 = number_format($percent1_rows * 100, 2) . '%';
-                            echo " &nbsp&nbsp&nbsp&nbsp&nbsp      $destnumfilled_rows (".$percent_friendly_1.") were filled<br>";
-                            // Find what the unfill rate is
-                            $destitemcountunfill=" SELECT `fill`  FROM `$sealSTAT` WHERE Fill='0' and `Itype`='$dessysitype' and `DestSystem`='$libsystem'  and `ReqSystem`='$dessysvar' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'";
-                            $destitemcountunfillq = mysqli_query($db, $destitemcountunfill);
-                            // Count the number of unfilled
-                            $destnumunfilled_rows = mysqli_num_rows($destitemcountunfillq);
-                            // Get percentage
-                            $percent2_rows =$destnumunfilled_rows/ $destnumitype_rows;
-                            $percent_friendly_2 = number_format($percent2_rows * 100, 2) . '%';
-                            echo "&nbsp&nbsp&nbsp&nbsp&nbsp   $destnumunfilled_rows (". $percent_friendly_2.") were not filled<br>";
-                            // Find what the expire rate is
-                            $destitemcountexfill=" SELECT `fill`  FROM `$sealSTAT` WHERE Fill='4' and `Itype`='$dessysitype' and `DestSystem`='$libsystem'  and `ReqSystem`='$dessysvar' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'";
-                            $destitemcountexfillq = mysqli_query($db, $destitemcountexfill);
-                            // Count the number of expired requests
-                            $destnumexfilled_rows = mysqli_num_rows($destitemcountexfillq);
-                            // Get percentage
-                            $percent3_rows = $destnumexfilled_rows/$destnumitype_rows;
-                            ;
-                            $percent_friendly_3 = number_format($percent3_rows * 100, 2) . '%';
-                            echo "&nbsp&nbsp&nbsp&nbsp&nbsp   $destnumexfilled_rows (". $percent_friendly_3.") were expired<br>";
-                            // Find what the cancel rate is
-                            $destitemcountcanfill=" SELECT `fill`  FROM `$sealSTAT` WHERE Fill='6' and `Itype`='$dessysitype' and `DestSystem`='$libsystem'  and `ReqSystem`='$dessysvar' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'";
-                            $destitemcountcanfillq = mysqli_query($db, $destitemcountcanfill);
-                            // Count the number of canceled requests
-                            $destnumcanfilled_rows = mysqli_num_rows($destitemcountcanfillq);
-                            // Get percentage
-                            $percent4_rows =$destnumcanfilled_rows/$destnumitype_rows;
-                            $percent_friendly_4 = number_format($percent4_rows * 100, 2) . '%';
-                            echo "&nbsp&nbsp&nbsp&nbsp&nbsp   $destnumcanfilled_rows  (". $percent_friendly_4.") were canceled<br>";
-                            // Find the numbered not answer yet
-                            $destitemcountnoanswfill=" SELECT `fill`  FROM `$sealSTAT` WHERE Fill='3' and `Itype`='$dessysitype' and `DestSystem`='$libsystem'  and `ReqSystem`='$dessysvar' and `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'";
-                            $destitemcountnoanswfillq = mysqli_query($db, $destitemcountnoanswfill);
-                            // Count the number of requests not answered yet
-                            $destnumnoanswfilled_rows = mysqli_num_rows($destitemcountnoanswfillq);
-                            // Get percentage
-                            $percent5_rows =$destnumnoanswfilled_rows/ $destnumitype_rows;
-                            $percent_friendly_5 = number_format($percent5_rows * 100, 2) . '%';
-                            echo "&nbsp&nbsp&nbsp&nbsp&nbsp   $destnumnoanswfilled_rows  (". $percent_friendly_5.") of requests not answered yet<br>";
-                            echo "<br>";
-                        }
-                        echo "<hr>";
-                    }
-                } //end check if 0 results
-            }// end  if (!$retval)
-        } // End of whole system lending stats
-    } elseif ($_REQUEST['stattype'] == 'top10fstats') {
-        // Generate the top 10 filling requests
-        $startdate = date('Y-m-d', strtotime('-7 days'));
-        $enddated = $_REQUEST["enddate"];
-        $startdated =   $_REQUEST["startdate"];
-
-        $startdate = date('Y-m-d H:i:s', strtotime(str_replace('-', '/', $startdated)));
-        $enddate = date('Y-m-d H:i:s', strtotime(str_replace('-', '/', $enddated)));
-        echo "<h1><center>Top 10 Libraries Filling Requests from $startdated to $enddated </h1></center>";
-        $GETREQUESTCOUNTSQLL= "SELECT  `Destination`, count(*)  FROM `$sealSTAT` WHERE `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00' and Fill=1  GROUP BY `Destination` ORDER BY count(*) DESC LIMIT 10 ";
-        $retval = mysqli_query($db, $GETREQUESTCOUNTSQLL);
-        $row_cnt = mysqli_num_rows($retval);
-        echo "<table><tr><th>Library Name</th><th>Number of Fills</th></tr>";
-        while ($row2 = mysqli_fetch_assoc($retval)) {
-            $reqestid = $row2['Destination'];
-            $countnumb =  $row2["count(*)"];
-            $libnames= "SELECT loc,Name FROM `$sealLIB` WHERE `loc`='$reqestid' ";
-            $result = mysqli_query($db, $libnames);
-            while ($row =  $result->fetch_assoc()) {
-                $reqestid =  $row["Name"];
-            }
-            echo "<tr><td>$reqestid</td><td>$countnumb</td></tr>";
-        }
-        echo "</table>";
-    } elseif ($_REQUEST['stattype'] == 'top10stats') {
-        $startdate = date('Y-m-d', strtotime('-7 days'));
-        $enddated = $_REQUEST["enddate"];
-        $startdated =   $_REQUEST["startdate"];
-        $startdate = date('Y-m-d H:i:s', strtotime(str_replace('-', '/', $startdated)));
-        $enddate = date('Y-m-d H:i:s', strtotime(str_replace('-', '/', $enddated)));
-        echo "<h1><center>Top 10 Libraries Making Requests from $startdated to $enddated </h1></center>";
-        $GETREQUESTCOUNTSQLL= "SELECT  `Requester LOC`, count(*)  FROM `$sealSTAT` WHERE `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'   GROUP BY `Requester LOC` ORDER BY count(*) DESC LIMIT 10 ";
-        $retval = mysqli_query($db, $GETREQUESTCOUNTSQLL);
-        $row_cnt = mysqli_num_rows($retval);
-        echo "<table><tr><th>Library Name</th><th>Number of Requests</th></tr>";
-        while ($row2 = mysqli_fetch_assoc($retval)) {
-            $reqestid = $row2['Requester LOC'];
-            $countnumb =  $row2["count(*)"];
-            $libnames= "SELECT loc,Name FROM `$sealLIB` WHERE `loc`='$reqestid' ";
-            $result = mysqli_query($db, $libnames);
-            while ($row =  $result->fetch_assoc()) {
-                $reqestid =  $row["Name"];
-            }
-            echo "<tr><td>$reqestid</td><td>$countnumb</td></tr>";
-        }
-        echo "</table>";
-    } elseif ($_REQUEST['stattype'] == 'expirestats') {
-        $startdate = date('Y-m-d', strtotime('-7 days'));
-        $enddated = $_REQUEST["enddate"];
-        $startdated =   $_REQUEST["startdate"];
-        $startdate = date('Y-m-d H:i:s', strtotime(str_replace('-', '/', $startdated)));
-        $enddate = date('Y-m-d H:i:s', strtotime(str_replace('-', '/', $enddated)));
-        // Get total requests that expired
-        $GETREQUESTCOUNTSQLL= "SELECT * FROM `$sealSTAT` WHERE `Timestamp` >= '$startdate 00:00:00' and `Timestamp` <= '$enddate 00:00:00'  and  Fill =4 ORDER BY Destination";
-        $retval = mysqli_query($db, $GETREQUESTCOUNTSQLL);
-        $row_cnt = mysqli_num_rows($retval);
-
-        // loop through the results of items from that destination
-        echo "<h1><center>SEAL Requests that expired from $startdated to $enddated </h1></center>";
-        echo  "$row_cnt  results"; ?>
-     <table><tr><th>ILL #</th><th>LOC</th><th>Destination Library</th><th>Requesting Library</th><th>Note</th><th>Title</th><th>Item Type</th><th>Date</th></tr>
-                <?php
-                while ($row2 = mysqli_fetch_assoc($retval)) {
-                    $dessid= $row2['Destination'];
-                    $illid= $row2['illNUB'];
-                    $note= $row2['responderNOTE'];
-                    $title= $row2['Title'];
-                    $itype= $row2['Itype'];
-                    $date= $row2['Timestamp'];
-                    $reqestid = $row2['Requester LOC'];
-                    $libnames= "SELECT loc,Name FROM `$sealLIB` WHERE `loc`='$dessid' ";
-                    $result = mysqli_query($db, $libnames);
-                    while ($row =  $result->fetch_assoc()) {
-                        $dessidtxt =  $row["Name"];
-                    }
-                    $libnames= "SELECT loc,Name FROM `$sealLIB` WHERE `loc`='$reqestid' ";
-                    $result = mysqli_query($db, $libnames);
-                    while ($row =  $result->fetch_assoc()) {
-                        $reqestid =  $row["Name"];
-                    }
-                    echo "<tr><td>".$illid."</td><td>".$dessid."</td><td>".$dessidtxt."</td><td>".$reqestid."</td><td>".$note."</td><td>".$title."</td><td>".$itype."</td><td>".$date."</td></tr>";
-                }
-                echo "</table>";
-    }
-} else {
-    ?>
-
-     <h2>Enter the data range you will like to run SEAL borrowing stats usage:</h2>
-     <form action="/sealstats?<?php echo $_SERVER['QUERY_STRING']; ?>" method="post">
-     Start Date:
-     <input id="datepicker" name="startdate"/>
-     End Date:
-     <input id="datepicker2" name="enddate"/>
-     <br><br>
-     <B>Requesting Library System</b><select name="system">
-     <option value = "">Select a system</option>
-   <option value="DU">Dutchess BOCES</option>
-   <option value="MH">Mid-Hudson Library System</option>
-   <option value="OU">Orange Ulster BOCES</option>
-   <option value="RC">Ramapo Catskill Library System</option>
-   <option value="RB">Rockland BOCES</option>
-   <option value="SE">SENYLRC</option>
-   <option value="SB">Sullivan BOCES</option>
-   <option value="UB">Ulster BOCES</option>
- </select>
-     <input type="hidden" name="stattype" value="wholesystem">
-     <input type="submit" value="Submit">
-    </form>
-    <br><hr>
-
-     <h2>Enter the data range you will like to run SEAL lending stats usage:</h2>
-     <form action="/sealstats?<?php echo $_SERVER['QUERY_STRING']; ?>" method="post">
-     Start Date:
-     <input id="datepickerl" name="startdate"/>
-     End Date:
-     <input id="datepickerl2" name="enddate"/>
-     <br><br>
-     <B>Requesting Library System</b><select name="system">
-     <option value = "">Select a system</option>
-   <option value="DU">Dutchess BOCES</option>
-   <option value="MH">Mid-Hudson Library System</option>
-   <option value="OU">Orange Ulster BOCES</option>
-   <option value="RC">Ramapo Catskill Library System</option>
-   <option value="RB">Rockland BOCES</option>
-   <option value="SE">SENYLRC</option>
-   <option value="SB">Sullivan BOCES</option>
-   <option value="UB">Ulster BOCES</option>
-
-                  </select>
-     <input type="hidden" name="stattype" value="wholesystemlending">
-     <input type="submit" value="Submit">
-    </form>
-    <br><hr>
-
-    <?php
-    // Generate the drop down for borrower stats
-    $libnames= "SELECT loc,Name FROM `$sealLIB` WHERE `participant`=1 order by `Name` ";
-    $libnameq =   mysqli_query($db, $libnames);
-    echo "<form action='/libstats'   method='post2' >";
-    echo "<h2>Generate borrowing stats for a specific Library:</h2><br>";
-    echo "<select name=libname>";
-    while ($row = $libnameq->fetch_assoc()) {
-        $libname =  $row["Name"];
-        $loccode = $row["loc"];
-        echo "<option value=".$loccode.">".$libname."</option><br>";
-    }
-    echo "<input type='submit' value='Submit'>";
-    echo "</select></form>";
-    echo "<hr>";
-    // Generating the links for borrowing stats
-    $libnames= "SELECT loc,Name FROM `$sealLIB` WHERE `participant`=1 order by `Name` ";
-    $libnameq =   mysqli_query($db, $libnames);
-    echo "<form action='/liblenderstat'   method='post2' >";
-    echo "<h2>Generate lending stats for a specific Library:</h2><br>";
-    echo "<select name=libname>";
-    while ($row = $libnameq->fetch_assoc()) {
-        $libname =  $row["Name"];
-        $loccode = $row["loc"];
-        echo "<option value=".$loccode.">".$libname."</option><br>";
-    }
-    echo "<input type='submit' value='Submit'>";
-    echo "</select></form>"; ?>
-    <hr>
-    <form action="/sealstats?<?php echo $_SERVER['QUERY_STRING']; ?>" method="post">
-    <h2>Generate list of expired requests:</h2><br>
-     Start Date:
-     <input id="expdatepicker" name="startdate"/>
-     End Date:
-     <input id="expdatepicker2" name="enddate"/>
-     <input type="hidden" name="stattype" value="expirestats">
-     <input type="submit" value="Submit">
-    </form>
-    <hr>
-    <form action="/sealstats?<?php echo $_SERVER['QUERY_STRING']; ?>" method="post">
-    <h2>Generate list of top 10 libraries making requests:</h2><br>
-    Start Date:
-    <input id="top10datepicker" name="startdate"/>
-    End Date:
-    <input id="top10datepicker2" name="enddate"/>
-    <input type="hidden" name="stattype" value="top10stats">
-    <input type="submit" value="Submit">
-    </form>
-      <hr>
-    <form action="/sealstats?<?php echo $_SERVER['QUERY_STRING']; ?>" method="post">
-    <h2>Generate list of top 10 libraries filling requests:</h2><br>
-    Start Date:
-    <input id="top10fdatepicker" name="startdate"/>
-    End Date:
-    <input id="top10fdatepicker2" name="enddate"/>
-    <input type="hidden" name="stattype" value="top10fstats">
-    <input type="submit" value="Submit">
-  </form>
-    <?php
+$db = mysqli_connect($dbhost, $dbuser, $dbpass, $dbname);
+if (!$db) {
+    die("DB connection failed: " . htmlspecialchars(mysqli_connect_error()));
 }
+mysqli_set_charset($db, 'utf8mb4');
+
+
+// ---- Helpers ----
+function h($s)
+{
+    return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
+}
+
+function require_csrf()
+{
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $posted = $_POST['csrf'] ?? '';
+        if (!$posted || !wp_verify_nonce($posted, 'seal_stats_console')) {
+            http_response_code(400);
+            die("<div style='padding:20px;color:red;font-weight:bold;'>Bad request (CSRF).</div>");
+        }
+    }
+}
+
+function normalize_date($v)
+{
+    // expects yyyy-mm-dd from datepicker
+    $v = trim((string)$v);
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $v)) {
+        return null;
+    }
+    return $v;
+}
+
+function system_whitelist($v)
+{
+    $allowed = ['DU','MH','OU','RC','RB','SE','SB','UB'];
+    return in_array($v, $allowed, true) ? $v : null;
+}
+
+function loc_whitelist($v)
+{
+    // adjust if LOC format differs; this keeps it safe
+    $v = trim((string)$v);
+    return preg_match('/^[A-Za-z0-9_-]{1,30}$/', $v) ? $v : null;
+}
+
+// ---- Load libraries for dropdowns ----
+$libs = [];
+$res = mysqli_query($db, "SELECT loc, Name FROM `$sealLIB` WHERE participant=1 ORDER BY Name");
+if ($res) {
+    while ($row = mysqli_fetch_assoc($res)) {
+        $libs[] = $row;
+    }
+}
+
+// ---- Handle actions ----
+$action = $_POST['action'] ?? '';
+$output_html = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+
+    $start = normalize_date($_POST['startdate'] ?? '');
+    $end   = normalize_date($_POST['enddate'] ?? '');
+
+    if (!$start || !$end) {
+        $output_html = "<div style='padding:10px;border:1px solid #c00;color:#c00;'>Please enter valid Start and End dates (YYYY-MM-DD).</div>";
+    } else {
+        // Use full-day inclusive end by adding 1 day and using < end+1day
+        $start_ts = $start . " 00:00:00";
+        $end_next = date('Y-m-d', strtotime($end . ' +1 day')) . " 00:00:00";
+
+        // ---- Action routing ----
+        switch ($action) {
+
+            case 'borrow_system': {
+                $system = $_POST['system'] ?? '';
+                $system = $system === '' ? '' : system_whitelist($system);
+                if ($system === null) {
+                    $output_html = "<div style='color:#c00;'>Select a valid system.</div>";
+                    break;
+                }
+
+                // --- Summary (exclude canceled: Fill <> 6) ---
+                if ($system === '') {
+                    $sql = "
+            SELECT
+              COUNT(*) AS total,
+              SUM(CASE WHEN Fill=1 THEN 1 ELSE 0 END) AS filled,
+              SUM(CASE WHEN Fill=0 THEN 1 ELSE 0 END) AS notfilled,
+              SUM(CASE WHEN Fill=4 THEN 1 ELSE 0 END) AS expired,
+              SUM(CASE WHEN Fill=3 THEN 1 ELSE 0 END) AS notanswered
+            FROM `$sealSTAT`
+            WHERE Fill <> 6
+              AND `Timestamp` >= ? AND `Timestamp` < ?
+        ";
+                    $stmt = mysqli_prepare($db, $sql);
+                    mysqli_stmt_bind_param($stmt, 'ss', $start_ts, $end_next);
+                } else {
+                    $sql = "
+            SELECT
+              COUNT(*) AS total,
+              SUM(CASE WHEN Fill=1 THEN 1 ELSE 0 END) AS filled,
+              SUM(CASE WHEN Fill=0 THEN 1 ELSE 0 END) AS notfilled,
+              SUM(CASE WHEN Fill=4 THEN 1 ELSE 0 END) AS expired,
+              SUM(CASE WHEN Fill=3 THEN 1 ELSE 0 END) AS notanswered
+            FROM `$sealSTAT`
+            WHERE Fill <> 6
+              AND `ReqSystem` LIKE CONCAT('%', ?, '%')
+              AND `Timestamp` >= ? AND `Timestamp` < ?
+        ";
+                    $stmt = mysqli_prepare($db, $sql);
+                    mysqli_stmt_bind_param($stmt, 'sss', $system, $start_ts, $end_next);
+                }
+
+                mysqli_stmt_execute($stmt);
+                $res = mysqli_stmt_get_result($stmt);
+                $row = mysqli_fetch_assoc($res) ?: [];
+                mysqli_stmt_close($stmt);
+
+                $total       = (int)($row['total'] ?? 0);
+                $filled      = (int)($row['filled'] ?? 0);
+                $notfilled   = (int)($row['notfilled'] ?? 0);
+                $expired     = (int)($row['expired'] ?? 0);
+                $notanswered = (int)($row['notanswered'] ?? 0);
+
+                $label = ($system === '') ? 'All systems' : $system;
+
+                $output_html  = "<h2>Borrowing stats (by system)</h2>";
+                $output_html .= "<div><b>System:</b> ".h($label)." &nbsp; <b>Range:</b> ".h($start)." to ".h($end)."</div>";
+                $output_html .= "<div><b>Total requests:</b> ".h($total)."</div>";
+                $output_html .= "<div>Filled: ".h($filled)." (".h(pct2($filled, $total)).")</div>";
+                $output_html .= "<div>Not filled: ".h($notfilled)." (".h(pct2($notfilled, $total)).")</div>";
+                $output_html .= "<div>Expired: ".h($expired)." (".h(pct2($expired, $total)).")</div>";
+                $output_html .= "<div>Not answered yet: ".h($notanswered)." (".h(pct2($notanswered, $total)).")</div>";
+
+                // --- Narrative Breakdown ---
+                $output_html .= "<h3>Break down of requests</h3>";
+                if ($total <= 0) {
+                    break;
+                }
+
+                // Borrowing system -> group by DestSystem (exclude canceled)
+                if ($system === '') {
+                    $sqlSys = "
+            SELECT s.DestSystem AS other_system, COUNT(*) AS cnt
+            FROM `$sealSTAT` s
+            WHERE s.Fill <> 6
+              AND s.`Timestamp` >= ? AND s.`Timestamp` < ?
+            GROUP BY s.DestSystem
+            ORDER BY cnt DESC
+        ";
+                    $stmt = mysqli_prepare($db, $sqlSys);
+                    mysqli_stmt_bind_param($stmt, 'ss', $start_ts, $end_next);
+                } else {
+                    $sqlSys = "
+            SELECT s.DestSystem AS other_system, COUNT(*) AS cnt
+            FROM `$sealSTAT` s
+            WHERE s.Fill <> 6
+              AND s.`ReqSystem` LIKE CONCAT('%', ?, '%')
+              AND s.`Timestamp` >= ? AND s.`Timestamp` < ?
+            GROUP BY s.DestSystem
+            ORDER BY cnt DESC
+        ";
+                    $stmt = mysqli_prepare($db, $sqlSys);
+                    mysqli_stmt_bind_param($stmt, 'sss', $system, $start_ts, $end_next);
+                }
+
+                mysqli_stmt_execute($stmt);
+                $resSys = mysqli_stmt_get_result($stmt);
+
+                while ($sysRow = mysqli_fetch_assoc($resSys)) {
+                    $other = (string)($sysRow['other_system'] ?? '');
+                    $cnt   = (int)($sysRow['cnt'] ?? 0);
+
+                    $output_html .= "<div style='margin-top:14px;'>
+            ".h($cnt)." (".h(pct2($cnt, $total)).") overall requests were made to <b>".h(system_name($other))."</b>
+        </div>";
+
+                    // Itype within that destination system (exclude canceled)
+                    if ($system === '') {
+                        $sqlType = "
+                SELECT
+                  COALESCE(NULLIF(TRIM(s.Itype),''),'(none)') AS itype,
+                  COUNT(*) AS cnt,
+                  SUM(CASE WHEN s.Fill=1 THEN 1 ELSE 0 END) AS filled,
+                  SUM(CASE WHEN s.Fill=0 THEN 1 ELSE 0 END) AS notfilled,
+                  SUM(CASE WHEN s.Fill=4 THEN 1 ELSE 0 END) AS expired,
+                  SUM(CASE WHEN s.Fill=3 THEN 1 ELSE 0 END) AS notanswered
+                FROM `$sealSTAT` s
+                WHERE s.Fill <> 6
+                  AND s.DestSystem = ?
+                  AND s.`Timestamp` >= ? AND s.`Timestamp` < ?
+                GROUP BY COALESCE(NULLIF(TRIM(s.Itype),''),'(none)')
+                ORDER BY cnt DESC
+            ";
+                        $stmt2 = mysqli_prepare($db, $sqlType);
+                        mysqli_stmt_bind_param($stmt2, 'sss', $other, $start_ts, $end_next);
+                    } else {
+                        $sqlType = "
+                SELECT
+                  COALESCE(NULLIF(TRIM(s.Itype),''),'(none)') AS itype,
+                  COUNT(*) AS cnt,
+                  SUM(CASE WHEN s.Fill=1 THEN 1 ELSE 0 END) AS filled,
+                  SUM(CASE WHEN s.Fill=0 THEN 1 ELSE 0 END) AS notfilled,
+                  SUM(CASE WHEN s.Fill=4 THEN 1 ELSE 0 END) AS expired,
+                  SUM(CASE WHEN s.Fill=3 THEN 1 ELSE 0 END) AS notanswered
+                FROM `$sealSTAT` s
+                WHERE s.Fill <> 6
+                  AND s.`ReqSystem` LIKE CONCAT('%', ?, '%')
+                  AND s.DestSystem = ?
+                  AND s.`Timestamp` >= ? AND s.`Timestamp` < ?
+                GROUP BY COALESCE(NULLIF(TRIM(s.Itype),''),'(none)')
+                ORDER BY cnt DESC
+            ";
+                        $stmt2 = mysqli_prepare($db, $sqlType);
+                        mysqli_stmt_bind_param($stmt2, 'ssss', $system, $other, $start_ts, $end_next);
+                    }
+
+                    mysqli_stmt_execute($stmt2);
+                    $resType = mysqli_stmt_get_result($stmt2);
+
+                    while ($t = mysqli_fetch_assoc($resType)) {
+                        $itype = (string)($t['itype'] ?? '');
+                        $tCnt  = (int)($t['cnt'] ?? 0);
+
+                        $tFilled      = (int)($t['filled'] ?? 0);
+                        $tNotfilled   = (int)($t['notfilled'] ?? 0);
+                        $tExpired     = (int)($t['expired'] ?? 0);
+                        $tNotanswered = (int)($t['notanswered'] ?? 0);
+
+                        $output_html .= "<div style='margin-left:18px;margin-top:6px;'>
+                ".h($tCnt)." (".h(pct2($tCnt, $cnt)).") of the requests to ".h(system_name($other))." were <b>".h($itype)."</b>
+            </div>";
+
+                        $output_html .= "<div style='margin-left:34px;line-height:1.6;'>
+                ".h($tFilled)." (".h(pct2($tFilled, $tCnt)).") were filled<br>
+                ".h($tNotfilled)." (".h(pct2($tNotfilled, $tCnt)).") were not filled<br>
+                ".h($tExpired)." (".h(pct2($tExpired, $tCnt)).") were expired<br>
+                ".h($tNotanswered)." (".h(pct2($tNotanswered, $tCnt)).") were not answered
+            </div>";
+                    }
+
+                    mysqli_stmt_close($stmt2);
+                }
+
+                mysqli_stmt_close($stmt);
+                break;
+            } //end case borror system
+
+
+
+            case 'lend_system': {
+                $system = $_POST['system'] ?? '';
+                $system = $system === '' ? '' : system_whitelist($system);
+                if ($system === null) {
+                    $output_html = "<div style='color:#c00;'>Select a valid system.</div>";
+                    break;
+                }
+
+                // --- Summary (exclude canceled: Fill <> 6) ---
+                if ($system === '') {
+                    $sql = "
+            SELECT
+              COUNT(*) AS total,
+              SUM(CASE WHEN Fill=1 THEN 1 ELSE 0 END) AS filled,
+              SUM(CASE WHEN Fill=0 THEN 1 ELSE 0 END) AS notfilled,
+              SUM(CASE WHEN Fill=4 THEN 1 ELSE 0 END) AS expired,
+              SUM(CASE WHEN Fill=3 THEN 1 ELSE 0 END) AS notanswered
+            FROM `$sealSTAT`
+            WHERE Fill <> 6
+              AND `Timestamp` >= ? AND `Timestamp` < ?
+        ";
+                    $stmt = mysqli_prepare($db, $sql);
+                    mysqli_stmt_bind_param($stmt, 'ss', $start_ts, $end_next);
+                } else {
+                    $sql = "
+            SELECT
+              COUNT(*) AS total,
+              SUM(CASE WHEN Fill=1 THEN 1 ELSE 0 END) AS filled,
+              SUM(CASE WHEN Fill=0 THEN 1 ELSE 0 END) AS notfilled,
+              SUM(CASE WHEN Fill=4 THEN 1 ELSE 0 END) AS expired,
+              SUM(CASE WHEN Fill=3 THEN 1 ELSE 0 END) AS notanswered
+            FROM `$sealSTAT`
+            WHERE Fill <> 6
+              AND `DestSystem` LIKE CONCAT('%', ?, '%')
+              AND `Timestamp` >= ? AND `Timestamp` < ?
+        ";
+                    $stmt = mysqli_prepare($db, $sql);
+                    mysqli_stmt_bind_param($stmt, 'sss', $system, $start_ts, $end_next);
+                }
+
+                mysqli_stmt_execute($stmt);
+                $res = mysqli_stmt_get_result($stmt);
+                $row = mysqli_fetch_assoc($res) ?: [];
+                mysqli_stmt_close($stmt);
+
+                $total       = (int)($row['total'] ?? 0);
+                $filled      = (int)($row['filled'] ?? 0);
+                $notfilled   = (int)($row['notfilled'] ?? 0);
+                $expired     = (int)($row['expired'] ?? 0);
+                $notanswered = (int)($row['notanswered'] ?? 0);
+
+                $label = ($system === '') ? 'All systems' : $system;
+
+                $output_html  = "<h2>Lending stats (by system)</h2>";
+                $output_html .= "<div><b>System:</b> ".h($label)." &nbsp; <b>Range:</b> ".h($start)." to ".h($end)."</div>";
+                $output_html .= "<div><b>Total requests received:</b> ".h($total)."</div>";
+                $output_html .= "<div>Filled: ".h($filled)." (".h(pct2($filled, $total)).")</div>";
+                $output_html .= "<div>Not filled: ".h($notfilled)." (".h(pct2($notfilled, $total)).")</div>";
+                $output_html .= "<div>Expired: ".h($expired)." (".h(pct2($expired, $total)).")</div>";
+                $output_html .= "<div>Not answered yet: ".h($notanswered)." (".h(pct2($notanswered, $total)).")</div>";
+
+                // --- Narrative Breakdown ---
+                $output_html .= "<h3>Break down of requests</h3>";
+                if ($total <= 0) {
+                    break;
+                }
+
+                // Lending system -> group by ReqSystem (exclude canceled)
+                if ($system === '') {
+                    $sqlSys = "
+            SELECT s.ReqSystem AS other_system, COUNT(*) AS cnt
+            FROM `$sealSTAT` s
+            WHERE s.Fill <> 6
+              AND s.`Timestamp` >= ? AND s.`Timestamp` < ?
+            GROUP BY s.ReqSystem
+            ORDER BY cnt DESC
+        ";
+                    $stmt = mysqli_prepare($db, $sqlSys);
+                    mysqli_stmt_bind_param($stmt, 'ss', $start_ts, $end_next);
+                } else {
+                    $sqlSys = "
+            SELECT s.ReqSystem AS other_system, COUNT(*) AS cnt
+            FROM `$sealSTAT` s
+            WHERE s.Fill <> 6
+              AND s.`DestSystem` LIKE CONCAT('%', ?, '%')
+              AND s.`Timestamp` >= ? AND s.`Timestamp` < ?
+            GROUP BY s.ReqSystem
+            ORDER BY cnt DESC
+        ";
+                    $stmt = mysqli_prepare($db, $sqlSys);
+                    mysqli_stmt_bind_param($stmt, 'sss', $system, $start_ts, $end_next);
+                }
+
+                mysqli_stmt_execute($stmt);
+                $resSys = mysqli_stmt_get_result($stmt);
+
+                while ($sysRow = mysqli_fetch_assoc($resSys)) {
+                    $other = (string)($sysRow['other_system'] ?? '');
+                    $cnt   = (int)($sysRow['cnt'] ?? 0);
+
+                    $output_html .= "<div style='margin-top:14px;'>
+            ".h($cnt)." (".h(pct2($cnt, $total)).") overall requests were made from <b>".h(system_name($other))."</b>
+        </div>";
+
+                    // Itype within that requesting system (exclude canceled)
+                    if ($system === '') {
+                        $sqlType = "
+                SELECT
+                  COALESCE(NULLIF(TRIM(s.Itype),''),'(none)') AS itype,
+                  COUNT(*) AS cnt,
+                  SUM(CASE WHEN s.Fill=1 THEN 1 ELSE 0 END) AS filled,
+                  SUM(CASE WHEN s.Fill=0 THEN 1 ELSE 0 END) AS notfilled,
+                  SUM(CASE WHEN s.Fill=4 THEN 1 ELSE 0 END) AS expired,
+                  SUM(CASE WHEN s.Fill=3 THEN 1 ELSE 0 END) AS notanswered
+                FROM `$sealSTAT` s
+                WHERE s.Fill <> 6
+                  AND s.ReqSystem = ?
+                  AND s.`Timestamp` >= ? AND s.`Timestamp` < ?
+                GROUP BY COALESCE(NULLIF(TRIM(s.Itype),''),'(none)')
+                ORDER BY cnt DESC
+            ";
+                        $stmt2 = mysqli_prepare($db, $sqlType);
+                        mysqli_stmt_bind_param($stmt2, 'sss', $other, $start_ts, $end_next);
+                    } else {
+                        $sqlType = "
+                SELECT
+                  COALESCE(NULLIF(TRIM(s.Itype),''),'(none)') AS itype,
+                  COUNT(*) AS cnt,
+                  SUM(CASE WHEN s.Fill=1 THEN 1 ELSE 0 END) AS filled,
+                  SUM(CASE WHEN s.Fill=0 THEN 1 ELSE 0 END) AS notfilled,
+                  SUM(CASE WHEN s.Fill=4 THEN 1 ELSE 0 END) AS expired,
+                  SUM(CASE WHEN s.Fill=3 THEN 1 ELSE 0 END) AS notanswered
+                FROM `$sealSTAT` s
+                WHERE s.Fill <> 6
+                  AND s.`DestSystem` LIKE CONCAT('%', ?, '%')
+                  AND s.ReqSystem = ?
+                  AND s.`Timestamp` >= ? AND s.`Timestamp` < ?
+                GROUP BY COALESCE(NULLIF(TRIM(s.Itype),''),'(none)')
+                ORDER BY cnt DESC
+            ";
+                        $stmt2 = mysqli_prepare($db, $sqlType);
+                        mysqli_stmt_bind_param($stmt2, 'ssss', $system, $other, $start_ts, $end_next);
+                    }
+
+                    mysqli_stmt_execute($stmt2);
+                    $resType = mysqli_stmt_get_result($stmt2);
+
+                    while ($t = mysqli_fetch_assoc($resType)) {
+                        $itype = (string)($t['itype'] ?? '');
+                        $tCnt  = (int)($t['cnt'] ?? 0);
+
+                        $tFilled      = (int)($t['filled'] ?? 0);
+                        $tNotfilled   = (int)($t['notfilled'] ?? 0);
+                        $tExpired     = (int)($t['expired'] ?? 0);
+                        $tNotanswered = (int)($t['notanswered'] ?? 0);
+
+                        $output_html .= "<div style='margin-left:18px;margin-top:6px;'>
+                ".h($tCnt)." (".h(pct2($tCnt, $cnt)).") of the requests from ".h(system_name($other))." were <b>".h($itype)."</b>
+            </div>";
+
+                        $output_html .= "<div style='margin-left:34px;line-height:1.6;'>
+                ".h($tFilled)." (".h(pct2($tFilled, $tCnt)).") were filled<br>
+                ".h($tNotfilled)." (".h(pct2($tNotfilled, $tCnt)).") were not filled<br>
+                ".h($tExpired)." (".h(pct2($tExpired, $tCnt)).") were expired<br>
+                ".h($tNotanswered)." (".h(pct2($tNotanswered, $tCnt)).") were not answered
+            </div>";
+                    }
+
+                    mysqli_stmt_close($stmt2);
+                }
+
+                mysqli_stmt_close($stmt);
+                break;
+            } //end case lend system
+
+
+
+            case 'borrow_library': {
+                $loc = loc_whitelist($_POST['loc'] ?? '');
+                if (!$loc) {
+                    $output_html = "<div style='color:#c00;'>Select a valid library.</div>";
+                    break;
+                }
+
+                // --- Summary (exclude canceled) ---
+                $sql = "
+        SELECT
+          COUNT(*) AS total,
+          SUM(CASE WHEN Fill=1 THEN 1 ELSE 0 END) AS filled,
+          SUM(CASE WHEN Fill=0 THEN 1 ELSE 0 END) AS notfilled,
+          SUM(CASE WHEN Fill=4 THEN 1 ELSE 0 END) AS expired,
+          SUM(CASE WHEN Fill=3 THEN 1 ELSE 0 END) AS notanswered,
+          COALESCE(l.Name, ?) AS libname
+        FROM `$sealSTAT` s
+        LEFT JOIN `$sealLIB` l ON l.loc = ?
+        WHERE s.Fill <> 6
+          AND s.`Requester LOC` = ?
+          AND s.`Timestamp` >= ? AND s.`Timestamp` < ?
+    ";
+                $stmt = mysqli_prepare($db, $sql);
+                mysqli_stmt_bind_param($stmt, 'sssss', $loc, $loc, $loc, $start_ts, $end_next);
+                mysqli_stmt_execute($stmt);
+                $res = mysqli_stmt_get_result($stmt);
+                $row = mysqli_fetch_assoc($res) ?: [];
+                mysqli_stmt_close($stmt);
+
+                $total       = (int)($row['total'] ?? 0);
+                $filled      = (int)($row['filled'] ?? 0);
+                $notfilled   = (int)($row['notfilled'] ?? 0);
+                $expired     = (int)($row['expired'] ?? 0);
+                $notanswered = (int)($row['notanswered'] ?? 0);
+
+                $output_html  = "<h2>Borrowing stats (specific library)</h2>";
+                $output_html .= "<div><b>Library:</b> ".h($row['libname'] ?? $loc)." (".h($loc).") &nbsp; <b>Range:</b> ".h($start)." to ".h($end)."</div>";
+                $output_html .= "<div><b>Total requests:</b> ".h($total)."</div>";
+                $output_html .= "<div>Filled: ".h($filled)." (".h(pct2($filled, $total)).")</div>";
+                $output_html .= "<div>Not filled: ".h($notfilled)." (".h(pct2($notfilled, $total)).")</div>";
+                $output_html .= "<div>Expired: ".h($expired)." (".h(pct2($expired, $total)).")</div>";
+                $output_html .= "<div>Not answered yet: ".h($notanswered)." (".h(pct2($notanswered, $total)).")</div>";
+
+                // --- Breakdown ---
+                $output_html .= "<h3>Break down of requests</h3>";
+                if ($total <= 0) {
+                    break;
+                }
+
+                // Borrowing library -> group by destination system (exclude canceled)
+                $sqlSys = "
+        SELECT s.DestSystem AS other_system, COUNT(*) AS cnt
+        FROM `$sealSTAT` s
+        WHERE s.Fill <> 6
+          AND s.`Requester LOC` = ?
+          AND s.`Timestamp` >= ? AND s.`Timestamp` < ?
+        GROUP BY s.DestSystem
+        ORDER BY cnt DESC
+    ";
+                $stmt = mysqli_prepare($db, $sqlSys);
+                mysqli_stmt_bind_param($stmt, 'sss', $loc, $start_ts, $end_next);
+                mysqli_stmt_execute($stmt);
+                $resSys = mysqli_stmt_get_result($stmt);
+
+                while ($sysRow = mysqli_fetch_assoc($resSys)) {
+                    $other = (string)($sysRow['other_system'] ?? '');
+                    $cnt   = (int)($sysRow['cnt'] ?? 0);
+
+                    $output_html .= "<div style='margin-top:14px;'>
+            ".h($cnt)." (".h(pct2($cnt, $total)).") overall requests were made to <b>".h(system_name($other))."</b>
+        </div>";
+
+                    $sqlType = "
+            SELECT
+              COALESCE(NULLIF(TRIM(s.Itype),''),'(none)') AS itype,
+              COUNT(*) AS cnt,
+              SUM(CASE WHEN s.Fill=1 THEN 1 ELSE 0 END) AS filled,
+              SUM(CASE WHEN s.Fill=0 THEN 1 ELSE 0 END) AS notfilled,
+              SUM(CASE WHEN s.Fill=4 THEN 1 ELSE 0 END) AS expired,
+              SUM(CASE WHEN s.Fill=3 THEN 1 ELSE 0 END) AS notanswered
+            FROM `$sealSTAT` s
+            WHERE s.Fill <> 6
+              AND s.`Requester LOC` = ?
+              AND s.DestSystem = ?
+              AND s.`Timestamp` >= ? AND s.`Timestamp` < ?
+            GROUP BY COALESCE(NULLIF(TRIM(s.Itype),''),'(none)')
+            ORDER BY cnt DESC
+        ";
+                    $stmt2 = mysqli_prepare($db, $sqlType);
+                    mysqli_stmt_bind_param($stmt2, 'ssss', $loc, $other, $start_ts, $end_next);
+                    mysqli_stmt_execute($stmt2);
+                    $resType = mysqli_stmt_get_result($stmt2);
+
+                    while ($t = mysqli_fetch_assoc($resType)) {
+                        $itype = (string)($t['itype'] ?? '');
+                        $tCnt  = (int)($t['cnt'] ?? 0);
+
+                        $tFilled      = (int)($t['filled'] ?? 0);
+                        $tNotfilled   = (int)($t['notfilled'] ?? 0);
+                        $tExpired     = (int)($t['expired'] ?? 0);
+                        $tNotanswered = (int)($t['notanswered'] ?? 0);
+
+                        $output_html .= "<div style='margin-left:18px;margin-top:6px;'>
+                ".h($tCnt)." (".h(pct2($tCnt, $cnt)).") of the requests to ".h(system_name($other))." were <b>".h($itype)."</b>
+            </div>";
+
+                        $output_html .= "<div style='margin-left:34px;line-height:1.6;'>
+                ".h($tFilled)." (".h(pct2($tFilled, $tCnt)).") were filled<br>
+                ".h($tNotfilled)." (".h(pct2($tNotfilled, $tCnt)).") were not filled<br>
+                ".h($tExpired)." (".h(pct2($tExpired, $tCnt)).") were expired<br>
+                ".h($tNotanswered)." (".h(pct2($tNotanswered, $tCnt)).") were not answered
+            </div>";
+                    }
+
+                    mysqli_stmt_close($stmt2);
+                }
+
+                mysqli_stmt_close($stmt);
+                break;
+            }//end case borrow library
+
+
+            case 'lend_library': {
+                $loc = loc_whitelist($_POST['loc'] ?? '');
+                if (!$loc) {
+                    $output_html = "<div style='color:#c00;'>Select a valid library.</div>";
+                    break;
+                }
+
+                // --- Summary (exclude canceled) ---
+                $sql = "
+        SELECT
+          COUNT(*) AS total,
+          SUM(CASE WHEN Fill=1 THEN 1 ELSE 0 END) AS filled,
+          SUM(CASE WHEN Fill=0 THEN 1 ELSE 0 END) AS notfilled,
+          SUM(CASE WHEN Fill=4 THEN 1 ELSE 0 END) AS expired,
+          SUM(CASE WHEN Fill=3 THEN 1 ELSE 0 END) AS notanswered,
+          COALESCE(l.Name, ?) AS libname
+        FROM `$sealSTAT` s
+        LEFT JOIN `$sealLIB` l ON l.loc = ?
+        WHERE s.Fill <> 6
+          AND s.`Destination` = ?
+          AND s.`Timestamp` >= ? AND s.`Timestamp` < ?
+    ";
+                $stmt = mysqli_prepare($db, $sql);
+                mysqli_stmt_bind_param($stmt, 'sssss', $loc, $loc, $loc, $start_ts, $end_next);
+                mysqli_stmt_execute($stmt);
+                $res = mysqli_stmt_get_result($stmt);
+                $row = mysqli_fetch_assoc($res) ?: [];
+                mysqli_stmt_close($stmt);
+
+                $total       = (int)($row['total'] ?? 0);
+                $filled      = (int)($row['filled'] ?? 0);
+                $notfilled   = (int)($row['notfilled'] ?? 0);
+                $expired     = (int)($row['expired'] ?? 0);
+                $notanswered = (int)($row['notanswered'] ?? 0);
+
+                $pctLocal = function ($n) use ($total) {
+                    return $total > 0 ? number_format(($n / $total) * 100, 2).'%' : '0.00%';
+                };
+
+                $output_html  = "<h2>Lending stats (specific library)</h2>";
+                $output_html .= "<div><b>Library:</b> ".h($row['libname'] ?? $loc)." (".h($loc).") &nbsp; <b>Range:</b> ".h($start)." to ".h($end)."</div>";
+                $output_html .= "<div><b>Total requests received:</b> ".h($total)."</div>";
+                $output_html .= "<div>Filled: ".h($filled)." (".$pctLocal($filled).")</div>";
+                $output_html .= "<div>Not filled: ".h($notfilled)." (".$pctLocal($notfilled).")</div>";
+                $output_html .= "<div>Expired: ".h($expired)." (".$pctLocal($expired).")</div>";
+                $output_html .= "<div>Not answered yet: ".h($notanswered)." (".$pctLocal($notanswered).")</div>";
+
+                // --- Breakdown ---
+                $output_html .= "<h3>Break down of requests</h3>";
+                if ($total <= 0) {
+                    break;
+                }
+
+                // Group by requesting system (exclude canceled)
+                $sqlSys = "
+        SELECT s.ReqSystem AS other_system, COUNT(*) AS cnt
+        FROM `$sealSTAT` s
+        WHERE s.Fill <> 6
+          AND s.`Destination` = ?
+          AND s.`Timestamp` >= ? AND s.`Timestamp` < ?
+        GROUP BY s.ReqSystem
+        ORDER BY cnt DESC
+    ";
+                $stmt = mysqli_prepare($db, $sqlSys);
+                mysqli_stmt_bind_param($stmt, 'sss', $loc, $start_ts, $end_next);
+                mysqli_stmt_execute($stmt);
+                $resSys = mysqli_stmt_get_result($stmt);
+
+                while ($sysRow = mysqli_fetch_assoc($resSys)) {
+                    $other = (string)($sysRow['other_system'] ?? '');
+                    $cnt   = (int)($sysRow['cnt'] ?? 0);
+
+                    $output_html .= "<div style='margin-top:14px;'>
+            ".h($cnt)." (".h(pct2($cnt, $total)).") overall requests were made from <b>".h(system_name($other))."</b>
+        </div>";
+
+                    $sqlType = "
+            SELECT
+              COALESCE(NULLIF(TRIM(s.Itype),''),'(none)') AS itype,
+              COUNT(*) AS cnt,
+              SUM(CASE WHEN s.Fill=1 THEN 1 ELSE 0 END) AS filled,
+              SUM(CASE WHEN s.Fill=0 THEN 1 ELSE 0 END) AS notfilled,
+              SUM(CASE WHEN s.Fill=4 THEN 1 ELSE 0 END) AS expired,
+              SUM(CASE WHEN s.Fill=3 THEN 1 ELSE 0 END) AS notanswered
+            FROM `$sealSTAT` s
+            WHERE s.Fill <> 6
+              AND s.`Destination` = ?
+              AND s.ReqSystem = ?
+              AND s.`Timestamp` >= ? AND s.`Timestamp` < ?
+            GROUP BY COALESCE(NULLIF(TRIM(s.Itype),''),'(none)')
+            ORDER BY cnt DESC
+        ";
+                    $stmt2 = mysqli_prepare($db, $sqlType);
+                    mysqli_stmt_bind_param($stmt2, 'ssss', $loc, $other, $start_ts, $end_next);
+                    mysqli_stmt_execute($stmt2);
+                    $resType = mysqli_stmt_get_result($stmt2);
+
+                    while ($t = mysqli_fetch_assoc($resType)) {
+                        $itype = (string)($t['itype'] ?? '');
+                        $tCnt  = (int)($t['cnt'] ?? 0);
+
+                        $tFilled      = (int)($t['filled'] ?? 0);
+                        $tNotfilled   = (int)($t['notfilled'] ?? 0);
+                        $tExpired     = (int)($t['expired'] ?? 0);
+                        $tNotanswered = (int)($t['notanswered'] ?? 0);
+
+                        $output_html .= "<div style='margin-left:18px;margin-top:6px;'>
+                ".h($tCnt)." (".h(pct2($tCnt, $cnt)).") of the requests from ".h(system_name($other))." were <b>".h($itype)."</b>
+            </div>";
+
+                        $output_html .= "<div style='margin-left:34px;line-height:1.6;'>
+                ".h($tFilled)." (".h(pct2($tFilled, $tCnt)).") were filled<br>
+                ".h($tNotfilled)." (".h(pct2($tNotfilled, $tCnt)).") were not filled<br>
+                ".h($tExpired)." (".h(pct2($tExpired, $tCnt)).") were expired<br>
+                ".h($tNotanswered)." (".h(pct2($tNotanswered, $tCnt)).") were not answered
+            </div>";
+                    }
+
+                    mysqli_stmt_close($stmt2);
+                }
+
+                mysqli_stmt_close($stmt);
+                break;
+            }//end case lend library
+
+
+
+            case 'top10_fillers': {
+                $sql = "
+    SELECT
+      s.`Destination` AS loc,
+      COALESCE(l.Name, s.`Destination`) AS name,
+      COUNT(*) AS cnt
+    FROM `$sealSTAT` s
+    LEFT JOIN `$sealLIB` l ON l.loc = s.`Destination`
+    WHERE s.`Timestamp` >= ? AND s.`Timestamp` < ?
+      AND s.Fill = 1
+    GROUP BY s.`Destination`
+    ORDER BY cnt DESC
+    LIMIT 10
+  ";
+                $stmt = mysqli_prepare($db, $sql);
+                mysqli_stmt_bind_param($stmt, 'ss', $start_ts, $end_next);
+                mysqli_stmt_execute($stmt);
+                $res = mysqli_stmt_get_result($stmt);
+
+                $output_html  = "<h2>Top 10 libraries filling requests</h2>";
+                $output_html .= "<div><b>Range:</b> ".h($start)." to ".h($end)."</div>";
+                $output_html .= "<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;margin-top:8px;'>
+    <tr><th>LOC</th><th>Library</th><th>Fills</th></tr>";
+
+                while ($r = mysqli_fetch_assoc($res)) {
+                    $output_html .= "<tr>
+      <td>".h($r['loc'])."</td>
+      <td>".h($r['name'])."</td>
+      <td>".h($r['cnt'])."</td>
+    </tr>";
+                }
+                $output_html .= "</table>";
+
+                mysqli_stmt_close($stmt);
+                break;
+            }
+
+
+            default:
+                $output_html = "<div style='color:#c00;'>Unknown action.</div>";
+        }
+    }
+}
+
+// Default date values (last 7 days)
+$default_start = date('Y-m-d', strtotime('-7 days'));
+$default_end   = date('Y-m-d');
 ?>
+<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+<script>
+jQuery(function($){
+  $(".seal-date").datepicker({ dateFormat: "yy-mm-dd" });
+});
+</script>
+
+<div style="max-width:1100px;margin:0 auto;padding:10px;">
+  <h1>SEAL Admin Stats</h1>
+
+  <?php if ($output_html) {
+      echo "<div style='padding:12px;border:1px solid #ddd;margin:10px 0;'>$output_html</div>";
+  } ?>
+
+  <hr>
+
+  <h2>Borrowing stats (by system)</h2>
+  <form method="post">
+    <input type="hidden" name="csrf" value="<?php echo h($csrf); ?>">
+    <input type="hidden" name="action" value="borrow_system">
+    Start Date: <input class="seal-date" name="startdate" value="<?php echo h($default_start); ?>">
+    End Date: <input class="seal-date" name="enddate" value="<?php echo h($default_end); ?>">
+    <br><br>
+    Requesting Library System:
+    <select name="system">
+      <option value="">All systems</option>
+      <option value="DU">Dutchess BOCES</option>
+      <option value="MH">Mid-Hudson Library System</option>
+      <option value="OU">Orange Ulster BOCES</option>
+      <option value="RC">Ramapo Catskill Library System</option>
+      <option value="RB">Rockland BOCES</option>
+      <option value="SE">SENYLRC</option>
+      <option value="SB">Sullivan BOCES</option>
+      <option value="UB">Ulster BOCES</option>
+    </select>
+    <button type="submit">Run</button>
+  </form>
+
+  <hr>
+
+  <h2>Lending stats (by system)</h2>
+  <form method="post">
+    <input type="hidden" name="csrf" value="<?php echo h($csrf); ?>">
+    <input type="hidden" name="action" value="lend_system">
+    Start Date: <input class="seal-date" name="startdate" value="<?php echo h($default_start); ?>">
+    End Date: <input class="seal-date" name="enddate" value="<?php echo h($default_end); ?>">
+    <br><br>
+    Requesting Library System:
+    <select name="system" >
+      <option value="">All systems</option>
+      <option value="DU">Dutchess BOCES</option>
+      <option value="MH">Mid-Hudson Library System</option>
+      <option value="OU">Orange Ulster BOCES</option>
+      <option value="RC">Ramapo Catskill Library System</option>
+      <option value="RB">Rockland BOCES</option>
+      <option value="SE">SENYLRC</option>
+      <option value="SB">Sullivan BOCES</option>
+      <option value="UB">Ulster BOCES</option>
+    </select>
+    <button type="submit">Run</button>
+  </form>
+
+  <hr>
+
+  <h2>Borrowing stats (specific library)</h2>
+  <form method="post">
+    <input type="hidden" name="csrf" value="<?php echo h($csrf); ?>">
+    <input type="hidden" name="action" value="borrow_library">
+    Start Date: <input class="seal-date" name="startdate" value="<?php echo h($default_start); ?>">
+    End Date: <input class="seal-date" name="enddate" value="<?php echo h($default_end); ?>">
+    <br><br>
+    Library:
+    <select name="loc" required>
+      <option value="">Select a library</option>
+      <?php foreach ($libs as $l) { ?>
+        <option value="<?php echo h($l['loc']); ?>"><?php echo h($l['Name']); ?></option>
+      <?php } ?>
+    </select>
+    <button type="submit">Run</button>
+  </form>
+
+  <hr>
+
+  <h2>Lending stats (specific library)</h2>
+  <form method="post">
+    <input type="hidden" name="csrf" value="<?php echo h($csrf); ?>">
+    <input type="hidden" name="action" value="lend_library">
+    Start Date: <input class="seal-date" name="startdate" value="<?php echo h($default_start); ?>">
+    End Date: <input class="seal-date" name="enddate" value="<?php echo h($default_end); ?>">
+    <br><br>
+    Library:
+    <select name="loc" required>
+      <option value="">Select a library</option>
+      <?php foreach ($libs as $l) { ?>
+        <option value="<?php echo h($l['loc']); ?>"><?php echo h($l['Name']); ?></option>
+      <?php } ?>
+    </select>
+    <button type="submit">Run</button>
+  </form>
+
+  <hr>
+
+  <h2>Expired requests</h2>
+  <form method="post">
+    <input type="hidden" name="csrf" value="<?php echo h($csrf); ?>">
+    <input type="hidden" name="action" value="expired_list">
+    Start Date: <input class="seal-date" name="startdate" value="<?php echo h($default_start); ?>">
+    End Date: <input class="seal-date" name="enddate" value="<?php echo h($default_end); ?>">
+    <button type="submit">Run</button>
+  </form>
+
+  <hr>
+
+  <h2>Top 10 libraries making requests</h2>
+  <form method="post">
+    <input type="hidden" name="csrf" value="<?php echo h($csrf); ?>">
+    <input type="hidden" name="action" value="top10_requesters">
+    Start Date: <input class="seal-date" name="startdate" value="<?php echo h($default_start); ?>">
+    End Date: <input class="seal-date" name="enddate" value="<?php echo h($default_end); ?>">
+    <button type="submit">Run</button>
+  </form>
+
+  <hr>
+
+  <h2>Top 10 libraries filling requests</h2>
+  <form method="post">
+    <input type="hidden" name="csrf" value="<?php echo h($csrf); ?>">
+    <input type="hidden" name="action" value="top10_fillers">
+    Start Date: <input class="seal-date" name="startdate" value="<?php echo h($default_start); ?>">
+    End Date: <input class="seal-date" name="enddate" value="<?php echo h($default_end); ?>">
+    <button type="submit">Run</button>
+  </form>
+
+</div>

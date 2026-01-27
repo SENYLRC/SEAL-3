@@ -108,11 +108,21 @@ function itemstatus($fill, $receiveaccount, $returnaccount, $returndate, $receiv
     if ($fillNoFillDate == '0000-00-00') {
         $fillNoFillDate = '';
     }
-    if ($fill == "1") $fill = "Filled<br>" . $fillNoFillDate;
-    if ($fill == "0") $fill = "Not Filled<br>" . $fillNoFillDate;
-    if ($fill == "3") $fill = "No Answer";
-    if ($fill == "4") $fill = "Expired";
-    if ($fill == "6") $fill = "Canceled";
+    if ($fill == "1") {
+        $fill = "Filled<br>" . $fillNoFillDate;
+    }
+    if ($fill == "0") {
+        $fill = "Not Filled<br>" . $fillNoFillDate;
+    }
+    if ($fill == "3") {
+        $fill = "No Answer";
+    }
+    if ($fill == "4") {
+        $fill = "Expired";
+    }
+    if ($fill == "6") {
+        $fill = "Canceled";
+    }
 
     if ((strlen($receiveaccount) > 1) && (strlen($returnaccount) < 1) && (strlen($checkinaccount) < 1)) {
         $fill = "Loan Item Received<br>" . $receivedate;
@@ -180,9 +190,15 @@ function normalize_availability($itemavail)
 
 function set_availability($itemavail)
 {
-    if ($itemavail == 1) return "Available";
-    if ($itemavail == 0) return "Unavailable";
-    if ($itemavail == 2) return "UNKNOWN";
+    if ($itemavail == 1) {
+        return "Available";
+    }
+    if ($itemavail == 0) {
+        return "Unavailable";
+    }
+    if ($itemavail == 2) {
+        return "UNKNOWN";
+    }
 }
 
 function set_koha_availability($itemavail)
@@ -257,15 +273,15 @@ function find_locationinfo($locationalias, $locationname)
     mysqli_select_db($db, $dbname);
 
     if ($locationname == "Mid-Hudson Library System") {
-        $GETLISTSQL="SELECT `loc`,`participant`,`ill_email`,`suspend`,`system`,`Name`,`alias`
+        $GETLISTSQL = "SELECT `loc`,`participant`,`ill_email`,`suspend`,`system`,`Name`,`alias`
                      FROM `$sealLIB`
                      WHERE alias LIKE '%".$locationalias."%' AND `system`='MH'";
     } elseif ($locationname == "Sullivan School Library System") {
-        $GETLISTSQL="SELECT `loc`,`participant`,`ill_email`,`suspend`,`system`,`Name`,`alias`
+        $GETLISTSQL = "SELECT `loc`,`participant`,`ill_email`,`suspend`,`system`,`Name`,`alias`
                      FROM `$sealLIB`
                      WHERE alias LIKE '%".$locationalias."%' AND `system`='SB'";
     } else {
-        $GETLISTSQL="SELECT `loc`,`participant`,`ill_email`,`suspend`,`system`,`Name`,`alias`
+        $GETLISTSQL = "SELECT `loc`,`participant`,`ill_email`,`suspend`,`system`,`Name`,`alias`
                      FROM `$sealLIB`
                      WHERE alias = '$locationalias'";
     }
@@ -283,34 +299,47 @@ function check_itemtype($destill, $itemtype, $destlibsystem)
     $db = mysqli_connect($dbhost, $dbuser, $dbpass);
     mysqli_select_db($db, $dbname);
 
-    $GETLISTSQL="SELECT `Name`,book_loan,av_loan,ejournal_request,theses_loan,ebook_request
+    $GETLISTSQL = "SELECT `Name`,book_loan,av_loan,ejournal_request,theses_loan,ebook_request
                  FROM `$sealLIB`
                  WHERE loc = '$destill'";
     $result = mysqli_query($db, $GETLISTSQL);
 
     while ($row = $result->fetch_assoc()) {
-        $libname=$row['Name'];
+        $libname = $row['Name'];
         if ($libname == 'New York State Library') {
             return 1; // allow all
         }
         if ($itemtype == "other") {
-            if ($destlibsystem == 'RC') return 0;
-            else return 1;
+            if ($destlibsystem == 'RC') {
+                return 0;
+            } else {
+                return 1;
+            }
         }
         if (($itemtype == "book") || ($itemtype == "book (large print)")) {
-            if ($row['book_loan']=="Yes") return 1;
+            if ($row['book_loan'] == "Yes") {
+                return 1;
+            }
         }
         if (($itemtype == 'journal') || ($itemtype == 'journal (electronic)')) {
-            if ($row['ejournal_request']=="Yes") return 1;
+            if ($row['ejournal_request'] == "Yes") {
+                return 1;
+            }
         }
         if (($itemtype == 'book (electronic)') || ($itemtype == 'web')) {
-            if ($row['ebook_request']=="Yes") return 1;
+            if ($row['ebook_request'] == "Yes") {
+                return 1;
+            }
         }
         if (($itemtype == 'recording') || ($itemtype == 'video') || ($itemtype == 'audio') || ($itemtype == 'video-dvd')) {
-            if ($row['av_loan']=="Yes") return 1;
+            if ($row['av_loan'] == "Yes") {
+                return 1;
+            }
         }
         if (($itemtype == 'other') || ($itemtype == 'music-score') || ($itemtype == 'map') || ($itemtype == 'other (electronic)')) {
-            if ($row['theses_loan']=="Yes") return 1;
+            if ($row['theses_loan'] == "Yes") {
+                return 1;
+            }
         }
     }
     return 0;
@@ -320,15 +349,16 @@ function check_itemtype($destill, $itemtype, $destlibsystem)
 // Datepicker enqueue
 // -----------------------------------------------------------------------------
 
-function liblenderstat_enqueue_datepicker() {
-  wp_enqueue_script('jquery');
-  wp_enqueue_script('jquery-ui-datepicker');
-  wp_enqueue_style(
-    'jquery-ui-css',
-    'https://code.jquery.com/ui/1.13.3/themes/base/jquery-ui.css',
-    [],
-    '1.13.3'
-  );
+function liblenderstat_enqueue_datepicker()
+{
+    wp_enqueue_script('jquery');
+    wp_enqueue_script('jquery-ui-datepicker');
+    wp_enqueue_style(
+        'jquery-ui-css',
+        'https://code.jquery.com/ui/1.13.3/themes/base/jquery-ui.css',
+        [],
+        '1.13.3'
+    );
 }
 add_action('wp_enqueue_scripts', 'liblenderstat_enqueue_datepicker');
 
@@ -337,16 +367,18 @@ add_action('wp_enqueue_scripts', 'liblenderstat_enqueue_datepicker');
 // -----------------------------------------------------------------------------
 
 if (!function_exists('attr_checked')) {
-    function attr_checked($val) {
+    function attr_checked($val)
+    {
         if (function_exists('checked')) {
             return checked($val, 'yes', false);
         }
-        return ( (string)$val === 'yes' || $val === true || $val === 1 || $val === '1' ) ? 'checked="checked"' : '';
+        return ((string)$val === 'yes' || $val === true || $val === 1 || $val === '1') ? 'checked="checked"' : '';
     }
 }
 
 if (!function_exists('attr_selected')) {
-    function attr_selected($value, $current) {
+    function attr_selected($value, $current)
+    {
         if (function_exists('selected')) {
             return selected((string)$value, (string)$current, false);
         }
@@ -354,7 +386,8 @@ if (!function_exists('attr_selected')) {
     }
 }
 
-function build_actions($row) {
+function build_actions($row)
+{
     $illNUB    = $row["illNUB"];
     $fill      = $row["Fill"];
     $receive   = $row["receiveAccount"];
@@ -420,7 +453,8 @@ function build_actions($row) {
 // -----------------------------------------------------------------------------
 // Build action buttons for lender-history and similar pages
 // -----------------------------------------------------------------------------
-function build_lender_actions($illNUB, $fill, $receive, $return, $checkin, $renewReq, $daysdiff) {
+function build_lender_actions($illNUB, $fill, $receive, $return, $checkin, $renewReq, $daysdiff)
+{
     ob_start();
 
     if ($fill == 0 || $fill == 6) {
@@ -480,7 +514,8 @@ function build_lender_actions($illNUB, $fill, $receive, $return, $checkin, $rene
 
     return ob_get_clean();
 }
-function self_url() {
+function self_url()
+{
     if (function_exists('get_permalink')) {
         return get_permalink(); // current WP page URL
     }
@@ -488,6 +523,56 @@ function self_url() {
     return $_SERVER['REQUEST_URI'];
 }
 
+
+function parse_ymd_date($s)
+{
+    $s = trim((string)$s);
+    if ($s === '') {
+        return null;
+    }
+
+    $dt = DateTime::createFromFormat('Y-m-d', $s);
+    if (!$dt) {
+        return null;
+    }
+
+    // Ensure strict match (rejects 2025-13-40, etc.)
+    $errors = DateTime::getLastErrors();
+    if (!empty($errors['warning_count']) || !empty($errors['error_count'])) {
+        return null;
+    }
+
+    $dt->setTime(0, 0, 0);
+    return $dt;
+}
+
+function ymd_today()
+{
+    $t = new DateTime('today');
+    $t->setTime(0, 0, 0);
+    return $t;
+}
+
+function system_name($code)
+{
+    $map = [
+      'MH' => 'Mid Hudson Library System',
+      'RC' => 'Ramapo Catskill Library System',
+      'DU' => 'Dutchess BOCES',
+      'OU' => 'Orange Ulster BOCES',
+      'RB' => 'Rockland BOCES',
+      'SB' => 'Sullivan BOCES',
+      'UB' => 'Ulster BOCES',
+      'SE' => 'SENYLRC Group',
+    ];
+    return $map[$code] ?? $code;
+}
+function pct2($n, $d)
+{
+    $n = (int)$n;
+    $d = (int)$d;
+    return $d > 0 ? number_format(($n / $d) * 100, 2) . '%' : '0.00%';
+}
 
 
 ?>
