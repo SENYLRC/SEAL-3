@@ -1,5 +1,4 @@
 <?php
-
 /**
  * SEAL / 3-Day Reminder Script (Business Day Logic)
  * ------------------------------------------------------------
@@ -17,21 +16,20 @@ error_log(date('c') . " - ===== Starting seal_3day_reminder.php =====\n", 3, $lo
 // ----------------------------------------------------
 //  Auto-Updating Holiday Function (Nager.Date + Winter Break)
 // ----------------------------------------------------
-function getHolidaysAuto($country = 'US')
-{
+function getHolidaysAuto($country = 'US') {
     $currentYear = (int)date('Y');
     $month = (int)date('n');
 
-    // Always include previous + current year
-    $years = [$currentYear - 1, $currentYear];
+// Always include previous + current year
+$years = [$currentYear - 1, $currentYear];
 
-    // If December, include next year as well
-    if ($month === 12) {
-        $years[] = $currentYear + 1;
-    }
+// If December, include next year as well
+if ($month === 12) {
+    $years[] = $currentYear + 1;
+}
 
-    $years = array_values(array_unique($years));
-    sort($years);
+$years = array_values(array_unique($years));
+sort($years);
 
 
     $holidays = [];
@@ -45,9 +43,7 @@ function getHolidaysAuto($country = 'US')
         // Cached JSON (valid ≤ 7 days)
         if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < 604800) {
             $data = json_decode(file_get_contents($cacheFile), true);
-            if (!is_array($data)) {
-                $data = [];
-            }
+            if (!is_array($data)) $data = [];
         } else {
             $context = stream_context_create(['http' => ['timeout' => 10]]);
             $json = @file_get_contents($url, false, $context);
@@ -96,8 +92,7 @@ $db->set_charset("utf8mb4");
 // ----------------------------------------------------
 //  Helper functions for business days
 // ----------------------------------------------------
-function isBusinessDay(string $ymd, array $holidays): bool
-{
+function isBusinessDay(string $ymd, array $holidays): bool {
     $dow = (int)date('N', strtotime($ymd)); // 1=Mon .. 7=Sun
     return $dow < 6 && !in_array($ymd, $holidays, true);
 }
@@ -105,8 +100,7 @@ function isBusinessDay(string $ymd, array $holidays): bool
 /**
  * Add exactly $days business days to $startDate, skipping weekends/holidays
  */
-function addBusinessDays(string $startDate, int $days, array $holidays, bool $includeStart = false): string
-{
+function addBusinessDays(string $startDate, int $days, array $holidays, bool $includeStart = false): string {
     $tz   = new DateTimeZone('America/New_York');
     $date = new DateTime($startDate, $tz);
 
@@ -171,6 +165,12 @@ while ($row = mysqli_fetch_assoc($retval)) {
     $reqnote     = $row["reqnote"];
     $fname       = $row["Requester person"];
     $email       = $row["requesterEMAIL"];
+// Normalize requester email list (supports comma or semicolon separated)
+$reqEmails = preg_split('/[;,]+/', (string)$email);
+$reqEmails = array_filter(array_map('trim', $reqEmails), fn($v) => $v !== '' && filter_var($v, FILTER_VALIDATE_EMAIL));
+$email_to_requester = implode(',', array_values(array_unique($reqEmails)));
+
+
     $wphone      = $row["requesterPhone"];
 
     $reqdate = substr($timestamp, 0, 10);
@@ -275,7 +275,7 @@ while ($row = mysqli_fetch_assoc($retval)) {
     // Normalize + split multiple addresses on ';'
     $destemailarray = array_filter(
         array_map('trim', explode(';', $destemail)),
-        fn ($v) => $v !== ''
+        fn($v) => $v !== ''
     );
 
     if (empty($destemailarray)) {
@@ -350,7 +350,7 @@ while ($row = mysqli_fetch_assoc($retval)) {
     // Send emails
     // ------------------------------------------------
     $destSent = mail($email_to, $subject, $messagedest, $headers, "-f donotreply@senylrc.org");
-    $reqSent  = mail($email, $subject, $messagereq, $headers, "-f donotreply@senylrc.org");
+    $reqSent  = mail($email_to_requester,    $subject, $messagereq, $headers, "-f donotreply@senylrc.org");
 
     if ($destSent || $reqSent) {
         $sqlupdate = "UPDATE `$sealSTAT`
@@ -370,3 +370,4 @@ while ($row = mysqli_fetch_assoc($retval)) {
 mysqli_close($db);
 error_log(date('c') . " - ===== Completed seal_3day_reminder.php =====\n", 3, $logfile);
 echo "3-day reminder processing complete.\n";
+?>

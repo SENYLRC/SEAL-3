@@ -225,7 +225,12 @@ while ($row = mysqli_fetch_assoc($res)) {
     $title       = $row["Title"];
     $requester   = $row["Requester lib"];
     $email       = trim($row["requesterEMAIL"]);
-    $destination = trim($row["Destination"]);
+// Normalize requester email list (supports comma or semicolon separated)
+$reqEmails = preg_split('/[;,]+/', (string)$email);
+$reqEmails = array_filter(array_map('trim', $reqEmails), fn($v) => $v !== '' && filter_var($v, FILTER_VALIDATE_EMAIL));
+$email_to_requester = implode(',', array_values(array_unique($reqEmails)));
+ 
+   $destination = trim($row["Destination"]);
 
     // Build a nice display for the lending library: "Name (CODE)" or just CODE if name missing
     $lenderCode = $destination; // LOC code from sealSTAT
@@ -346,7 +351,7 @@ while ($row = mysqli_fetch_assoc($res)) {
 ";
 
     // Notify requester
-    mail($email, $subject, $message, $headers, "-f donotreply@senylrc.org");
+    mail($email_to_requester, $subject, $message, $headers, "-f donotreply@senylrc.org");
 
     // ----------------------------------------------------
     //  Notify the LENDING library

@@ -325,7 +325,20 @@ $illsystemhost = $_SERVER["SERVER_NAME"];
 
         $fname = trim(mysqli_real_escape_string($db, $_POST['fname']));
         $lname = trim(mysqli_real_escape_string($db, $_POST['lname']));
-        $email = trim(mysqli_real_escape_string($db, $_POST['email']));
+        
+        $primary_email = trim($_POST['email']);
+
+$alt_email = get_user_meta($current_user->ID, 'alt_email', true);
+$alt_email = is_string($alt_email) ? trim($alt_email) : '';
+
+$combined_email = $primary_email;
+
+if ($alt_email !== '' && is_email($alt_email)) {
+    $combined_email .= ', ' . $alt_email;
+}
+
+$email = mysqli_real_escape_string($db, $combined_email);
+
         $needbydate = trim(mysqli_real_escape_string($db, $_POST['needbydate']));
         $reqnote = trim(mysqli_real_escape_string($db, $_POST['reqnote']));
         $patronnote = trim(mysqli_real_escape_string($db, $_POST['patronnote']));
@@ -571,7 +584,8 @@ if ($illiadtxnub === '' || !ctype_digit($illiadtxnub) || strlen($illiadtxnub) < 
             }
         }// end the $libilliad check
 
-        $requester_email = $_POST['email'];
+        $requester_email = $combined_email;
+
         $lib_parts = explode(':', $_POST['libdestination'][0]);
         $destination_email = $lib_parts[6]; // Can be semicolon-separated list
 
@@ -835,9 +849,9 @@ return;
         <input type="text" id="reqnote" name="reqnote" style="width:100%;">
       </div>
       <div class="full-row" style="grid-column:1/-1;">
-        
+       
         <label for="patronnote">Patron Name or Barcode</label><br>
-        <em>Patron information is optional; please follow your local policies regarding patron privacy.</em>
+ <em>Patron information is optional; please follow your local policies regarding patron privacy.</em>
         <input type="text" id="patronnote" name="patronnote" style="width:100%;">
       </div>
 

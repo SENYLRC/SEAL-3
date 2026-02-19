@@ -112,10 +112,7 @@ $FromLender = $_POST["FromLender"] ?? ($_REQUEST["FromLender"] ?? '');
 $reqnumb   = mysqli_real_escape_string($db, $reqnumb);
 $reqanswer = mysqli_real_escape_string($db, $reqanswer);
 
-function esc_out($s)
-{
-    return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-}
+function esc_out($s){ return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $FromLender != 1) {
 
@@ -159,12 +156,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $FromLender != 1) {
         $row = mysqli_fetch_array($result);
 
         $title         = $row['Title'];
-        $requesterEMAIL = $row['requesterEMAIL'];
+        $requesterEMAIL= $row['requesterEMAIL'];
         $destlib       = $row['Destination'];
 
         // Get the Destination Name
-        $GETLISTSQLDEST = "SELECT `Name`, `ill_email` FROM `$sealLIB` WHERE loc like '$destlib' LIMIT 1";
-        $resultdest = mysqli_query($db, $GETLISTSQLDEST);
+        $GETLISTSQLDEST="SELECT `Name`, `ill_email` FROM `$sealLIB` WHERE loc like '$destlib' LIMIT 1";
+        $resultdest=mysqli_query($db, $GETLISTSQLDEST);
         while ($rowdest = mysqli_fetch_assoc($resultdest)) {
             $destlib   = $rowdest["Name"];
             $destemail = $rowdest["ill_email"];
@@ -182,27 +179,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $FromLender != 1) {
         if ($resfill == '1') {
 
             $shiptxt = '';
-            if ($shipmethod == "usps") {
-                $shiptxt = 'US Mail';
-            }
-            if ($shipmethod == "mhls") {
-                $shiptxt = 'Mid-Hudson Courier';
-            }
-            if ($shipmethod == "rcls") {
-                $shiptxt = 'RCLS Courier';
-            }
-            if ($shipmethod == "empire") {
-                $shiptxt = 'Empire Delivery';
-            }
-            if ($shipmethod == "ups") {
-                $shiptxt = 'UPS';
-            }
-            if ($shipmethod == "fedex") {
-                $shiptxt = 'FedEx';
-            }
-            if ($shipmethod == "other") {
-                $shiptxt = 'Other';
-            }
+            if($shipmethod=="usps")   { $shiptxt='US Mail'; }
+            if($shipmethod=="mhls")   { $shiptxt='Mid-Hudson Courier'; }
+            if($shipmethod=="rcls")   { $shiptxt='RCLS Courier'; }
+            if($shipmethod=="empire") { $shiptxt='Empire Delivery'; }
+            if($shipmethod=="ups")    { $shiptxt='UPS'; }
+            if($shipmethod=="fedex")  { $shiptxt='FedEx'; }
+            if($shipmethod=="other")  { $shiptxt='Other'; }
 
             $message = "Your ILL request $reqnumb for $title will be filled by $destlib <br>" .
                        "Due Date: $duedate<br><br>" .
@@ -219,24 +202,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $FromLender != 1) {
         } else {
 
             $reasontxt = '';
-            if ($nofillreason == '20') {
-                $reasontxt = 'In Use';
-            }
-            if ($nofillreason == '21') {
-                $reasontxt = 'Lost';
-            }
-            if ($nofillreason == '22') {
-                $reasontxt = 'Non-Circulating';
-            }
-            if ($nofillreason == '23') {
-                $reasontxt = 'Not on shelf';
-            }
-            if ($nofillreason == '24') {
-                $reasontxt = 'Poor condition';
-            }
-            if ($nofillreason == '25') {
-                $reasontxt = 'Too New';
-            }
+            if ($nofillreason=='20') { $reasontxt='In Use'; }
+            if ($nofillreason=='21') { $reasontxt='Lost'; }
+            if ($nofillreason=='22') { $reasontxt='Non-Circulating'; }
+            if ($nofillreason=='23') { $reasontxt='Not on shelf'; }
+            if ($nofillreason=='24') { $reasontxt='Poor condition'; }
+            if ($nofillreason=='25') { $reasontxt='Too New'; }
 
             $message = "Your ILL request $reqnumb for $title can not be filled by $destlib.<br>" .
                        "Reason request can not be filled: $reasontxt" .
@@ -263,23 +234,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $FromLender != 1) {
         echo "<h6>Recommend shipping methods</h6>";
 
         // Determine borrower/lender shipping compatibility (unchanged logic)
-        $LibInLISTSQL = "SELECT `Requester LOC`, `Destination` FROM `$sealSTAT` WHERE `illNUB` = '$reqnumb'";
+        $LibInLISTSQL="SELECT `Requester LOC`, `Destination` FROM `$sealSTAT` WHERE `illNUB` = '$reqnumb'";
         $LibGETLIST = mysqli_query($db, $LibInLISTSQL);
         $Librow = mysqli_fetch_assoc($LibGETLIST);
 
         $reqlib = $Librow["Requester LOC"];
         $destlib = strtolower($Librow["Destination"]);
 
-        $getlenderoptions = "SELECT lbsyscourier,lbUSPS,lbEmpire,lbCommCourier FROM `$sealLIB` WHERE `loc` ='$destlib'";
+        $getlenderoptions="SELECT lbsyscourier,lbUSPS,lbEmpire,lbCommCourier FROM `$sealLIB` WHERE `loc` ='$destlib'";
         $GETLISTlendOPT = mysqli_query($db, $getlenderoptions);
         $rowlendopt = mysqli_fetch_assoc($GETLISTlendOPT);
 
         $lbsyscourier1 = $rowlendopt["lbsyscourier"];
         $lbUSPS1       = $rowlendopt["lbUSPS"];
         $lbEmpire1     = $rowlendopt["lbEmpire"];
-        $lbCommCourier1 = $rowlendopt["lbCommCourier"];
+        $lbCommCourier1= $rowlendopt["lbCommCourier"];
 
-        $getborrowptions = "SELECT lbsyscourier,lbUSPS,lbEmpire,lbCommCourier FROM `$sealLIB` WHERE `loc` ='$reqlib'";
+        $getborrowptions="SELECT lbsyscourier,lbUSPS,lbEmpire,lbCommCourier FROM `$sealLIB` WHERE `loc` ='$reqlib'";
         $GETLISTborrowOPT = mysqli_query($db, $getborrowptions);
         $rowborrowdopt = mysqli_fetch_assoc($GETLISTborrowOPT);
 
@@ -288,7 +259,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $FromLender != 1) {
         $lbEmpire2      = $rowborrowdopt["lbEmpire"];
         $lbCommCourier2 = $rowborrowdopt["lbCommCourier"];
 
-        $illdelmes = '0';
+        $illdelmes='0';
         if (($lbEmpire1 === "Yes") && ($lbEmpire2 === "Yes")) {
             echo "<p class='green-text'>OK to ship via Empire Library Delivery</p>";
             $illdelmes++;
