@@ -295,6 +295,10 @@ function find_locationinfo($locationalias, $locationname)
 
 function check_itemtype($destill, $itemtype, $destlibsystem)
 {
+    // If no item type provided, allow it
+    if (empty($itemtype)) {
+        return 1;
+    }
     include '/var/www/seal_wp_script/seal_db.inc';
     $db = mysqli_connect($dbhost, $dbuser, $dbpass);
     mysqli_select_db($db, $dbname);
