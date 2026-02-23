@@ -140,6 +140,13 @@ $idc      = $_GET['id'] ?? '';
 
 $reqserverurl = 'https://senylrc.indexdata.com/service-proxy/?command=record\\&windowid=';
 $cmd = "curl -b JSESSIONID=$jession $reqserverurl$windowid\\&id=" . urlencode($idc);
+// Show the exact curl (staff only)
+//if ($staff_debug) {
+//    echo "<div style='padding:10px;border:1px dashed #999;margin:10px 0;'>";
+////   echo "<b>DEBUG curl (record):</b><br><pre>" . htmlspecialchars($cmd, ENT_QUOTES) . "</pre>";
+//   echo "</div>";
+//   echo "<!-- DEBUG curl (record):\n$cmd\n-->\n";
+//}
 $output = shell_exec($cmd);
 
 // Parse XML
@@ -325,25 +332,25 @@ $illsystemhost = $_SERVER["SERVER_NAME"];
 
         $fname = trim(mysqli_real_escape_string($db, $_POST['fname']));
         $lname = trim(mysqli_real_escape_string($db, $_POST['lname']));
-        
+
         $primary_email = trim($_POST['email']);
 
-$alt_email = get_user_meta($current_user->ID, 'alt_email', true);
-$alt_email = is_string($alt_email) ? trim($alt_email) : '';
+        $alt_email = get_user_meta($current_user->ID, 'alt_email', true);
+        $alt_email = is_string($alt_email) ? trim($alt_email) : '';
 
-$combined_email = $primary_email;
+        $combined_email = $primary_email;
 
-if ($alt_email !== '' && is_email($alt_email)) {
-    $combined_email .= ', ' . $alt_email;
-}
+        if ($alt_email !== '' && is_email($alt_email)) {
+            $combined_email .= ', ' . $alt_email;
+        }
 
-$email = mysqli_real_escape_string($db, $combined_email);
+        $email = mysqli_real_escape_string($db, $combined_email);
 
         $needbydate = trim(mysqli_real_escape_string($db, $_POST['needbydate']));
         $reqnote = trim(mysqli_real_escape_string($db, $_POST['reqnote']));
         $patronnote = trim(mysqli_real_escape_string($db, $_POST['patronnote']));
         $wphone = trim(mysqli_real_escape_string($db, $_POST['wphone']));
-      
+
         // -------------------------------
         // Article field handling (unchanged)
         // -------------------------------
@@ -542,32 +549,32 @@ $email = mysqli_real_escape_string($db, $combined_email);
 
             // If response does not have a TransactionNumber, send email
             // (treat as failure if missing OR not numeric OR too short)
-if ($illiadtxnub === '' || !ctype_digit($illiadtxnub) || strlen($illiadtxnub) < 4) {
+            if ($illiadtxnub === '' || !ctype_digit($illiadtxnub) || strlen($illiadtxnub) < 4) {
 
-    $headers  = "From: Southeastern SEAL <donotreply@senylrc.org>\r\n";
-    $headers .= "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
-    $headers  = preg_replace('/(?<!\r)\n/', "\r\n", $headers);
+                $headers  = "From: Southeastern SEAL <donotreply@senylrc.org>\r\n";
+                $headers .= "MIME-Version: 1.0\r\n";
+                $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
+                $headers  = preg_replace('/(?<!\r)\n/', "\r\n", $headers);
 
-    $messagereq = ""
-      . "<p><b>ILLiad API Failure</b></p>"
-      . "<p><b>SEAL ILL:</b> " . htmlspecialchars($illnum) . "</p>"
-      . "<p><b>Destination LOC:</b> " . htmlspecialchars($destloc) . "</p>"
-      . "<p><b>Requester LOC:</b> " . htmlspecialchars($reqLOCcode) . "</p>"
-      . "<p><b>ILLiad URL:</b> " . htmlspecialchars($libilliadurl) . "</p>"
-      . "<p><b>Returned TransactionNumber:</b> " . htmlspecialchars($illiadtxnub) . "</p>"
-      . "<p><b>Returned TransactionStatus:</b> " . htmlspecialchars($illstatus) . "</p>"
-      . "<p><b>Payload Sent (JSON):</b><br><pre>" . htmlspecialchars($json_enc) . "</pre></p>"
-      . "<p><b>Raw Response:</b><br><pre>" . htmlspecialchars($output) . "</pre></p>";
+                $messagereq = ""
+                  . "<p><b>ILLiad API Failure</b></p>"
+                  . "<p><b>SEAL ILL:</b> " . htmlspecialchars($illnum) . "</p>"
+                  . "<p><b>Destination LOC:</b> " . htmlspecialchars($destloc) . "</p>"
+                  . "<p><b>Requester LOC:</b> " . htmlspecialchars($reqLOCcode) . "</p>"
+                  . "<p><b>ILLiad URL:</b> " . htmlspecialchars($libilliadurl) . "</p>"
+                  . "<p><b>Returned TransactionNumber:</b> " . htmlspecialchars($illiadtxnub) . "</p>"
+                  . "<p><b>Returned TransactionStatus:</b> " . htmlspecialchars($illstatus) . "</p>"
+                  . "<p><b>Payload Sent (JSON):</b><br><pre>" . htmlspecialchars($json_enc) . "</pre></p>"
+                  . "<p><b>Raw Response:</b><br><pre>" . htmlspecialchars($output) . "</pre></p>";
 
-    mail("noc@senylrc.org, spalding@senylrc.org", "ILLiad Failure (no TransactionNumber)", $messagereq, $headers, "-f donotreply@senylrc.org");
-}
+                mail("noc@senylrc.org, spalding@senylrc.org", "ILLiad Failure (no TransactionNumber)", $messagereq, $headers, "-f donotreply@senylrc.org");
+            }
 
             // save API output to the request (even if blank, but we at least won't throw notices)
             $illiadtxnub_esc = mysqli_real_escape_string($db, $illiadtxnub);
             $illstatus_esc   = mysqli_real_escape_string($db, $illstatus);
             $sqlupdate2 = "UPDATE `$sealSTAT` SET `IlliadStatus` = '$illstatus_esc', `IlliadTransID` = '$illiadtxnub_esc' WHERE `index` = $sqlidnumb";
-            
+
             //echo $sqlupdate2;
 
             if (mysqli_query($db, $sqlupdate2)) {
@@ -793,7 +800,7 @@ return;
   <?php echo ($lc === $selected_req_loc)
       ? esc_html($field_your_institution . " ($lc)")
       : esc_html($lc);
-  ?>
+              ?>
 </option>
 
           <?php endforeach; ?>
@@ -813,15 +820,15 @@ return;
         <span>Mailing Address:&nbsp;</span><br>
         <strong>
           <?php
-            if (trim($field_street_address . $field_city_state_zip) === '') {
-                echo "<span class='grayout'>(No mailing address on file for {$selected_req_loc}.)</span>";
-            } else {
-                echo esc_html($field_street_address) . "<br>";
-                if (trim($field_street_address2) !== '') {
-                    echo esc_html($field_street_address2) . "<br>";
-                }
-                echo esc_html($field_city_state_zip);
-            }
+                        if (trim($field_street_address . $field_city_state_zip) === '') {
+                            echo "<span class='grayout'>(No mailing address on file for {$selected_req_loc}.)</span>";
+                        } else {
+                            echo esc_html($field_street_address) . "<br>";
+                            if (trim($field_street_address2) !== '') {
+                                echo esc_html($field_street_address2) . "<br>";
+                            }
+                            echo esc_html($field_city_state_zip);
+                        }
 ?>
         </strong>
       </div>
@@ -1083,7 +1090,7 @@ foreach ($records->location as $location) {
             $destlibsystem = "Unknown";
             $failmessage = "No alias match in SEAL directory";
         }
-                // -------------------------------
+        // -------------------------------
         // DEBUG (only for staff) — emit when a holding fails OR always if you prefer
         // -------------------------------
         if ($staff_debug && $destfail != 0) {
@@ -1267,7 +1274,7 @@ foreach ($records->location as $location) {
                 echo "--> \n\n";
             }
 
-            
+
             if ($destfail == 0) {
                 $itemcallnum = preg_replace('/[:]/', ' ', $itemcallnum);
                 $itemlocation = preg_replace('/[:]/', ' ', $itemlocation);
@@ -1316,9 +1323,9 @@ foreach ($records->location as $location) {
                 echo "<!-- Holding location failed checks. --> \n";
             }
         }
-        
+
     }
-    
+
 }
 
 foreach ($deadlibraries as $line) {
