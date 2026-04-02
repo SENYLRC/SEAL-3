@@ -358,7 +358,7 @@ if ($renanswer === '1') {
 
 // 4 = lender edits due date (no renew note change)
 } elseif ($renanswer === '4') {
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+     if ($_SERVER['REQUEST_METHOD'] === 'POST' && $duedate !== '') {
         $sql = "UPDATE `$sealSTAT`
                 SET `renewTimeStamp` = '$timestamp',
                     `renewAccountLender` = '$wholename',

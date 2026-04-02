@@ -702,7 +702,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
             }//end case lend library
 
+case 'expired_list': {
+    $sql = "
+        SELECT s.`illNUB`, s.`Title`, s.`Requester LOC`,
+               COALESCE(l.Name, s.`Requester LOC`) AS reqname,
+               s.`Destination`,
+               COALESCE(l2.Name, s.`Destination`) AS destname,
+               s.`Timestamp`
+        FROM `$sealSTAT` s
+        LEFT JOIN `$sealLIB` l  ON l.loc  = s.`Requester LOC`
+        LEFT JOIN `$sealLIB` l2 ON l2.loc = s.`Destination`
+        WHERE s.Fill = 4
+          AND s.`Timestamp` >= ? AND s.`Timestamp` < ?
+        ORDER BY s.`Timestamp` DESC
+    ";
+    $stmt = mysqli_prepare($db, $sql);
+    mysqli_stmt_bind_param($stmt, 'ss', $start_ts, $end_next);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
 
+    $output_html  = "<h2>Expired requests</h2>";
+    $output_html .= "<div><b>Range:</b> ".h($start)." to ".h($end)."</div>";
+    $output_html .= "<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;margin-top:8px;'>
+        <tr><th>ILL#</th><th>Title</th><th>Requester</th><th>Destination</th><th>Date</th></tr>";
+
+    $count = 0;
+    while ($r = mysqli_fetch_assoc($res)) {
+        $count++;
+        $output_html .= "<tr>
+            <td>".h($r['illNUB'])."</td>
+            <td>".h($r['Title'])."</td>
+            <td>".h($r['reqname'])." (".h($r['Requester LOC']).")</td>
+            <td>".h($r['destname'])." (".h($r['Destination']).")</td>
+            <td>".h($r['Timestamp'])."</td>
+        </tr>";
+    }
+    $output_html .= "</table>";
+    $output_html .= "<div style='margin-top:8px;'><b>Total expired:</b> ".h($count)."</div>";
+
+    mysqli_stmt_close($stmt);
+    break;
+}
+
+case 'top10_requesters': {
+    $sql = "
+        SELECT
+            s.`Requester LOC` AS loc,
+            COALESCE(l.Name, s.`Requester LOC`) AS name,
+            COUNT(*) AS cnt
+        FROM `$sealSTAT` s
+        LEFT JOIN `$sealLIB` l ON l.loc = s.`Requester LOC`
+        WHERE s.`Timestamp` >= ? AND s.`Timestamp` < ?
+          AND s.Fill <> 6
+        GROUP BY s.`Requester LOC`
+        ORDER BY cnt DESC
+        LIMIT 10
+    ";
+    $stmt = mysqli_prepare($db, $sql);
+    mysqli_stmt_bind_param($stmt, 'ss', $start_ts, $end_next);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+
+    $output_html  = "<h2>Top 10 libraries making requests</h2>";
+    $output_html .= "<div><b>Range:</b> ".h($start)." to ".h($end)."</div>";
+    $output_html .= "<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;margin-top:8px;'>
+        <tr><th>LOC</th><th>Library</th><th>Requests</th></tr>";
+
+    while ($r = mysqli_fetch_assoc($res)) {
+        $output_html .= "<tr>
+            <td>".h($r['loc'])."</td>
+            <td>".h($r['name'])."</td>
+            <td>".h($r['cnt'])."</td>
+        </tr>";
+    }
+    $output_html .= "</table>";
+
+    mysqli_stmt_close($stmt);
+    break;
+}
 
             case 'top10_fillers': {
                 $sql = "
