@@ -114,7 +114,9 @@ $extra_locs = [];
 if ($extra_locs_raw !== '') {
     foreach (explode(',', $extra_locs_raw) as $c) {
         $c = strtoupper(trim($c));
-        if ($c !== '') $extra_locs[] = $c;
+        if ($c !== '') {
+            $extra_locs[] = $c;
+        }
     }
 }
 
@@ -128,14 +130,19 @@ $has_multi  = (count($all_locs) > 1);
 if (!$has_multi) {
     $filter_loc = $all_locs[0] ?? strtoupper($primary_loc);
 } else {
-    if ($filter_loc === '') $filter_loc = 'all';
+    if ($filter_loc === '') {
+        $filter_loc = 'all';
+    }
     if ($filter_loc !== 'all' && !in_array(strtoupper($filter_loc), $all_locs, true)) {
         $filter_loc = 'all';
     }
 }
 
 // Small output helpers
-function esc_out($s){ return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
+function esc_out($s)
+{
+    return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
 ?>
 
 <style>
@@ -201,12 +208,12 @@ if ($has_multi) {
     echo "<select id='filter_loc' name='filter_loc' style='min-width:240px;'>";
     echo "<option value='all' " . selected('all', $filter_loc, false) . ">All My Libraries</option>";
     foreach ($all_locs as $code) {
-       $code_u = strtoupper($code);
-$label  = $loc_name_map[$code_u] ?? $code_u; // fallback if name missing
+        $code_u = strtoupper($code);
+        $label  = $loc_name_map[$code_u] ?? $code_u; // fallback if name missing
 
-echo "<option value='" . esc_attr($code_u) . "' " . selected($code_u, strtoupper($filter_loc), false) . ">" .
-     esc_html($label . " (" . $code_u . ")") .
-     "</option>";
+        echo "<option value='" . esc_attr($code_u) . "' " . selected($code_u, strtoupper($filter_loc), false) . ">" .
+             esc_html($label . " (" . $code_u . ")") .
+             "</option>";
 
     }
     echo "</select></label>";
@@ -299,15 +306,33 @@ if (strlen($filter_destination ?? '') > 2) {
 
 // Status conditions
 $conds = [];
-if ($filter_yes === "yes")    $conds[] = "`Fill` = 1";
-if ($filter_no === "yes")     $conds[] = "`Fill` = 0";
-if ($filter_noans === "yes")  $conds[] = "`Fill` = 3";
-if ($filter_expire === "yes") $conds[] = "`Fill` = 4";
-if ($filter_cancel === "yes") $conds[] = "`Fill` = 6";
-if ($filter_checkin === "yes") $conds[] = "`checkinAccount` IS NOT NULL";
-if ($filter_recevied === "yes") $conds[] = "`receiveAccount` IS NOT NULL AND `returnAccount` IS NULL";
-if ($filter_return === "yes") $conds[] = "`returnAccount` IS NOT NULL AND `checkinAccount` IS NULL";
-if ($filter_renew === "yes")  $conds[] = "`renewAnswer` > 1";
+if ($filter_yes === "yes") {
+    $conds[] = "`Fill` = 1";
+}
+if ($filter_no === "yes") {
+    $conds[] = "`Fill` = 0";
+}
+if ($filter_noans === "yes") {
+    $conds[] = "`Fill` = 3";
+}
+if ($filter_expire === "yes") {
+    $conds[] = "`Fill` = 4";
+}
+if ($filter_cancel === "yes") {
+    $conds[] = "`Fill` = 6";
+}
+if ($filter_checkin === "yes") {
+    $conds[] = "`checkinAccount` IS NOT NULL";
+}
+if ($filter_recevied === "yes") {
+    $conds[] = "`receiveAccount` IS NOT NULL AND `returnAccount` IS NULL";
+}
+if ($filter_return === "yes") {
+    $conds[] = "`returnAccount` IS NOT NULL AND `checkinAccount` IS NULL";
+}
+if ($filter_renew === "yes") {
+    $conds[] = "`renewAnswer` > 1";
+}
 
 $SQLMIDDLE = count($conds) ? implode(' OR ', $conds) : "`Fill` = ''";
 $GETLISTSQL = $SQLBASE . $SQL_DESTINATION . $SQL_DAYS . $SQLILL . " AND (" . $SQLMIDDLE . ")" . $SQLEND;
@@ -323,7 +348,7 @@ if (!$GETLIST) {
 } elseif ($GETLISTCOUNTwhole == 0) {
     echo "<p role='status' aria-live='polite'>No results found.</p>";
 } else {
-?>
+    ?>
     <hr>
     <h4 id="bulk_action_heading">Perform Bulk Action</h4>
 
@@ -359,7 +384,7 @@ if (!$GETLIST) {
         </thead>
         <tbody>
 <?php
-    $rowtype = 1;
+        $rowtype = 1;
     while ($row = mysqli_fetch_assoc($GETLIST)) {
         $illNUB   = $row["illNUB"];
         $fill     = $row["Fill"];
@@ -367,6 +392,19 @@ if (!$GETLIST) {
 
         // Row checkbox needs a label for SR (no visible change)
         $row_cb_id = 'cb_' . preg_replace('/[^A-Za-z0-9_\-]/', '_', (string)$illNUB);
+
+        // --------------------------------------------------
+        // Status color — WCAG AA compliant on white bg
+        // #1a7a1a green ~5.8:1, #b91c1c red ~5.9:1
+        // Color is supplemental; text label always present
+        // --------------------------------------------------
+        if ($fill == 1) {
+            $status_style = 'style="color:#1a7a1a;font-weight:bold;"';
+        } elseif ($fill == 0) {
+            $status_style = 'style="color:#b91c1c;font-weight:bold;"';
+        } else {
+            $status_style = '';
+        }
 
         echo "<tr class='".esc_attr($rowclass)."'>
                 <td>
@@ -378,88 +416,118 @@ if (!$GETLIST) {
                 <td>" . esc_html($row["Itype"]) . "<br>" . esc_html($row["needbydate"]) . "</td>
                 <td>" . esc_html($row["Requester person"]) . "<br><a href='mailto:" . esc_attr($row["requesterEMAIL"]) . "?Subject=NOTE%20Request%20ILL%23%20" . rawurlencode($illNUB) . "' target='_blank'>" . esc_html($row["Requester lib"]) . "</a></td>
                 <td>" . esc_html($row["DueDate"]) . "<br>" . esc_html(shipmtotxt($row["shipMethod"])) . "</td>
-                <td>" . esc_html(date("Y-m-d", strtotime($row["Timestamp"]))) . "<br>" .
-                    itemstatus(
-                        $fill,
-                        $row["receiveAccount"],
-                        $row["returnAccount"],
-                        $row["returnDate"],
-                        $row["receiveDate"],
-                        $row["checkinAccount"],
-                        $row["checkinTimeStamp"],
-                        $row["fillNofillDate"]
-                    ) .
-                    "<br>" . esc_html($row["IlliadTransID"]) . "</td>
+                <td>" . esc_html(date("Y-m-d", strtotime($row["Timestamp"]))) . "<br>
+                    <span " . $status_style . ">" .
+                        itemstatus(
+                            $fill,
+                            $row["receiveAccount"],
+                            $row["returnAccount"],
+                            $row["returnDate"],
+                            $row["receiveDate"],
+                            $row["checkinAccount"],
+                            $row["checkinTimeStamp"],
+                            $row["fillNofillDate"]
+                        ) .
+                    "</span><br>" . esc_html($row["IlliadTransID"]) . "
+                </td>
                 <td>";
 
-        // ==== Actions (unchanged) ====
-        $receive  = $row["receiveAccount"];
-        $return   = $row["returnAccount"];
-        $renewReq = $row["renewAccountRequester"];
-        $checkin  = $row["checkinAccount"];
-        $daysdiff = (time() - strtotime($row["Timestamp"])) / (60 * 60 * 24);
+        // ==== Actions ====
+$receive  = $row["receiveAccount"];
+$return   = $row["returnAccount"];
+$renewReq = $row["renewAccountRequester"];
+$checkin  = $row["checkinAccount"];
+$daysdiff = (time() - strtotime($row["Timestamp"])) / (60 * 60 * 24);
 
-        if ($fill == 0) {
-            echo "&nbsp;";
-        } elseif (($fill == 3) || (strlen($receive) < 1 && $daysdiff < 30 && $fill != 6)) {
-            echo "<form method='post' action='/respond'>
-                        <input type='hidden' name='FromLender' value='1'>
-                        <input type='hidden' name='num' value='" . esc_out($illNUB) . "'>
-                        <input type='hidden' name='fill' value='1'>
-                        <button type='submit'>Yes, Will Fill</button>
-                      </form>
-                      <hr>
-                      <form method='post' action='/respond'>
-                        <input type='hidden' name='FromLender' value='1'>
-                        <input type='hidden' name='num' value='" . esc_out($illNUB) . "'>
-                        <input type='hidden' name='fill' value='0'>
-                        <button type='submit'>No, Can&#39;t Fill</button>
-                      </form>";
-        } elseif ((strlen($return) < 2) && ($fill == 1) && (strlen($renewReq) > 1) && (strlen($checkin) < 2)) {
-            echo "<form method='post' action='/renew'>
-                        <input type='hidden' name='num' value='" . esc_out($illNUB) . "'>
-                        <input type='hidden' name='a' value='1'>
-                        <button type='submit'>Approve Renewal</button>
-                      </form>
-                      <form method='post' action='/renew'>
-                        <input type='hidden' name='num' value='" . esc_out($illNUB) . "'>
-                        <input type='hidden' name='a' value='2'>
-                        <button type='submit'>Deny Renewal</button>
-                      </form>
-                      <hr>
-                      <form method='post' action='/status'>
-                        <input type='hidden' name='num' value='" . esc_out($illNUB) . "'>
-                        <input type='hidden' name='a' value='3'>
-                        <button type='submit'>Check Item Back In</button>
-                      </form>";
-        } elseif (($daysdiff > 14) && (strlen($checkin) < 2) && ($fill != 4) && ($fill != 6)) {
-            echo "<form method='post' action='/status'>
-                        <input type='hidden' name='num' value='" . esc_out($illNUB) . "'>
-                        <input type='hidden' name='a' value='3'>
-                        <button type='submit'>Check Item Back In</button>
-                      </form>";
-        } elseif ((strlen($return) < 2) && (strlen($renewReq) < 1) && (strlen($receive) > 1) && (strlen($checkin) < 2)) {
-            echo "<form method='post' action='/renew'>
-                        <input type='hidden' name='num' value='" . esc_out($illNUB) . "'>
-                        <input type='hidden' name='a' value='4'>
-                        <button type='submit'>Edit Due Date</button>
-                      </form>";
-            if ($daysdiff > 14) {
-                echo "<form method='post' action='/status'>
-                            <input type='hidden' name='num' value='" . esc_out($illNUB) . "'>
-                            <input type='hidden' name='a' value='3'>
-                            <button type='submit'>Check Item Back In</button>
-                          </form>";
-            }
-        } elseif ((strlen($checkin) < 2) && (strlen($receive) > 1)) {
-            echo "<form method='post' action='/status'>
-                        <input type='hidden' name='num' value='" . esc_out($illNUB) . "'>
-                        <input type='hidden' name='a' value='3'>
-                        <button type='submit'>Check Item Back In</button>
-                      </form>";
-        } else {
-            echo "&nbsp;";
-        }
+// Already checked in — nothing to do
+if (strlen($checkin) > 1) {
+    echo "&nbsp;";
+
+// Renewal pending — show approve/deny + check in
+} elseif ((strlen($return) < 2) && ($fill == 1) && (strlen($renewReq) > 1) && (strlen($checkin) < 2)) {
+    echo "<form method='post' action='/renew'>
+            <input type='hidden' name='num' value='" . esc_out($illNUB) . "'>
+            <input type='hidden' name='a' value='1'>
+            <button type='submit'>Approve Renewal</button>
+          </form>
+          <form method='post' action='/renew'>
+            <input type='hidden' name='num' value='" . esc_out($illNUB) . "'>
+            <input type='hidden' name='a' value='2'>
+            <button type='submit'>Deny Renewal</button>
+          </form>
+          <hr>
+          <form method='post' action='/status'>
+            <input type='hidden' name='num' value='" . esc_out($illNUB) . "'>
+            <input type='hidden' name='a' value='3'>
+            <button type='submit'>Check Item Back In</button>
+          </form>";
+
+// Item returned or out > 14 days — show check in
+} elseif (strlen($return) > 1 || (($daysdiff > 14) && ($fill != 4) && ($fill != 6))) {
+    echo "<form method='post' action='/status'>
+            <input type='hidden' name='num' value='" . esc_out($illNUB) . "'>
+            <input type='hidden' name='a' value='3'>
+            <button type='submit'>Check Item Back In</button>
+          </form>";
+
+// Item received, no return yet, no renew pending — show edit due date (+ check in if > 14 days)
+} elseif ((strlen($return) < 2) && (strlen($renewReq) < 1) && (strlen($receive) > 1)) {
+    echo "<form method='post' action='/renew'>
+            <input type='hidden' name='num' value='" . esc_out($illNUB) . "'>
+            <input type='hidden' name='a' value='4'>
+            <button type='submit'>Edit Due Date</button>
+          </form>";
+    if ($daysdiff > 14) {
+        echo "<form method='post' action='/status'>
+                <input type='hidden' name='num' value='" . esc_out($illNUB) . "'>
+                <input type='hidden' name='a' value='3'>
+                <button type='submit'>Check Item Back In</button>
+              </form>";
+    }
+
+// Answered (fill 0 or 1), not yet received — Edit Fill Status
+} elseif (($fill == 1 || $fill == 0) && strlen($receive) < 1) {
+    $toggle_id         = 'edit_fill_' . preg_replace('/[^A-Za-z0-9_\-]/', '_', (string)$illNUB);
+    $change_fill_val   = ($fill == 1) ? 0 : 1;
+    $change_fill_label = ($fill == 1) ? "No, Can&#39;t Fill" : "Yes, Will Fill";
+
+    echo "<button type='button'
+            onclick=\"document.getElementById('" . esc_attr($toggle_id) . "').style.display='block';this.style.display='none';\">
+            Edit Fill Status
+          </button>
+          <div id='" . esc_attr($toggle_id) . "' style='display:none;'>
+            <form method='post' action='/respond'>
+              <input type='hidden' name='FromLender' value='1'>
+              <input type='hidden' name='num' value='" . esc_out($illNUB) . "'>
+              <input type='hidden' name='fill' value='" . esc_out($change_fill_val) . "'>
+              <button type='submit'>" . $change_fill_label . "</button>
+            </form>
+            <hr>
+            <button type='button'
+              onclick=\"document.getElementById('" . esc_attr($toggle_id) . "').style.display='none';this.parentElement.previousElementSibling.style.display='inline-block';\">
+              Cancel
+            </button>
+          </div>";
+
+// No answer yet (fill 3) or unanswered within 30 days — show Yes/No
+} elseif ($fill == 3 || (strlen($receive) < 1 && $daysdiff < 30 && $fill != 6)) {
+    echo "<form method='post' action='/respond'>
+            <input type='hidden' name='FromLender' value='1'>
+            <input type='hidden' name='num' value='" . esc_out($illNUB) . "'>
+            <input type='hidden' name='fill' value='1'>
+            <button type='submit'>Yes, Will Fill</button>
+          </form>
+          <hr>
+          <form method='post' action='/respond'>
+            <input type='hidden' name='FromLender' value='1'>
+            <input type='hidden' name='num' value='" . esc_out($illNUB) . "'>
+            <input type='hidden' name='fill' value='0'>
+            <button type='submit'>No, Can&#39;t Fill</button>
+          </form>";
+
+} else {
+    echo "&nbsp;";
+}
 
         echo "</td></tr>";
 
@@ -499,10 +567,18 @@ if (!$GETLIST) {
 
         if ($returnnote || $returnmethod || $returnDate || $returnAccount) {
             $displayreturnnotes = '';
-            if (strlen($returnnote) > 2)   $displayreturnnotes .= "<b>Return Note:</b> " . nl2br(esc_out($returnnote)) . "<br>";
-            if (strlen($returnmethod) > 2) $displayreturnnotes .= "<b>Return Method:</b> " . esc_out($returnmethod) . "<br>";
-            if (strlen($returnDate) > 2)   $displayreturnnotes .= "<b>Returned On:</b> " . esc_out($returnDate) . "<br>";
-            if (strlen($returnAccount) > 2) $displayreturnnotes .= "<b>Checked In By:</b> " . esc_out($returnAccount);
+            if (strlen($returnnote) > 2) {
+                $displayreturnnotes .= "<b>Return Note:</b> " . nl2br(esc_out($returnnote)) . "<br>";
+            }
+            if (strlen($returnmethod) > 2) {
+                $displayreturnnotes .= "<b>Return Method:</b> " . esc_out($returnmethod) . "<br>";
+            }
+            if (strlen($returnDate) > 2) {
+                $displayreturnnotes .= "<b>Returned On:</b> " . esc_out($returnDate) . "<br>";
+            }
+            if (strlen($returnAccount) > 2) {
+                $displayreturnnotes .= "<b>Checked In By:</b> " . esc_out($returnAccount);
+            }
 
             echo "<tr class='".esc_attr($rowclass)."'>
                     <td></td><td></td>
